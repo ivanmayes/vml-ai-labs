@@ -6,6 +6,7 @@ import { User } from './user/user.entity';
 import { Organization } from './organization/organization.entity';
 import { AuthenticationStrategy } from './authentication-strategy/authentication-strategy.entity';
 import { ApiKey } from './api-key/api-key.entity';
+import { ApiKeyLog } from './api-key/api-key-log.entity';
 // CLI_ENTITIES_IMPORT
 
 @Module({
@@ -30,6 +31,7 @@ import { ApiKey } from './api-key/api-key.entity';
 				AuthenticationStrategy,
 				Organization,
 				ApiKey,
+				ApiKeyLog,
 				User,
 				// CLI_ENTITIES_REF
 			],
