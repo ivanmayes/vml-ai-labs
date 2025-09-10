@@ -1,28 +1,32 @@
 {
 	"compileOnSave": false,
 	"compilerOptions": {
-		"baseUrl": "./",
-		"outDir": "./dist/out-tsc",
-		"sourceMap": true,
-		"declaration": false,
-		"downlevelIteration": true,
-		"experimentalDecorators": true,
-		"module": "es2020",
-		"moduleResolution": "node",
-		"importHelpers": true,
-		"target": "es2020",
-		"lib": ["es2018", "dom", "esnext.asynciterable"],
-		"allowSyntheticDefaultImports": true,
-		"paths": {
-			"*": [
-				"node_modules/*",
-				"node_modules/@types"
-			]
-		},
-		"typeRoots": [
-			"node_modules/@types"
-		],
-	},
+    "baseUrl": "./",
+    "outDir": "./dist/out-tsc",
+    "sourceMap": true,
+    "declaration": false,
+    "downlevelIteration": true,
+    "experimentalDecorators": true,
+    "module": "es2020",
+    "moduleResolution": "bundler",
+    "importHelpers": true,
+    "target": "es2020",
+    "lib": [
+      "es2018",
+      "dom",
+      "esnext.asynciterable"
+    ],
+    "allowSyntheticDefaultImports": true,
+    "paths": {
+      "*": [
+        "node_modules/*",
+        "node_modules/@types"
+      ]
+    },
+    "typeRoots": [
+      "node_modules/@types"
+    ]
+  },
 	"angularCompilerOptions": {
 		"fullTemplateTypeCheck": true,
 		"strictInjectionParameters": true,

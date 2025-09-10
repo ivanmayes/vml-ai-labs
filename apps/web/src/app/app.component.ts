@@ -1,7 +1,7 @@
-import { Component, HostListener, Inject } from '@angular/core';
+import { Component, HostListener, Inject, DOCUMENT } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { Location, DOCUMENT } from '@angular/common';
+import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -20,10 +20,11 @@ import { ORG_SETTINGS } from './state/session/session.store';
 //import { WppOpenService } from './_core/services/wpp-open/wpp-open.service';
 
 @Component({
-	selector: 'app-root',
-	templateUrl: './app.component.html',
-	styleUrls: ['./app.component.scss'],
-	animations: [fade('fade', 500)]
+    selector: 'app-root',
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss'],
+    animations: [fade('fade', 500)],
+    standalone: false
 })
 export class AppComponent {
 	public loaded = false;

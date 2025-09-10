@@ -10,9 +10,10 @@ import { GlobalQuery } from '../../../state/global/global.query';
  * This component handles the view for the header bar for the site, including the navigation and user profile.
  */
 @Component({
-	selector: 'app-header',
-	templateUrl: './header.component.html',
-	styleUrls: ['./header.component.scss']
+    selector: 'app-header',
+    templateUrl: './header.component.html',
+    styleUrls: ['./header.component.scss'],
+    standalone: false
 })
 export class HeaderComponent implements OnInit {
 	public routerActiveState$: Observable<ActiveRouteState>;

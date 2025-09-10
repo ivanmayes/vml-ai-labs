@@ -4,10 +4,11 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 @Component({
-	selector: 'app-home',
-	templateUrl: './home.page.html',
-	styleUrls: ['./home.page.scss'],
-	animations: [fade('fade', 400, '-50%')]
+    selector: 'app-home',
+    templateUrl: './home.page.html',
+    styleUrls: ['./home.page.scss'],
+    animations: [fade('fade', 400, '-50%')],
+    standalone: false
 })
 export class HomeComponent implements OnInit, OnDestroy {
 	public sampleData;

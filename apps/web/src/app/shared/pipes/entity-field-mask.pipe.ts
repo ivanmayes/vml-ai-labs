@@ -3,7 +3,8 @@ import { GlobalQuery } from '../../state/global/global.query';
 import { resolveDotNotationPath } from '../../_core/utils/object.utils';
 
 @Pipe({
-	name: 'entityFieldMask'
+    name: 'entityFieldMask',
+    standalone: false
 })
 export class EntityFieldMaskPipe implements PipeTransform {
 	constructor(private readonly globalQuery: GlobalQuery) {}

@@ -6,7 +6,8 @@ import { joinWithProp } from '../../_core/utils/array.utils';
  * Takes an array and joins it into a string with a custom separator
  */
 @Pipe({
-	name: 'joinWithProp'
+    name: 'joinWithProp',
+    standalone: false
 })
 export class JoinWithPropPipe implements PipeTransform {
 	public transform = joinWithProp;

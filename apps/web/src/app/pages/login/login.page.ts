@@ -20,10 +20,11 @@ import { environment } from '../../../environments/environment';
  * complete the authentication
  */
 @Component({
-	selector: 'app-login',
-	templateUrl: './login.page.html',
-	styleUrls: ['./login.page.scss'],
-	animations: [fade('fade', 400, '-50%')]
+    selector: 'app-login',
+    templateUrl: './login.page.html',
+    styleUrls: ['./login.page.scss'],
+    animations: [fade('fade', 400, '-50%')],
+    standalone: false
 })
 export class LoginComponent implements OnInit, OnDestroy {
 	public siteSettings$: Observable<GlobalSettings>;

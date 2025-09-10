@@ -15,10 +15,11 @@ import { fade } from '../../../_core/utils/animations.utils';
  * Ideally, only devs would use this and everyone else would be using SSO
  */
 @Component({
-	selector: 'app-auth-basic',
-	templateUrl: './basic.component.html',
-	styleUrls: ['./basic.component.scss'],
-	animations: [fade('fade', 400, '-50%')]
+    selector: 'app-auth-basic',
+    templateUrl: './basic.component.html',
+    styleUrls: ['./basic.component.scss'],
+    animations: [fade('fade', 400, '-50%')],
+    standalone: false
 })
 export class BasicAuthComponent implements OnInit {
 	@Input() email: string;

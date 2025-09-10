@@ -7,7 +7,8 @@ import { DomSanitizer } from '@angular/platform-browser';
  * Commonly used for iframe content.
  */
 @Pipe({
-	name: 'safeUrl'
+    name: 'safeUrl',
+    standalone: false
 })
 export class SafeUrlPipe implements PipeTransform {
 	constructor(private sanitizer: DomSanitizer) {}

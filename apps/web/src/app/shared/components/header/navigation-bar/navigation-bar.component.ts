@@ -14,10 +14,11 @@ import type { PublicUser } from '../../../../../../../api/src/user/user.entity';
  * This component handles the navigation of the header.
  */
 @Component({
-	selector: 'app-navigation-bar',
-	templateUrl: './navigation-bar.component.html',
-	styleUrls: ['./navigation-bar.component.scss'],
-	changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'app-navigation-bar',
+    templateUrl: './navigation-bar.component.html',
+    styleUrls: ['./navigation-bar.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class NavigationBarComponent implements OnInit {
 	@Input() activeRouteState: ActiveRouteState;

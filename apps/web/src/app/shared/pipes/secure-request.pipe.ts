@@ -12,7 +12,8 @@ import { SessionQuery } from '../../state/session/session.query';
  * Used mostly to pull in images from the SIMPL API
  */
 @Pipe({
-	name: 'secure'
+    name: 'secure',
+    standalone: false
 })
 export class SecureRequestPipe implements PipeTransform {
 	constructor(private http: HttpClient, private sanitizer: DomSanitizer, private sessionQuery: SessionQuery) {}

@@ -6,9 +6,10 @@ import { SessionService } from '../../../state/session/session.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
-	selector: 'app-auth-okta',
-	templateUrl: './okta.component.html',
-	styleUrls: ['./okta.component.scss']
+    selector: 'app-auth-okta',
+    templateUrl: './okta.component.html',
+    styleUrls: ['./okta.component.scss'],
+    standalone: false
 })
 export class OktaAuthComponent implements OnInit {
 	@Input() email: string;

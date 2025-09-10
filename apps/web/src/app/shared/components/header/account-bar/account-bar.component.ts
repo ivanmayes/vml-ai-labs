@@ -13,9 +13,10 @@ import type { PublicUser } from '../../../../../../../api/src/user/user.entity';
  * This component handles the user profile / account button on the header bar.
  */
 @Component({
-	selector: 'app-account-bar',
-	templateUrl: './account-bar.component.html',
-	styleUrls: ['./account-bar.component.scss']
+    selector: 'app-account-bar',
+    templateUrl: './account-bar.component.html',
+    styleUrls: ['./account-bar.component.scss'],
+    standalone: false
 })
 export class AccountBarComponent implements OnInit {
 	public settings$: Observable<GlobalSettings>;

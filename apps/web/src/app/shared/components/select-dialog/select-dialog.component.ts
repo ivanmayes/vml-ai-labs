@@ -14,9 +14,10 @@ export interface SelectDialogData {
  * Give the user some options, get result.
  */
 @Component({
-	selector: 'app-select-dialog',
-	templateUrl: './select-dialog.component.html',
-	styleUrls: ['./select-dialog.component.scss']
+    selector: 'app-select-dialog',
+    templateUrl: './select-dialog.component.html',
+    styleUrls: ['./select-dialog.component.scss'],
+    standalone: false
 })
 export class SelectDialogComponent {
 	public selection = new FormGroup({
