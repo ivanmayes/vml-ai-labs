@@ -1,0 +1,48 @@
+<div class="login-container content-group" *ngIf="siteSettings$ | async as settings">
+	<div class="lockup">
+		<img [src]="(siteSettings$ | async)?.logo || 'assets/vmly-r-logo.svg'" />
+	</div>
+
+	<form class="enter-email" *ngIf="state === 'enter-email'" (submit)="submit()">
+		<div class="input-group" fxFill fxLayoutAlign="center center">
+			<mat-form-field class="input" fxFlex="80%">
+				<mat-label>Email</mat-label>
+				<input
+					#emailField="ngModel"
+					matInput
+					name="email"
+					email
+					required
+					[(ngModel)]="email"
+					placeholder="first.last@company.com"
+				/>
+			</mat-form-field>
+		</div>
+
+		<button
+			mat-flat-button
+			color="primary"
+			class="submit button-small"
+			[class.loading-spinner]="loading$ | async"
+			[disabled]="!email || !emailField.valid || (loading$ | async)"
+		>
+			Enter
+		</button>
+		<ng-container *ngIf="!exclusiveServer">
+			<br />
+			<br />
+			<button mat-flat-button color="tertiary" class="button-extra-small" (click)="changeOrg()">Change Organization</button>
+		</ng-container>
+		<span @fade class="error" *ngIf="emailError === 403">Invalid email address for this site.</span>
+	</form>
+
+	<app-auth-basic *ngIf="state === 'basic'" (loggedIn)="loggedIn()" [email]="email" [authConfig]="authConfig"></app-auth-basic>
+	<app-auth-okta *ngIf="state === 'okta'" (loggedIn)="loggedIn()" [email]="email" [authConfig]="authConfig"></app-auth-okta>
+</div>
+
+<!-- Errors -->
+<div class="api-error login-container text-center" *ngIf="settingsError">
+	<h3>We're experiencing some technical difficulties.</h3>
+	<p>Try refreshing the page, or contact your main contact about this issue. Reference the error below.</p>
+	<p class="text-danger">{{ settingsError }}</p>
+</div>

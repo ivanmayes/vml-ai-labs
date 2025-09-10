@@ -1,0 +1,33 @@
+<div class="enter-code">
+	<h2>Almost there!</h2>
+	<p>
+		We've a one-time passcode to your email address.<br />
+		Check your email and enter the passcode below.<br />
+		<small>(Check your spam folder if you don't receive in a few minutes.)</small>
+	</p>
+	<div class="token" *ngIf="authConfig?.data?.token">{{ authConfig?.data?.token }}</div>
+
+	<form #form="ngForm" (submit)="activate()">
+		<div class="input-group" fxFill fxLayoutAlign="center center">
+			<mat-form-field class="input" fxFlex="50%">
+				<mat-label>Enter Keycode</mat-label>
+				<input #emailField="ngModel" class="input-key" matInput name="key" required [(ngModel)]="key" placeholder="eg. 123456" />
+			</mat-form-field>
+		</div>
+
+		<button
+			mat-flat-button
+			color="primary"
+			class="submit button-small"
+			[class.loading-spinner]="loading$ | async"
+			[disabled]="!email || !emailField.valid || (loading$ | async)"
+		>
+			Verify
+		</button>
+	</form>
+
+	<a class="resend" (click)="resend()">Resend Email</a>
+	<p class="resent" [class.active]="resendComplete">Resent!</p>
+
+	<span @fade class="error" *ngIf="error">Invalid verification code.</span>
+</div>

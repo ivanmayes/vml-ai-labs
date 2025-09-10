@@ -1,0 +1,39 @@
+<h1 mat-dialog-title>{{ data.title }}</h1>
+
+<div mat-dialog-content>
+	<p *ngIf="this.data.message" [innerHTML]="this.data.message | safeHtml"></p>
+
+	<ng-container *ngIf="confirmation && data.confirmWithString">
+		<p>
+			Please type <strong>{{ data.confirmationString }}</strong> below to confirm.
+		</p>
+		<br />
+
+		<form [formGroup]="confirmation">
+			<mat-form-field class="input" fxFlex="100%">
+				<mat-label>Type the name to confirm.</mat-label>
+				<input
+					matInput
+					name="verifyString"
+					formControlName="verifyString"
+					required
+					[pattern]="escapeRegExp(data.confirmationString)"
+				/>
+			</mat-form-field>
+		</form>
+	</ng-container>
+</div>
+
+<div mat-dialog-actions>
+	<button class="cancel" mat-button (click)="no()">Cancel</button>
+	<button
+		*ngIf="confirmation"
+		[disabled]="data.confirmWithString && confirmation.invalid"
+		mat-button
+		[mat-dialog-close]="data"
+		mat-flat-button
+		class="remove button-extra-small"
+	>
+		<span *ngIf="this.data.confirm">{{ this.data.confirm || 'Confirm' }}</span>
+	</button>
+</div>

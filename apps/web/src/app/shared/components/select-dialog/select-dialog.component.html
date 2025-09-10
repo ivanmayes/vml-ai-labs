@@ -1,0 +1,27 @@
+<h1 mat-dialog-title>{{ data.title }}</h1>
+
+<div mat-dialog-content>
+	<form [formGroup]="selection">
+		<mat-select [placeholder]="data.placeholder || 'Make a selection'" required name="choice" formControlName="choice">
+			<ng-container *ngFor="let item of data.options | keyvalue">
+				<mat-option [value]="item.value">
+					{{ item.key }}
+				</mat-option>
+			</ng-container>
+		</mat-select>
+	</form>
+</div>
+
+<div mat-dialog-actions>
+	<button class="cancel" mat-button (click)="cancel()" *ngIf="data.canCancel">Cancel</button>
+	<button
+		*ngIf="selection"
+		[disabled]="selection.invalid"
+		mat-button
+		mat-flat-button
+		class="remove button-extra-small"
+		(click)="submit()"
+	>
+		Select
+	</button>
+</div>

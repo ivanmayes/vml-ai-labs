@@ -1,0 +1,27 @@
+{
+	"localhost": [
+		{
+			"name": "Test 1 (Local)",
+			"endpoint": "http://localhost:8001",
+			"organizationId": "9d43c93a-2f41-45fd-98ef-bfa77921a6ca",
+			"production": false,
+			"locale": "en-US"
+		},
+		{
+			"name": "Test 2 (local)",
+			"endpoint": "http://localhost:8001",
+			"organizationId": "af43c93a-2f41-45fd-98ef-bfa77921a3ff",
+			"production": false,
+			"locale": "en-US"
+		}
+	],
+	"somedomain.com": [
+		{
+			"name": "Test 1 (Prod)",
+			"endpoint": "http://some-api-domain.com.com",
+			"organizationId": "6d2239f8-3052-4eb3-b122-d5e68498410f",
+			"production": true,
+			"locale": "en-US"
+		}
+	]
+}

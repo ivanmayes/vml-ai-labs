@@ -1,0 +1,9 @@
+.error {
+	position: absolute;
+	left: 50%;
+	bottom: -25px;
+	transform: translate3d(-50%, 0, 0);
+	width: 100%;
+	font-size: 1.3rem;
+	color: var(--color-danger);
+}

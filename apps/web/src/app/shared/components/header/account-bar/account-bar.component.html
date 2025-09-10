@@ -1,0 +1,19 @@
+<div class="left" *ngIf="settings$ | async as settings">
+	<p class="logo">
+		{{ settings.name }} <span *ngIf="!production" class="non-production text-danger"> - Non Production Environment!</span>
+	</p>
+</div>
+
+<div class="right" *ngIf="user$ | async as user">
+	<div class="name-container" [matMenuTriggerFor]="menu">
+		<span class="name">{{ user.email }}</span>
+		<mat-icon inline aria-hidden="false" aria-label="Expand">expand_more</mat-icon>
+	</div>
+
+	<mat-menu #menu="matMenu" overlayPanelClass="full-width">
+		<button mat-menu-item (click)="logout()" width="100%">
+			<mat-icon>exit_to_app</mat-icon>
+			<span>Logout</span>
+		</button>
+	</mat-menu>
+</div>

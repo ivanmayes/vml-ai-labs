@@ -1,0 +1,48 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { FindManyOptions, FindOptionsWhere, Repository } from 'typeorm';
+
+import { FindOptions } from '../_core/models';
+
+import { ENTITY_NAME_UPPER } from './ENTITY_NAME_SLUG.entity';
+
+@Injectable()
+export class ENTITY_NAME_UPPERService {
+	constructor(
+		@InjectRepository(ENTITY_NAME_UPPER)
+		private readonly ENTITY_NAME_LOWERRepository: Repository<ENTITY_NAME_UPPER>
+	) {}
+
+	public async add(ENTITY_NAME_LOWER: Partial<ENTITY_NAME_UPPER>) {
+		return this.ENTITY_NAME_LOWERRepository
+			.save(ENTITY_NAME_LOWER);
+	}
+
+	public async update(ENTITY_NAME_LOWER: ENTITY_NAME_UPPER) {
+		return this.ENTITY_NAME_LOWERRepository
+			.save(ENTITY_NAME_LOWER);
+	}
+
+	public async findPaginated(options: FindOptions<ENTITY_NAME_UPPER>, filter: FindOptionsWhere<ENTITY_NAME_UPPER> = {}): Promise<[ENTITY_NAME_UPPER[], number]> {
+		const { page, perPage, sortBy, sortOrder } = options;
+
+		const where: FindManyOptions<ENTITY_NAME_UPPER>['where'] = {
+			...filter
+		};
+
+		const order: FindManyOptions<ENTITY_NAME_UPPER>['order'] = {};
+		if(sortBy) {
+			order[sortBy as string] = sortOrder;
+		}
+
+		const skip = (page - 1) * perPage;
+
+		return this.ENTITY_NAME_LOWERRepository
+			.findAndCount({
+				where,
+				order,
+				skip,
+				take: perPage
+			});
+	}
+}

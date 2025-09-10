@@ -1,0 +1,43 @@
+:host {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100%;
+}
+
+.content-group {
+	width: 600px;
+	text-align: center;
+	padding: 40px 80px;
+	background: var(--color-step-100);
+	border-radius: 6px;
+	position: relative;
+}
+
+.lockup {
+	user-select: none;
+	padding-bottom: 30px;
+
+	img {
+		max-width: 200px;
+		max-height: 110px;
+	}
+}
+
+.error {
+	position: absolute;
+	left: 50%;
+	bottom: -25px;
+	transform: translate3d(-50%, 0, 0);
+	width: 100%;
+	font-size: 1.3rem;
+	color: var(--color-danger);
+}
+
+.enter-email {
+	position: relative;
+
+	ion-button {
+		margin-top: 15px;
+	}
+}

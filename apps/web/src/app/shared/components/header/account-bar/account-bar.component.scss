@@ -1,0 +1,23 @@
+:host {
+	height: 34px;
+	background: var(--color-secondary);
+	display: flex;
+	align-items: center;
+	color: black;
+	font-size: 1.2rem;
+	padding: 0 10px;
+
+	.right {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+	}
+}
+
+.name-container {
+	cursor: pointer;
+}
+::ng-deep .mat-menu-panel {
+	padding: 0 10px !important;
+	width: 100% !important;
+}

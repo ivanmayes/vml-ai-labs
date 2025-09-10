@@ -1,0 +1,96 @@
+import {
+	Body,
+	Controller,
+	DefaultValuePipe,
+	Delete,
+	Get,
+	HttpException,
+	HttpStatus,
+	Post,
+	Put,
+	Query,
+	UseGuards
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ResponseEnvelope, ResponseEnvelopeFind, ResponseStatus, SortStrategy, FindOptions } from '../_core/models';
+
+import { ENTITY_NAME_UPPERService } from './ENTITY_NAME_SLUG.service';
+import { ENTITY_NAME_UPPER } from './ENTITY_NAME_SLUG.entity';
+import { ENTITY_NAME_UPPERFindDto } from './dtos';
+
+@Controller('ENTITY_NAME_SLUG')
+export class ENTITY_NAME_UPPERController {
+	constructor(
+		private readonly ENTITY_NAME_LOWERService: ENTITY_NAME_UPPERService
+	) {}
+
+	@Post()
+	@UseGuards(AuthGuard())
+	public async create() {
+		return new ResponseEnvelope(ResponseStatus.Success, 'Create');
+	}
+
+	@Get(':id')
+	@UseGuards(AuthGuard())
+	public async read() {
+		return new ResponseEnvelope(ResponseStatus.Success, 'Read');
+	}
+
+	@Put(':id')
+	@UseGuards(AuthGuard())
+	public async update() {
+		return new ResponseEnvelope(ResponseStatus.Success, 'Update');
+	}
+
+	@Delete(':id')
+	@UseGuards(AuthGuard())
+	public async delete() {
+		return new ResponseEnvelope(ResponseStatus.Success, 'Delete');
+	}
+
+	@Post('find')
+	@UseGuards(AuthGuard())
+	public async find(
+		@Body() filter: ENTITY_NAME_UPPERFindDto,
+		@Query('page', new DefaultValuePipe(1)) page: number,
+		@Query('perPage', new DefaultValuePipe(10)) perPage: number,
+		@Query('sortBy') sortBy?: keyof ENTITY_NAME_UPPER,
+		@Query('order', new DefaultValuePipe('ASC')) sortOrder?: SortStrategy
+	) {
+		perPage = perPage > 50 ? 50 : perPage;
+		const options: FindOptions<ENTITY_NAME_UPPER> = {
+			page,
+			perPage,
+			sortBy,
+			sortOrder
+		};
+
+		let error;
+		const [queryResult, count]: [ENTITY_NAME_UPPER[], number] = await this.ENTITY_NAME_LOWERService
+			.findPaginated(options, filter)
+			.catch(err => {
+				console.log(err);
+				error = err;
+				return [[], 0];
+			});
+
+		if(error) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Error, 'Error finding ENTITY_NAME_UPPERs.'),
+				HttpStatus.INTERNAL_SERVER_ERROR
+			);
+		}
+
+		return new ResponseEnvelopeFind<ENTITY_NAME_UPPER>(
+			ResponseStatus.Success,
+			undefined,
+			{
+				page,
+				perPage,
+				numPages: Math.ceil(count / perPage) || 1,
+				totalResults: count,
+				results: queryResult.map(r => new ENTITY_NAME_UPPER(r).toPublic())
+			}
+		);
+	}
+}

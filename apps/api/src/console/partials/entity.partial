@@ -1,0 +1,32 @@
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+
+export type PublicENTITY_NAME_UPPER = Pick<ENTITY_NAME_UPPER,
+	'id'
+> & {
+	// Other Public Properties
+}
+
+@Entity('ENTITY_NAME_PLURAL')
+export class ENTITY_NAME_UPPER {
+	constructor(value?: Partial<ENTITY_NAME_UPPER>) {
+		if(value) {
+			value = structuredClone(value);
+		}
+		for(const k in value) {
+			this[k] = value[k];
+		}
+	}
+
+	@PrimaryGeneratedColumn('uuid')
+	id: string;
+
+	public toPublic() {
+		const pub: Partial<PublicENTITY_NAME_UPPER> = {
+			id: this.id
+		};
+
+		// Other public transformations
+
+		return pub as PublicENTITY_NAME_UPPER;
+	}
+}
