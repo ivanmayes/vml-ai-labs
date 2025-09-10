@@ -1,0 +1,16 @@
+{
+  "name": "vml-open-boilerplate",
+  "version": "1.0.0",
+  "description": "VML Open Boilerplate - Monorepo",
+  "private": true,
+  "scripts": {
+    "start": "concurrently -p \"[{name}]\" -n \"API,WEB\" -c \"bgBlue.bold,bgMagenta.bold\" \"cd apps/api && npm run start:dev\" \"cd apps/web && npm run dev\"",
+    "postinstall": "cd apps/api && npm install && cd ../web && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
