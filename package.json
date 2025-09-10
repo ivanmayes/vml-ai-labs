@@ -4,7 +4,7 @@
   "description": "VML Open Boilerplate - Monorepo",
   "private": true,
   "scripts": {
-    "start": "concurrently -p \"[{name}]\" -n \"API,WEB\" -c \"bgBlue.bold,bgMagenta.bold\" \"cd apps/api && npm run start:dev\" \"cd apps/web && npm run dev\"",
+    "start": "concurrently -p \"[{name}]\" -n \"API,WEB\" -c \"bgBlue.bold,bgMagenta.bold\" \"cd apps/api && npm run start:dev\" \"cd apps/web && npm run start:dev\"",
     "postinstall": "cd apps/api && npm install && cd ../web && npm install"
   },
   "devDependencies": {
