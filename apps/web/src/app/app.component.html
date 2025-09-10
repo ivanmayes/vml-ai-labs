@@ -1,10 +1,10 @@
-<ng-container *ngIf="loaded">
-	<ng-container *ngIf="(headerSettings$ | async) as settings">
-		<app-header *ngIf="settings?.visible" [class.floating]="settings.floating"></app-header>
-	</ng-container>
-
-	<router-outlet></router-outlet>
-</ng-container>
+<div class="app-container" *ngIf="loaded">
+	<app-sidebar></app-sidebar>
+	
+	<main class="main-content">
+		<router-outlet></router-outlet>
+	</main>
+</div>
 
 <div class="loading" *ngIf="!loaded">
 	<mat-spinner [diameter]="40"></mat-spinner>

@@ -5,6 +5,15 @@
 </div>
 
 <div class="right" *ngIf="user$ | async as user">
+	<!-- Theme Toggle Button -->
+	<button mat-icon-button 
+		class="theme-toggle"
+		(click)="toggleTheme()"
+		[matTooltip]="getThemeTooltip()"
+		[attr.aria-label]="'Switch to ' + getThemeTooltip()">
+		<mat-icon>{{ getThemeIcon() }}</mat-icon>
+	</button>
+
 	<div class="name-container" [matMenuTriggerFor]="menu">
 		<span class="name">{{ user.email }}</span>
 		<mat-icon inline aria-hidden="false" aria-label="Expand">expand_more</mat-icon>

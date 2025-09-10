@@ -10,6 +10,7 @@ import { AccountBarComponent } from './components/header/account-bar/account-bar
 import { NavigationBarComponent } from './components/header/navigation-bar/navigation-bar.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { SelectDialogComponent } from './components/select-dialog/select-dialog.component';
+import { SidebarComponent } from './components/sidebar/sidebar.component';
 
 // Directives
 import { FillHeightDirective } from './directives/fill-height.directive';
@@ -31,6 +32,7 @@ import { AngularMaterialModule } from './angular-material.module';
 		HeaderComponent,
 		AccountBarComponent,
 		NavigationBarComponent,
+		SidebarComponent,
 		JoinWithPropPipe,
 		ConfirmDialogComponent,
 		FillHeightDirective,
@@ -55,6 +57,7 @@ import { AngularMaterialModule } from './angular-material.module';
 		HeaderComponent,
 		AccountBarComponent,
 		NavigationBarComponent,
+		SidebarComponent,
 		JoinWithPropPipe,
 		ConfirmDialogComponent,
 		FillHeightDirective,

@@ -1,0 +1,82 @@
+<nav class="sidebar">
+  
+  <!-- Logo Section -->
+  <div class="sidebar-header">
+    <button 
+      mat-icon-button
+      class="logo-button"
+      [routerLink]="['/home']"
+      [matTooltip]="(settings$ | async)?.name || 'Home'"
+      matTooltipPosition="right">
+      <mat-icon class="logo-icon">apps</mat-icon>
+    </button>
+  </div>
+  
+  <!-- Navigation Items -->
+  <div class="sidebar-nav">
+    <ng-container *ngFor="let item of sidebarService.navigationItems()">
+      <button
+        mat-icon-button
+        class="nav-item"
+        [class.active]="item.route && isActiveRoute(item.route)"
+        (click)="handleItemClick(item)"
+        [matTooltip]="item.label"
+        matTooltipPosition="right">
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span class="item-badge" *ngIf="item.badge" [ngClass]="'badge-' + (item.badgeColor || 'primary')">
+          {{ item.badge }}
+        </span>
+      </button>
+      
+      <mat-divider *ngIf="item.dividerAfter" class="nav-divider"></mat-divider>
+    </ng-container>
+  </div>
+  
+  <!-- User Section at Bottom -->
+  <div class="sidebar-footer">
+    <!-- Theme Toggle -->
+    <button 
+      mat-icon-button 
+      class="theme-toggle"
+      (click)="themeService.toggleTheme()"
+      [matTooltip]="'Switch to ' + (themeService.isDarkMode() ? 'light' : 'dark') + ' mode'"
+      matTooltipPosition="right">
+      <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
+    
+    <!-- User Menu -->
+    <div class="user-section" *ngIf="user$ | async as user">
+      <button 
+        mat-icon-button
+        class="user-button"
+        [matMenuTriggerFor]="userMenu"
+        [matTooltip]="user.email"
+        matTooltipPosition="right">
+        <div class="user-avatar">
+          {{ getUserInitial(user) }}
+        </div>
+      </button>
+      
+      <mat-menu #userMenu="matMenu" xPosition="after">
+        <div class="user-menu-header">
+          <div class="user-avatar-large">
+            {{ getUserInitial(user) }}
+          </div>
+          <div class="user-details">
+            <div class="user-email">{{ user.email }}</div>
+            <div class="app-name" *ngIf="(settings$ | async) as settings">
+              {{ settings.name }}
+            </div>
+          </div>
+        </div>
+        
+        <mat-divider></mat-divider>
+        
+        <button mat-menu-item (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+</nav>

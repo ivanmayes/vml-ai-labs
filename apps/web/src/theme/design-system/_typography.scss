@@ -1,0 +1,369 @@
+// Typography System
+// Consistent text styles using CSS custom properties
+
+// Base typography styles (Compact for app-like interface)
+body {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md); // 13px by default
+  line-height: var(--line-height-normal);
+  color: var(--theme-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0.01em; // Slight letter spacing for better readability at small sizes
+}
+
+// Heading styles (Compact for app interface)
+h1, .h1 {
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.01562em;
+  margin: 0 0 var(--space-md);
+}
+
+h2, .h2 {
+  font-size: var(--font-size-xxxl);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.00833em;
+  margin: 0 0 var(--space-sm);
+}
+
+h3, .h3 {
+  font-size: var(--font-size-xxl);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  letter-spacing: normal;
+  margin: 0 0 var(--space-sm);
+}
+
+h4, .h4 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  letter-spacing: 0.00735em;
+  margin: 0 0 var(--space-xs);
+}
+
+h5, .h5 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  letter-spacing: normal;
+  margin: 0 0 var(--space-xs);
+}
+
+h6, .h6 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  letter-spacing: 0.0125em;
+  margin: 0 0 var(--space-xs);
+}
+
+// Body text styles
+.body-1 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  letter-spacing: 0.00938em;
+}
+
+.body-2 {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  letter-spacing: 0.01071em;
+}
+
+// Caption and overline
+.caption {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  letter-spacing: 0.03333em;
+  color: var(--theme-text-secondary);
+}
+
+.overline {
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-loose);
+  letter-spacing: 0.16667em;
+  text-transform: uppercase;
+  color: var(--theme-text-secondary);
+}
+
+// Button text
+.button-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  letter-spacing: 0.08929em;
+  text-transform: uppercase;
+}
+
+// Links
+a {
+  color: var(--theme-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast) var(--ease-in-out);
+  
+  &:hover {
+    color: var(--theme-primary-variant);
+    text-decoration: underline;
+  }
+  
+  &:focus {
+    outline: var(--focus-ring-width) solid var(--theme-focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+  
+  &:visited {
+    color: var(--theme-primary-variant);
+  }
+}
+
+// Text utilities
+.text-primary {
+  color: var(--theme-text-primary) !important;
+}
+
+.text-secondary {
+  color: var(--theme-text-secondary) !important;
+}
+
+.text-disabled {
+  color: var(--theme-text-disabled) !important;
+}
+
+.text-hint {
+  color: var(--theme-text-hint) !important;
+}
+
+.text-error {
+  color: var(--theme-error) !important;
+}
+
+.text-success {
+  color: var(--theme-success) !important;
+}
+
+.text-warning {
+  color: var(--theme-warning) !important;
+}
+
+.text-info {
+  color: var(--theme-info) !important;
+}
+
+// Font weight utilities
+.font-light {
+  font-weight: var(--font-weight-light) !important;
+}
+
+.font-regular {
+  font-weight: var(--font-weight-regular) !important;
+}
+
+.font-medium {
+  font-weight: var(--font-weight-medium) !important;
+}
+
+.font-semibold {
+  font-weight: var(--font-weight-semibold) !important;
+}
+
+.font-bold {
+  font-weight: var(--font-weight-bold) !important;
+}
+
+// Text alignment
+.text-left {
+  text-align: left !important;
+}
+
+.text-center {
+  text-align: center !important;
+}
+
+.text-right {
+  text-align: right !important;
+}
+
+.text-justify {
+  text-align: justify !important;
+}
+
+// Text transform
+.text-lowercase {
+  text-transform: lowercase !important;
+}
+
+.text-uppercase {
+  text-transform: uppercase !important;
+}
+
+.text-capitalize {
+  text-transform: capitalize !important;
+}
+
+.text-normal-case {
+  text-transform: none !important;
+}
+
+// Text decoration
+.text-underline {
+  text-decoration: underline !important;
+}
+
+.text-line-through {
+  text-decoration: line-through !important;
+}
+
+.text-no-underline {
+  text-decoration: none !important;
+}
+
+// Truncation
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-break {
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+// Line clamp (requires webkit)
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// Selection
+::selection {
+  background-color: var(--theme-selection-background);
+  color: var(--theme-selection-text);
+}
+
+// Placeholder
+::placeholder {
+  color: var(--theme-input-placeholder);
+  opacity: 1;
+}
+
+// Code and pre
+code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  padding: 2px 4px;
+  background-color: var(--theme-surface-variant);
+  border-radius: var(--radius-xs);
+  color: var(--theme-primary);
+}
+
+pre {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  padding: var(--space-md);
+  background-color: var(--theme-surface-variant);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  
+  code {
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+    color: inherit;
+  }
+}
+
+// Blockquote
+blockquote {
+  margin: var(--space-md) 0;
+  padding-left: var(--space-md);
+  border-left: 4px solid var(--theme-primary);
+  color: var(--theme-text-secondary);
+  font-style: italic;
+}
+
+// Lists
+ul, ol {
+  margin: 0 0 var(--space-md);
+  padding-left: var(--space-xl);
+  
+  li {
+    margin-bottom: var(--space-xs);
+  }
+}
+
+// Definition lists
+dl {
+  margin: 0 0 var(--space-md);
+  
+  dt {
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--space-xs);
+  }
+  
+  dd {
+    margin: 0 0 var(--space-sm) var(--space-md);
+    color: var(--theme-text-secondary);
+  }
+}
+
+// Horizontal rule
+hr {
+  border: none;
+  border-top: 1px solid var(--theme-divider);
+  margin: var(--space-lg) 0;
+}
+
+// Mark
+mark {
+  background-color: var(--palette-warning-200);
+  color: var(--palette-warning-900);
+  padding: 2px 4px;
+  border-radius: var(--radius-xs);
+}
+
+// Small
+small {
+  font-size: var(--font-size-sm);
+}
+
+// Strong
+strong, b {
+  font-weight: var(--font-weight-bold);
+}
+
+// Emphasis
+em, i {
+  font-style: italic;
+}
+
+// Abbreviation
+abbr[title] {
+  text-decoration: underline dotted;
+  cursor: help;
+}

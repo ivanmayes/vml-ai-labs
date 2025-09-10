@@ -1,21 +1,41 @@
 :host {
-	height: 34px;
-	background: var(--color-secondary);
+	height: 32px;
+	background: var(--theme-primary);
 	display: flex;
 	align-items: center;
-	color: black;
-	font-size: 1.2rem;
-	padding: 0 10px;
+	color: var(--theme-on-primary);
+	font-size: var(--font-size-sm);
+	padding: 0 8px;
 
 	.right {
 		margin-left: auto;
 		display: flex;
 		align-items: center;
+		gap: 8px;
 	}
 }
 
 .name-container {
 	cursor: pointer;
+	display: flex;
+	align-items: center;
+}
+
+.theme-toggle {
+	color: var(--theme-on-primary);
+	width: 28px;
+	height: 28px;
+	
+	&:hover {
+		background-color: rgba(255, 255, 255, 0.08);
+	}
+	
+	mat-icon {
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+		line-height: 18px;
+	}
 }
 ::ng-deep .mat-menu-panel {
 	padding: 0 10px !important;

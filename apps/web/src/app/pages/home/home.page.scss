@@ -1,0 +1,33 @@
+.page-container {
+  padding: var(--space-md);
+  height: 100%;
+  background-color: var(--theme-background);
+}
+
+.page-title {
+  margin-bottom: var(--space-md);
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  border-bottom: 1px solid var(--theme-divider);
+  padding-bottom: var(--space-sm);
+}
+
+.content-area {
+  background-color: var(--theme-surface);
+  border-radius: var(--radius-sm);
+  padding: var(--space-md);
+  box-shadow: var(--theme-elevation-1);
+}
+
+.data-display {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--theme-text-primary);
+  background-color: var(--theme-surface-variant);
+  padding: var(--space-sm);
+  border-radius: var(--radius-xs);
+  margin: 0;
+  overflow-x: auto;
+}

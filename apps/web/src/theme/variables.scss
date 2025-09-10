@@ -1,10 +1,24 @@
+// Legacy variables - to be migrated to design system
+// These are kept for backward compatibility
+
 // Custom Theming for Angular Material
 @use '@angular/material' as mat;
 
 @include mat.elevation-classes();
 @include mat.app-background();
 
+// App-specific variables (will remain as they are component-specific)
 app-root {
-	--app-header-height: 55px;
-	--option-background-color: #f5f5f5;
+	--app-header-height: 48px; // Reduced for more compact feel
+	--option-background-color: var(--theme-surface-variant);
+}
+
+// Map old color variables to new design system (for backward compatibility)
+:root {
+	// Legacy color mappings
+	--color-primary: var(--theme-primary);
+	--color-success: var(--theme-success);
+	--color-warning: var(--theme-warning);
+	--color-danger: var(--theme-error);
+	--color-step-800: var(--theme-surface-variant);
 }
