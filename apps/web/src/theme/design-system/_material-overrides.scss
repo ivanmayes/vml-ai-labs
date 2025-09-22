@@ -308,6 +308,7 @@
 .mat-mdc-menu-panel {
   background-color: var(--theme-menu-background);
   box-shadow: var(--theme-elevation-8);
+  z-index: var(--z-index-popover);
   
   .mat-mdc-menu-item {
     color: var(--theme-text-primary);

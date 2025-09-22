@@ -1,4 +1,4 @@
-import { FullscreenAppContext, FramedCompactAppMethods, FramedCompactAppParentMethods, DefaultHierarchyLevelType } from '@wppopen/core';
+import { DefaultHierarchyLevelType, FramedAppParentMethods, OsContext } from '@wppopen/core';
 import { connectToParent, Methods } from 'penpal';
 import { environment } from '../../../../environments/environment';
 import { Injectable } from '@angular/core';
@@ -13,11 +13,11 @@ export class WppOpenService {
 
 	private readonly config = {
 		parentOrigin: environment?.wppOpenParentOrigin?.length ? environment.wppOpenParentOrigin : '*',
-		debug: !!environment?.wppOpenDebug ?? false
+		debug: true
 	};
 
-	private _context: FullscreenAppContext;
-	public get context(): FullscreenAppContext {
+	private _context: OsContext
+	public get context(): OsContext {
 		return this._context;
 	}
 
@@ -34,10 +34,10 @@ export class WppOpenService {
 			this.connection = null;
 			this.connected = false;
 			this.connecting = true;
-			this.connection = await connectToParent<FramedCompactAppParentMethods>({
+			this.connection = await connectToParent<FramedAppParentMethods>({
 				parentOrigin: this.config.parentOrigin,
 				methods: {
-					receiveOsContext: (context: FullscreenAppContext) => {
+					receiveOsContext: (context: OsContext) => {
 						this.connecting = false;
 						this.connected = true;
 						console.error('RECEIVED CONTEXT VVVVV');

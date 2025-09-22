@@ -28,6 +28,8 @@
     "@datorama/akita-ng-router-store": "^7.0.0",
     "@okta/okta-auth-js": "^6.8.1",
     "@okta/okta-signin-widget": "^6.7.0",
+    "@wppopen/components-library": "^2.15.0",
+	"@wppopen/core": "9.0.0",
     "class-validator": "^0.13.2",
     "colors": "^1.4.0",
     "compression": "^1.7.4",

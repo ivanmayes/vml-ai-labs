@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { filter, take } from 'rxjs/operators';
 
 import { HeaderSettings } from './state/global/global.model';
 import { GlobalService } from './state/global/global.service';
@@ -17,7 +17,9 @@ import { environment } from '../environments/environment';
 
 import { SelectDialogComponent } from './shared/components/select-dialog/select-dialog.component';
 import { ORG_SETTINGS } from './state/session/session.store';
-//import { WppOpenService } from './_core/services/wpp-open/wpp-open.service';
+import { WppOpenService } from './_core/services/wpp-open/wpp-open.service';
+import { OsContext } from '@wppopen/core';
+import { Hierarchy } from '../../../api/src/_core/third-party/wpp-open/models';
 
 @Component({
     selector: 'app-root',
@@ -46,7 +48,7 @@ export class AppComponent {
 		private readonly router: Router,
 		private readonly location: Location,
 		private readonly dialog: MatDialog,
-		//private readonly wppOpenService: WppOpenService,
+		private readonly wppOpenService: WppOpenService,
 		@Inject(DOCUMENT) private readonly document: Document
 	) {
 		this.headerSettings$ = this.globalQuery.select('header');
@@ -65,54 +67,54 @@ export class AppComponent {
 		// Remove .disabled from wpp-open.service.ts
 
 
-		//// Likely in an iframe.
-		//// Attempt to login with WPP Open token.
-		// if(window.self !== window.top) {
-		// 	const token = await this.wppOpenService
-		// 		.getAccessToken()
-		// 		.catch(err => {
-		// 			console.error('Penpal child context error:', err);
-		// 			return null;
-		// 		});
+		// Likely in an iframe.
+		// Attempt to login with WPP Open token.
+		if(window.self !== window.top) {
+			const token = await this.wppOpenService
+				.getAccessToken()
+				.catch(err => {
+					console.error('Penpal child context error:', err);
+					return null;
+				});
 
-		// 	if(!token) {
-		// 		// No WPP Open token.
-		// 		return;
-		// 	}
+			if(!token) {
+				// No WPP Open token.
+				return;
+			}
 
-		// 	const workspaceScope = await this.wppOpenService
-		// 		.getWorkspaceScope()
-		// 		.catch(err => {
-		// 			console.error('Penpal child workspace scope error:', err);
-		// 			return null;
-		// 		});
+			const workspaceScope = await this.wppOpenService
+				.getWorkspaceScope()
+				.catch(err => {
+					console.error('Penpal child workspace scope error:', err);
+					return null;
+				});
 
-		// 	const context: FullscreenAppContext & { hierarchy?: Hierarchy } = await this.wppOpenService
-		// 		.getOsContext()
-		// 		.catch(err => {
-		// 			console.error('Penpal child context error:', err);
-		// 			return null;
-		// 		});
+			const context: OsContext & { hierarchy?: Hierarchy } = await this.wppOpenService
+				.getOsContext()
+				.catch(err => {
+					console.error('Penpal child context error:', err);
+					return null;
+				});
 
-		// 	this.sessionService
-		// 		.wppOpenLogin(
-		// 			token,
-		// 			environment.organizationId,
-		// 			workspaceScope?.workspaceId,
-		// 			workspaceScope?.scopeId,
-		// 			context?.project?.id,
-		// 			context?.project?.name,
-		// 			context?.hierarchy
-		// 		)
-		// 		.pipe(take(1))
-		// 		.subscribe((resp) => {
-		// 			if(resp.redirect) {
-		// 				this.router.navigate([resp?.redirect], {
-		// 					replaceUrl: true
-		// 				});
-		// 			}
-		// 		});
-		// }
+			this.sessionService
+				.wppOpenLogin(
+					token,
+					environment.organizationId,
+					workspaceScope?.workspaceId,
+					workspaceScope?.scopeId,
+					context?.project?.id,
+					context?.project?.name,
+					context?.hierarchy
+				)
+				.pipe(take(1))
+				.subscribe((resp) => {
+					if(resp['redirect']) {
+						this.router.navigate([resp['redirect']], {
+							replaceUrl: true
+						});
+					}
+				});
+		}
 	}
 
 	private async initializeApp() {

@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment';
 import { HttpHeaders, HttpClient } from '@angular/common/http';
 import { throwError } from 'rxjs';
 import { AccessToken, IDToken } from '@okta/okta-auth-js';
-//import { Hierarchy } from '../../../../../api/src/_core/third-party/wpp-open/models';
+import { Hierarchy } from '../../../../../api/src/_core/third-party/wpp-open/models';
 
 /**
  * Session Service
@@ -22,50 +22,50 @@ export class SessionService {
 
 	constructor(private sessionStore: SessionStore, protected httpClient: HttpClient) {}
 
-	// public wppOpenLogin(
-	// 	token: string,
-	// 	siteId: string,
-	// 	workspaceId?: string,
-	// 	scopeId?: string,
-	// 	projectRemoteId?: string,
-	// 	projectRemoteName?: string,
-	// 	hierarchy?: Hierarchy
-	// ) {
-	// 	const headers = this.defaultHeaders;
-	// 	this.sessionStore.setLoading(true);
+	public wppOpenLogin(
+		token: string,
+		siteId: string,
+		workspaceId?: string,
+		scopeId?: string,
+		projectRemoteId?: string,
+		projectRemoteName?: string,
+		hierarchy?: Hierarchy
+	) {
+		const headers = this.defaultHeaders;
+		this.sessionStore.setLoading(true);
 
-	// 	return this.httpClient
-	// 		.post<LoginResponse>(
-	// 			`${environment.apiUrl}/user/auth/wpp-open/sign-in`,
-	// 			{
-	// 				token,
-	// 				siteId: siteId,
-	// 				workspaceId,
-	// 				scopeId,
-	// 				projectRemoteId,
-	// 				projectRemoteName,
-	// 				hierarchy
-	// 			},
-	// 			{
-	// 				headers
-	// 			}
-	// 		)
-	// 		.pipe(
-	// 			tap(resp => {
-	// 				this.sessionStore.login({
-	// 					initialUrl: resp?.data?.redirect,
-	// 					token: resp?.data?.token,
-	// 					user: resp?.data?.user
-	// 				});
+		return this.httpClient
+			.post<LoginResponse>(
+				`${environment.apiUrl}/user/auth/wpp-open/sign-in`,
+				{
+					token,
+					siteId: siteId,
+					workspaceId,
+					scopeId,
+					projectRemoteId,
+					projectRemoteName,
+					hierarchy
+				},
+				{
+					headers
+				}
+			)
+			.pipe(
+				tap(resp => {
+					this.sessionStore.login({
+						initialUrl: resp?.data?.redirect,
+						token: resp?.data?.token,
+						user: resp?.data?.user
+					});
 
-	// 				this.sessionStore.setLoading(false);
-	// 			}),
-	// 			catchError(err => {
-	// 				this.sessionStore.setLoading(false);
-	// 				throw err;
-	// 			})
-	// 		);
-	// }
+					this.sessionStore.setLoading(false);
+				}),
+				catchError(err => {
+					this.sessionStore.setLoading(false);
+					throw err;
+				})
+			);
+	}
 
 	/**
 	 * Verify a user's email on our system and then send the email a code

@@ -3,14 +3,14 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 
 import { RequestInterceptor } from './interceptors/request.interceptor';
-//import { WppOpenService } from './services/wpp-open/wpp-open.service';
+import { WppOpenService } from './services/wpp-open/wpp-open.service';
 
 @NgModule({
 	imports: [CommonModule],
 	exports: [],
 	declarations: [],
 	providers: [
-		//WppOpenService,
+		WppOpenService,
 		{
 			provide: HTTP_INTERCEPTORS,
 			useClass: RequestInterceptor,
