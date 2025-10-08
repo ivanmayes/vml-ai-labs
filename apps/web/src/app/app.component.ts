@@ -1,6 +1,6 @@
 import { Component, HostListener, Inject, DOCUMENT } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -47,7 +47,7 @@ export class AppComponent {
 		private readonly sessionQuery: SessionQuery,
 		private readonly router: Router,
 		private readonly location: Location,
-		private readonly dialog: MatDialog,
+		private readonly dialogService: DialogService,
 		private readonly wppOpenService: WppOpenService,
 		@Inject(DOCUMENT) private readonly document: Document
 	) {
@@ -183,7 +183,8 @@ export class AppComponent {
 						return;
 					}
 				} else {
-					const dialogRef = this.dialog.open(SelectDialogComponent, {
+					const dialogRef = this.dialogService.open(SelectDialogComponent, {
+						header: 'Select an Organization',
 						data: {
 							title: 'Select an Organization',
 							options: environment.apiSettings?.reduce((acc, cur) => {
@@ -193,12 +194,14 @@ export class AppComponent {
 						}
 					});
 
-					dialogRef.afterClosed().subscribe(result => {
-						localStorage.setItem(ORG_SETTINGS, JSON.stringify(result));
-						environment.apiUrl = result.endpoint;
-						environment.organizationId = result.organizationId;
-						environment.production = result.production || environment.production;
-						environment.locale = result.locale || environment.locale;
+					dialogRef.onClose.subscribe(result => {
+						if (result) {
+							localStorage.setItem(ORG_SETTINGS, JSON.stringify(result));
+							environment.apiUrl = result.endpoint;
+							environment.organizationId = result.organizationId;
+							environment.production = result.production || environment.production;
+							environment.locale = result.locale || environment.locale;
+						}
 						resolve(true);
 					});
 				}

@@ -1,82 +1,87 @@
 <nav class="sidebar">
-  
-  <!-- Logo Section -->
-  <div class="sidebar-header">
-    <button 
-      mat-icon-button
-      class="logo-button"
-      [routerLink]="['/home']"
-      [matTooltip]="(settings$ | async)?.name || 'Home'"
-      matTooltipPosition="right">
-      <mat-icon class="logo-icon">apps</mat-icon>
-    </button>
-  </div>
-  
-  <!-- Navigation Items -->
-  <div class="sidebar-nav">
-    <ng-container *ngFor="let item of sidebarService.navigationItems()">
-      <button
-        mat-icon-button
-        class="nav-item"
-        [class.active]="item.route && isActiveRoute(item.route)"
-        (click)="handleItemClick(item)"
-        [matTooltip]="item.label"
-        matTooltipPosition="right">
-        <mat-icon>{{ item.icon }}</mat-icon>
-        <span class="item-badge" *ngIf="item.badge" [ngClass]="'badge-' + (item.badgeColor || 'primary')">
-          {{ item.badge }}
-        </span>
-      </button>
-      
-      <mat-divider *ngIf="item.dividerAfter" class="nav-divider"></mat-divider>
-    </ng-container>
-  </div>
-  
-  <!-- User Section at Bottom -->
-  <div class="sidebar-footer">
-    <!-- Theme Toggle -->
-    <button 
-      mat-icon-button 
+	<!-- Logo Section -->
+	<div class="sidebar-header">
+		<p-button
+			icon="pi pi-th-large"
+			[text]="true"
+			class="logo-button"
+			[routerLink]="['/home']"
+			[pTooltip]="(settings$ | async)?.name || 'Home'"
+			tooltipPosition="right"
+		>
+		</p-button>
+	</div>
+
+	<!-- Navigation Items -->
+	<div class="sidebar-nav">
+		<ng-container *ngFor="let item of sidebarService.navigationItems()">
+			<p-button
+				[icon]="'pi pi-' + item.icon"
+				[text]="true"
+				class="nav-item"
+				[class.active]="item.route && isActiveRoute(item.route)"
+				(onClick)="handleItemClick(item)"
+				[pTooltip]="item.label"
+				tooltipPosition="right"
+			>
+				<span
+					class="item-badge"
+					*ngIf="item.badge"
+					[ngClass]="'badge-' + (item.badgeColor || 'primary')"
+				>
+					{{ item.badge }}
+				</span>
+			</p-button>
+
+			<p-divider
+				*ngIf="item.dividerAfter"
+				class="nav-divider"
+			></p-divider>
+		</ng-container>
+	</div>
+
+	<!-- User Section at Bottom -->
+	<div class="sidebar-footer">
+		<!-- Theme Toggle -->
+		<!-- <p-button
+      [icon]="themeService.isDarkMode() ? 'pi pi-sun' : 'pi pi-moon'"
+      [text]="true"
       class="theme-toggle"
-      (click)="themeService.toggleTheme()"
-      [matTooltip]="'Switch to ' + (themeService.isDarkMode() ? 'light' : 'dark') + ' mode'"
-      matTooltipPosition="right">
-      <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-    </button>
-    
-    <!-- User Menu -->
-    <div class="user-section" *ngIf="user$ | async as user">
-      <button 
-        mat-icon-button
-        class="user-button"
-        [matMenuTriggerFor]="userMenu"
-        [matTooltip]="user.email"
-        matTooltipPosition="right">
-        <div class="user-avatar">
-          {{ getUserInitial(user) }}
-        </div>
-      </button>
-      
-      <mat-menu #userMenu="matMenu" xPosition="after">
-        <div class="user-menu-header">
-          <div class="user-avatar-large">
-            {{ getUserInitial(user) }}
-          </div>
-          <div class="user-details">
-            <div class="user-email">{{ user.email }}</div>
-            <div class="app-name" *ngIf="(settings$ | async) as settings">
-              {{ settings.name }}
-            </div>
-          </div>
-        </div>
-        
-        <mat-divider></mat-divider>
-        
-        <button mat-menu-item (click)="logout()">
-          <mat-icon>logout</mat-icon>
-          <span>Logout</span>
-        </button>
-      </mat-menu>
-    </div>
-  </div>
+      (onClick)="themeService.toggleTheme()"
+      [pTooltip]="'Switch to ' + (themeService.isDarkMode() ? 'light' : 'dark') + ' mode'"
+      tooltipPosition="right">
+    </p-button> -->
+
+		<!-- User Menu -->
+		<div class="user-section" *ngIf="user$ | async as user">
+			<p-button
+				[text]="true"
+				(onClick)="userMenu.toggle($event)"
+				[pTooltip]="user.email"
+				tooltipPosition="right"
+			>
+				{{ getUserInitial(user) }}
+			</p-button>
+
+			<p-menu #userMenu [model]="userMenuItems" [popup]="true">
+				<ng-template pTemplate="start">
+					<div class="user-menu-header">
+						<div class="user-avatar-large">
+							{{ getUserInitial(user) }}
+						</div>
+						<div class="user-details">
+							<div class="user-email">{{ user.email }}</div>
+							<div
+								class="app-name"
+								*ngIf="settings$ | async as settings"
+							>
+								{{ settings.name }}
+							</div>
+						</div>
+					</div>
+					<p-divider></p-divider>
+				</ng-template>
+			</p-menu>
+		</div>
+	</div>
 </nav>

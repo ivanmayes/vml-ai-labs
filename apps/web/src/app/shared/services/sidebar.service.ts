@@ -21,28 +21,21 @@ export class SidebarService {
       icon: 'home',
       label: 'Home',
       route: '/home'
-    },
-    {
-      id: 'dashboard',
-      icon: 'dashboard',
-      label: 'Dashboard',
-      route: '/dashboard',
-      dividerAfter: true
-    },
+    }
     // Add more navigation items here
   ]);
-  
+
   public readonly navigationItems = this.navItems.asReadonly();
-  
+
   constructor() {}
-  
+
   /**
    * Update navigation items
    */
   setNavigationItems(items: NavItem[]): void {
     this.navItems.set(items);
   }
-  
+
   /**
    * Add a navigation item
    */
@@ -51,7 +44,7 @@ export class SidebarService {
     items.push(item);
     this.navItems.set(items);
   }
-  
+
   /**
    * Remove a navigation item
    */
@@ -59,14 +52,14 @@ export class SidebarService {
     const items = this.navItems().filter(item => item.id !== itemId);
     this.navItems.set(items);
   }
-  
+
   /**
    * Update badge for a navigation item
    */
   updateItemBadge(itemId: string, badge?: number | string, badgeColor?: 'primary' | 'accent' | 'warn'): void {
     const items = [...this.navItems()];
     const item = items.find(i => i.id === itemId);
-    
+
     if (item) {
       item.badge = badge;
       item.badgeColor = badgeColor;

@@ -1,12 +1,6 @@
 // Legacy variables - to be migrated to design system
 // These are kept for backward compatibility
 
-// Custom Theming for Angular Material
-@use '@angular/material' as mat;
-
-@include mat.elevation-classes();
-@include mat.app-background();
-
 // App-specific variables (will remain as they are component-specific)
 app-root {
 	--app-header-height: 48px; // Reduced for more compact feel

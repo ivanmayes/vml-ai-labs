@@ -8,22 +8,29 @@
 	<div class="token" *ngIf="authConfig?.data?.token">{{ authConfig?.data?.token }}</div>
 
 	<form #form="ngForm" (submit)="activate()">
-		<div class="input-group" fxFill fxLayoutAlign="center center">
-			<mat-form-field class="input" fxFlex="50%">
-				<mat-label>Enter Keycode</mat-label>
-				<input #emailField="ngModel" class="input-key" matInput name="key" required [(ngModel)]="key" placeholder="eg. 123456" />
-			</mat-form-field>
+		<div class="input-group">
+			<div class="p-field">
+				<label for="keycode">Enter Keycode</label>
+				<input
+					#emailField="ngModel"
+					pInputText
+					id="keycode"
+					class="input-key"
+					name="key"
+					required
+					[(ngModel)]="key"
+					placeholder="eg. 123456"
+				/>
+			</div>
 		</div>
 
-		<button
-			mat-flat-button
-			color="primary"
-			class="submit button-small"
-			[class.loading-spinner]="loading$ | async"
+		<p-button
+			type="submit"
+			label="Verify"
+			styleClass="submit button-small"
 			[disabled]="!email || !emailField.valid || (loading$ | async)"
-		>
-			Verify
-		</button>
+			[loading]="loading$ | async"
+		></p-button>
 	</form>
 
 	<a class="resend" (click)="resend()">Resend Email</a>

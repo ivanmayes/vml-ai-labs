@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { PrimeNgModule } from '../../../shared/primeng.module';
 
 import { BasicAuthComponent } from './basic.component';
 
@@ -9,7 +12,12 @@ describe('BasicAuthComponent', () => {
 	beforeEach(
 		waitForAsync(() => {
 			TestBed.configureTestingModule({
-				declarations: [BasicAuthComponent]
+				declarations: [BasicAuthComponent],
+				imports: [
+					FormsModule,
+					BrowserAnimationsModule,
+					PrimeNgModule
+				]
 			}).compileComponents();
 		})
 	);

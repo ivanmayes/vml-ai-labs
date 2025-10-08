@@ -1,6 +1,6 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
 
 export interface SelectDialogData {
 	title: string;
@@ -24,7 +24,11 @@ export class SelectDialogComponent {
 		choice: new FormControl([''], [Validators.required])
 	});
 
-	constructor(public dialogRef: MatDialogRef<SelectDialogComponent>, @Inject(MAT_DIALOG_DATA) public data: SelectDialogData) {}
+	public data: SelectDialogData;
+
+	constructor(public dialogRef: DynamicDialogRef, public config: DynamicDialogConfig) {
+		this.data = config.data;
+	}
 
 	submit() {
 		this.dialogRef.close(this.selection.get('choice').value);

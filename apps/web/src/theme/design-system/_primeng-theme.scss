@@ -1,0 +1,127 @@
+// PrimeNG Theme Customizations
+// Override PrimeNG CSS variables to match our design system
+
+:root {
+  // Primary color overrides
+  --p-primary-50: var(--palette-primary-50);
+  --p-primary-100: var(--palette-primary-100);
+  --p-primary-200: var(--palette-primary-200);
+  --p-primary-300: var(--palette-primary-300);
+  --p-primary-400: var(--palette-primary-400);
+  --p-primary-500: var(--palette-primary-500);
+  --p-primary-600: var(--palette-primary-600);
+  --p-primary-700: var(--palette-primary-700);
+  --p-primary-800: var(--palette-primary-800);
+  --p-primary-900: var(--palette-primary-900);
+
+  // Success/Green colors
+  --p-green-50: var(--palette-success-50);
+  --p-green-100: var(--palette-success-100);
+  --p-green-200: var(--palette-success-200);
+  --p-green-300: var(--palette-success-300);
+  --p-green-400: var(--palette-success-400);
+  --p-green-500: var(--palette-success-500);
+  --p-green-600: var(--palette-success-600);
+  --p-green-700: var(--palette-success-700);
+  --p-green-800: var(--palette-success-800);
+  --p-green-900: var(--palette-success-900);
+
+  // Error/Red colors
+  --p-red-50: var(--palette-warn-50);
+  --p-red-100: var(--palette-warn-100);
+  --p-red-200: var(--palette-warn-200);
+  --p-red-300: var(--palette-warn-300);
+  --p-red-400: var(--palette-warn-400);
+  --p-red-500: var(--palette-warn-500);
+  --p-red-600: var(--palette-warn-600);
+  --p-red-700: var(--palette-warn-700);
+  --p-red-800: var(--palette-warn-800);
+  --p-red-900: var(--palette-warn-900);
+
+  // Info/Light Blue colors
+  --p-sky-50: var(--palette-info-50);
+  --p-sky-100: var(--palette-info-100);
+  --p-sky-200: var(--palette-info-200);
+  --p-sky-300: var(--palette-info-300);
+  --p-sky-400: var(--palette-info-400);
+  --p-sky-500: var(--palette-info-500);
+  --p-sky-600: var(--palette-info-600);
+  --p-sky-700: var(--palette-info-700);
+  --p-sky-800: var(--palette-info-800);
+  --p-sky-900: var(--palette-info-900);
+
+  // Warning/Amber colors
+  --p-orange-50: var(--palette-warning-50);
+  --p-orange-100: var(--palette-warning-100);
+  --p-orange-200: var(--palette-warning-200);
+  --p-orange-300: var(--palette-warning-300);
+  --p-orange-400: var(--palette-warning-400);
+  --p-orange-500: var(--palette-warning-500);
+  --p-orange-600: var(--palette-warning-600);
+  --p-orange-700: var(--palette-warning-700);
+  --p-orange-800: var(--palette-warning-800);
+  --p-orange-900: var(--palette-warning-900);
+
+  // Neutral/Surface colors
+  --p-surface-0: var(--palette-white);
+  --p-surface-50: var(--palette-gray-50);
+  --p-surface-100: var(--palette-gray-100);
+  --p-surface-200: var(--palette-gray-200);
+  --p-surface-300: var(--palette-gray-300);
+  --p-surface-400: var(--palette-gray-400);
+  --p-surface-500: var(--palette-gray-500);
+  --p-surface-600: var(--palette-gray-600);
+  --p-surface-700: var(--palette-gray-700);
+  --p-surface-800: var(--palette-gray-800);
+  --p-surface-900: var(--palette-gray-900);
+  --p-surface-950: var(--palette-black);
+}
+
+// Dark theme overrides
+.p-dark {
+  // Primary color adjustments for dark mode
+  --p-primary-color: var(--palette-primary-400);
+  --p-primary-contrast-color: var(--palette-black);
+
+  // Surface colors for dark mode
+  --p-surface-0: #18181b;
+  --p-surface-50: #27272a;
+  --p-surface-100: #3f3f46;
+  --p-surface-200: #52525b;
+  --p-surface-300: #71717a;
+  --p-surface-400: #a1a1aa;
+  --p-surface-500: #d4d4d8;
+  --p-surface-600: #e4e4e7;
+  --p-surface-700: #f4f4f5;
+  --p-surface-800: #fafafa;
+  --p-surface-900: #ffffff;
+  --p-surface-950: #ffffff;
+
+  // Text colors for dark mode
+  --p-text-color: var(--palette-gray-100);
+  --p-text-secondary-color: var(--palette-gray-400);
+  --p-text-muted-color: var(--palette-gray-500);
+}
+
+// Component-specific customizations
+.p-button {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.02857em;
+}
+
+.p-inputtext {
+  &:focus {
+    box-shadow: 0 0 0 0.2rem var(--p-primary-200);
+  }
+}
+
+.p-dialog {
+  .p-dialog-header {
+    padding: 1.5rem;
+  }
+
+  .p-dialog-content {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+  }
+}

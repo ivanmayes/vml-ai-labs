@@ -1,6 +1,6 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
 
 export interface ConfirmDialogData {
 	title?: string;
@@ -28,7 +28,11 @@ export class ConfirmDialogComponent {
 		verifyString: new FormControl([''])
 	});
 
-	constructor(public dialogRef: MatDialogRef<ConfirmDialogComponent>, @Inject(MAT_DIALOG_DATA) public data: ConfirmDialogData) {}
+	public data: ConfirmDialogData;
+
+	constructor(public dialogRef: DynamicDialogRef, public config: DynamicDialogConfig) {
+		this.data = config.data;
+	}
 
 	yes() {
 		this.dialogRef.close(true);

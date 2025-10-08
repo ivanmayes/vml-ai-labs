@@ -5,11 +5,14 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from './shared/shared.module';
+import { PrimeNgModule } from './shared/primeng.module';
 import { HttpClientModule, HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { AkitaNgRouterStoreModule } from '@datorama/akita-ng-router-store';
 import { RequestInterceptor } from './_core/interceptors/request.interceptor';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDialogModule } from '@angular/material/dialog';
+
+// PrimeNG Configuration
+import { providePrimeNG } from 'primeng/config';
+import Lara from '@primeng/themes/lara';
 
 @NgModule({
 	declarations: [AppComponent],
@@ -18,8 +21,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 		AppRoutingModule,
 		BrowserAnimationsModule,
 		AkitaNgRouterStoreModule,
-		MatProgressSpinnerModule,
-		MatDialogModule,
+		PrimeNgModule,
 		SharedModule
 	],
 	providers: [
@@ -29,7 +31,19 @@ import { MatDialogModule } from '@angular/material/dialog';
 			provide: HTTP_INTERCEPTORS,
 			useClass: RequestInterceptor,
 			multi: true
-		}
+		},
+		providePrimeNG({
+			theme: {
+				preset: Lara,
+				options: {
+					prefix: 'p',
+					darkModeSelector: '.p-dark',
+					cssLayer: false
+				}
+			},
+			ripple: true,
+			inputVariant: 'outlined'
+		})
 	],
 	bootstrap: [AppComponent]
 })

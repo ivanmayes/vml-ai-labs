@@ -1,8 +1,8 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { A11yModule } from '@angular/cdk/a11y';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { PrimeNgModule } from './primeng.module';
 
 // Components
 import { HeaderComponent } from './components/header/header.component';
@@ -24,8 +24,6 @@ import { SafeHtmlPipe } from './pipes/safe-html.pipe';
 import { EntityFieldMaskPipe } from './pipes/entity-field-mask.pipe';
 import { PluckFromArrayPipe } from './pipes/pluck-from-array.pipe';
 import { ShortNumberPipe } from './pipes/short-number.pipe';
-import { CoreModule } from '@angular/flex-layout';
-import { AngularMaterialModule } from './angular-material.module';
 
 @NgModule({
 	declarations: [
@@ -46,12 +44,11 @@ import { AngularMaterialModule } from './angular-material.module';
 		ShortNumberPipe
 	],
 	imports: [
-		AngularMaterialModule,
+		PrimeNgModule,
 		CommonModule,
 		RouterModule,
 		FormsModule,
-		ReactiveFormsModule,
-		A11yModule
+		ReactiveFormsModule
 	],
 	exports: [
 		HeaderComponent,

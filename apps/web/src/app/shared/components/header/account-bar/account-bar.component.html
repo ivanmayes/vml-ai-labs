@@ -6,23 +6,21 @@
 
 <div class="right" *ngIf="user$ | async as user">
 	<!-- Theme Toggle Button -->
-	<button mat-icon-button 
+	<p-button
+		icon="{{ getThemeIcon() }}"
+		[rounded]="true"
+		[text]="true"
+		severity="secondary"
 		class="theme-toggle"
-		(click)="toggleTheme()"
-		[matTooltip]="getThemeTooltip()"
+		(onClick)="toggleTheme()"
+		[pTooltip]="'Switch to ' + getThemeTooltip()"
 		[attr.aria-label]="'Switch to ' + getThemeTooltip()">
-		<mat-icon>{{ getThemeIcon() }}</mat-icon>
-	</button>
+	</p-button>
 
-	<div class="name-container" [matMenuTriggerFor]="menu">
+	<div class="name-container" (click)="accountMenu.toggle($event)">
 		<span class="name">{{ user.email }}</span>
-		<mat-icon inline aria-hidden="false" aria-label="Expand">expand_more</mat-icon>
+		<i class="pi pi-chevron-down"></i>
 	</div>
 
-	<mat-menu #menu="matMenu" overlayPanelClass="full-width">
-		<button mat-menu-item (click)="logout()" width="100%">
-			<mat-icon>exit_to_app</mat-icon>
-			<span>Logout</span>
-		</button>
-	</mat-menu>
+	<p-menu #accountMenu [model]="accountMenuItems" [popup]="true"></p-menu>
 </div>

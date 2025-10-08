@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { MenuItem } from 'primeng/api';
 import { GlobalSettings } from '../../../../state/global/global.model';
 import { GlobalQuery } from '../../../../state/global/global.query';
 import { Observable } from 'rxjs';
@@ -22,6 +23,7 @@ import { ThemeService } from '../../../services/theme.service';
 export class AccountBarComponent implements OnInit {
 	public settings$: Observable<GlobalSettings>;
 	public user$: Observable<PublicUser>;
+	public accountMenuItems: MenuItem[];
 
 	public production = environment.production;
 
@@ -36,7 +38,15 @@ export class AccountBarComponent implements OnInit {
 		this.user$ = this.sessionQuery.select('user');
 	}
 
-	ngOnInit(): void {}
+	ngOnInit(): void {
+		this.accountMenuItems = [
+			{
+				label: 'Logout',
+				icon: 'pi pi-sign-out',
+				command: () => this.logout()
+			}
+		];
+	}
 
 	logout() {
 		this.sessionService.logout();

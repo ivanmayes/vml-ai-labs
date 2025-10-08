@@ -1,11 +1,13 @@
+<p-toast></p-toast>
+
 <div class="app-container" *ngIf="loaded">
 	<app-sidebar></app-sidebar>
-	
+
 	<main class="main-content">
 		<router-outlet></router-outlet>
 	</main>
 </div>
 
 <div class="loading" *ngIf="!loaded">
-	<mat-spinner [diameter]="40"></mat-spinner>
+	<p-progressSpinner styleClass="w-4rem h-4rem" strokeWidth="8"></p-progressSpinner>
 </div>

@@ -1,11 +1,11 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { MessageService } from 'primeng/api';
 import { GlobalStore } from './global.store';
 import { GlobalSettings, HeaderSettings } from './global.model';
 import { environment } from '../../../environments/environment';
 import { tap } from 'rxjs/operators';
 import { Title } from '@angular/platform-browser';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import type { OrganizationSettings } from '../../../../../api/src/organization/organization.settings';
 import { UserRole } from '../../../../../api/src/user/user-role.enum';
 
@@ -24,7 +24,7 @@ export class GlobalService {
 		private globalStore: GlobalStore,
 		private httpClient: HttpClient,
 		private titleService: Title,
-		private snackBar: MatSnackBar
+		private messageService: MessageService
 	) {}
 
 	/**
@@ -160,42 +160,42 @@ export class GlobalService {
 	}
 
 	/**
-	 * Open a snack bar presenting the saving message to the user.
-	 * @param err The error response object
+	 * Show a toast presenting the saving message to the user.
 	 * @param message Override with a custom message
 	 */
 	triggerSaveMessage(message?: string) {
-		this.snackBar.open(message || 'Save Successful.', undefined, {
-			verticalPosition: 'bottom',
-			horizontalPosition: 'right',
-			duration: 2000,
-			panelClass: 'success'
+		this.messageService.add({
+			severity: 'success',
+			summary: 'Success',
+			detail: message || 'Save Successful.',
+			life: 2000
 		});
 	}
 
 	/**
-	 * Open a snack bar presenting the save success message to the user.
-	 * @param err The error response object
+	 * Show a toast presenting the save success message to the user.
 	 * @param message Override with a custom message
 	 */
 	triggerSaveSuccessMessage(message?: string) {
-		this.snackBar.open(message || 'Save Successful.', undefined, {
-			verticalPosition: 'bottom',
-			horizontalPosition: 'right',
-			duration: 2000,
-			panelClass: 'success'
+		this.messageService.add({
+			severity: 'success',
+			summary: 'Success',
+			detail: message || 'Save Successful.',
+			life: 2000
 		});
 	}
 
 	/**
-	 * Open a snack bar presenting the error message to the user.
+	 * Show a toast presenting the error message to the user.
 	 * @param err The error response object
 	 * @param message Override with a custom message
 	 */
 	triggerErrorMessage(err: HttpErrorResponse, message?: string) {
-		this.snackBar.open(err?.error?.message || err?.message || message || 'There was an error completing this task.', undefined, {
-			duration: 4000,
-			panelClass: 'danger'
+		this.messageService.add({
+			severity: 'error',
+			summary: 'Error',
+			detail: err?.error?.message || err?.message || message || 'There was an error completing this task.',
+			life: 4000
 		});
 	}
 

@@ -1,5 +1,8 @@
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { PrimeNgModule } from '../../shared/primeng.module';
 
 import { HomeComponent } from './home.page';
 
@@ -11,6 +14,11 @@ describe('HomeComponent', () => {
 		waitForAsync(() => {
 			TestBed.configureTestingModule({
 				declarations: [HomeComponent],
+				imports: [
+					HttpClientTestingModule,
+					BrowserAnimationsModule,
+					PrimeNgModule
+				],
 				schemas: [CUSTOM_ELEMENTS_SCHEMA]
 			}).compileComponents();
 		})

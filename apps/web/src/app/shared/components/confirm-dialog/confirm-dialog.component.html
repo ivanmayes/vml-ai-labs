@@ -1,6 +1,4 @@
-<h1 mat-dialog-title>{{ data.title }}</h1>
-
-<div mat-dialog-content>
+<div class="dialog-content">
 	<p *ngIf="this.data.message" [innerHTML]="this.data.message | safeHtml"></p>
 
 	<ng-container *ngIf="confirmation && data.confirmWithString">
@@ -10,30 +8,29 @@
 		<br />
 
 		<form [formGroup]="confirmation">
-			<mat-form-field class="input" fxFlex="100%">
-				<mat-label>Type the name to confirm.</mat-label>
+			<div class="p-field">
+				<label for="verifyString">Type the name to confirm.</label>
 				<input
-					matInput
+					pInputText
+					id="verifyString"
 					name="verifyString"
 					formControlName="verifyString"
 					required
 					[pattern]="escapeRegExp(data.confirmationString)"
+					class="input"
 				/>
-			</mat-form-field>
+			</div>
 		</form>
 	</ng-container>
 </div>
 
-<div mat-dialog-actions>
-	<button class="cancel" mat-button (click)="no()">Cancel</button>
-	<button
+<div class="dialog-actions">
+	<p-button label="Cancel" severity="secondary" (onClick)="no()"></p-button>
+	<p-button
 		*ngIf="confirmation"
+		[label]="this.data.confirm || 'Confirm'"
 		[disabled]="data.confirmWithString && confirmation.invalid"
-		mat-button
-		[mat-dialog-close]="data"
-		mat-flat-button
-		class="remove button-extra-small"
-	>
-		<span *ngIf="this.data.confirm">{{ this.data.confirm || 'Confirm' }}</span>
-	</button>
+		severity="danger"
+		(onClick)="yes()"
+	></p-button>
 </div>

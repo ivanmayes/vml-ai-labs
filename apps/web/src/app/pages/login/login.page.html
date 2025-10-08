@@ -4,34 +4,39 @@
 	</div>
 
 	<form class="enter-email" *ngIf="state === 'enter-email'" (submit)="submit()">
-		<div class="input-group" fxFill fxLayoutAlign="center center">
-			<mat-form-field class="input" fxFlex="80%">
-				<mat-label>Email</mat-label>
+		<div class="input-group">
+			<div class="p-field">
+				<label for="email">Email</label>
 				<input
 					#emailField="ngModel"
-					matInput
+					pInputText
+					id="email"
 					name="email"
 					email
 					required
 					[(ngModel)]="email"
 					placeholder="first.last@company.com"
+					class="input"
 				/>
-			</mat-form-field>
+			</div>
 		</div>
 
-		<button
-			mat-flat-button
-			color="primary"
-			class="submit button-small"
-			[class.loading-spinner]="loading$ | async"
+		<p-button
+			type="submit"
+			label="Enter"
+			styleClass="submit button-small"
 			[disabled]="!email || !emailField.valid || (loading$ | async)"
-		>
-			Enter
-		</button>
+			[loading]="loading$ | async"
+		></p-button>
+
 		<ng-container *ngIf="!exclusiveServer">
 			<br />
 			<br />
-			<button mat-flat-button color="tertiary" class="button-extra-small" (click)="changeOrg()">Change Organization</button>
+			<p-button
+				label="Change Organization"
+				styleClass="p-button-secondary button-extra-small"
+				(onClick)="changeOrg()"
+			></p-button>
 		</ng-container>
 		<span @fade class="error" *ngIf="emailError === 403">Invalid email address for this site.</span>
 	</form>
