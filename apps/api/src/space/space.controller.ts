@@ -27,6 +27,7 @@ import { SpaceAccessGuard } from './guards/space-access.guard';
 import { UserRole } from '../user/user-role.enum';
 import { User } from '../user/user.entity';
 import { ResponseEnvelope, ResponseStatus } from '../_core/models';
+import { SpaceUserService } from '../space-user/space-user.service';
 
 const basePath = 'organization/:orgId/admin/spaces';
 
@@ -268,7 +269,57 @@ export class SpaceController {
 
 @Controller('spaces')
 export class SpacePublicController {
-	constructor(private readonly spaceService: SpaceService) {}
+	constructor(
+		private readonly spaceService: SpaceService,
+		private readonly spaceUserService: SpaceUserService
+	) {}
+
+	@Get(':id')
+	@UseGuards(AuthGuard())
+	public async getSpace(
+		@Req() req: Request & { user: User },
+		@Param('id') id: string
+	) {
+		// Find the space
+		const space = await this.spaceService
+			.findOne({ where: { id } })
+			.catch(err => {
+				console.log(err);
+				return null;
+			});
+
+		if(!space) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Failure, 'Space not found.'),
+				HttpStatus.NOT_FOUND
+			);
+		}
+
+		// Check authorization
+		// Admins and SuperAdmins have access to all spaces
+		const hasAdminAccess = req.user.role === UserRole.SuperAdmin || req.user.role === UserRole.Admin;
+
+		// Check if user has access to this space
+		const hasAccess = await this.spaceUserService
+			.hasSpaceAccess(id, req.user.id, req.user.role, space.isPublic)
+			.catch(err => {
+				console.log(err);
+				return false;
+			});
+
+		if(!hasAdminAccess && !hasAccess) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Failure, 'You do not have access to this space.'),
+				HttpStatus.FORBIDDEN
+			);
+		}
+
+		return new ResponseEnvelope(
+			ResponseStatus.Success,
+			undefined,
+			new Space(space).toPublic()
+		);
+	}
 
 	@Get(':id/public')
 	@UseGuards(AuthGuard(), SpaceAccessGuard)

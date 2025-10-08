@@ -11,6 +11,8 @@ import { Organization } from '../organization/organization.entity';
 
 export type PublicSpace = Pick<Space, 'id' | 'name' | 'created' | 'isPublic' | 'settings'>;
 
+export type MinimalSpace = Pick<Space, 'id' | 'name' | 'created' | 'isPublic'>;
+
 @Entity('spaces')
 @Index(['organizationId'])
 export class Space {
@@ -59,6 +61,15 @@ export class Space {
 			created: this.created,
 			isPublic: this.isPublic,
 			settings: this.settings
+		};
+	}
+
+	public toMinimal(): MinimalSpace {
+		return {
+			id: this.id,
+			name: this.name,
+			created: this.created,
+			isPublic: this.isPublic
 		};
 	}
 }

@@ -67,6 +67,13 @@ export class SpaceService {
 		);
 	}
 
+	getSpace(spaceId: string): Observable<any> {
+		return this.http.get<any>(
+			`${this.apiUrl}/spaces/${spaceId}`,
+			{ headers: this.defaultHeaders }
+		);
+	}
+
 	getPublicDetails(spaceId: string): Observable<any> {
 		return this.http.get<any>(
 			`${this.apiUrl}/spaces/${spaceId}/public`,

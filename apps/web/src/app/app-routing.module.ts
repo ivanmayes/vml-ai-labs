@@ -18,6 +18,10 @@ const routes: Routes = [
 		canActivate: [SpaceAdminGuard]
 	},
 	{
+		path: 'space/:id',
+		loadChildren: () => import('./pages/space/space.module').then(m => m.SpacePageModule)
+	},
+	{
 		path: 'sso/okta/:orgId/login',
 		loadChildren: () => import('./pages/login/login.module').then(m => m.LoginPageModule),
 		data: {

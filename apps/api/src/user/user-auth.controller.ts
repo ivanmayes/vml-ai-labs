@@ -47,6 +47,8 @@ import { ResponseEnvelope, ResponseStatus } from '../_core/models';
 import { WPPOpen } from '../_core/third-party/wpp-open';
 import { WorkspaceHierarchy } from '../_core/third-party/wpp-open/models';
 import { WPPOpenLoginRequestDto } from './dtos/wpp-open-login-request.dto';
+import { SpaceUserService } from '../space-user/space-user.service';
+import { SpaceService } from '../space/space.service';
 
 export const basePath = 'user';
 export const SAMLLoginPath = 'auth/saml/:orgSlug/login';
@@ -58,7 +60,9 @@ export class UserAuthController {
 		private readonly userService: UserService,
 		private readonly authService: AuthService,
 		private readonly notificationService: NotificationService,
-		private readonly organizationService: OrganizationService
+		private readonly organizationService: OrganizationService,
+		private readonly spaceUserService: SpaceUserService,
+		private readonly spaceService: SpaceService
 	) {}
 
 	@Post('sign-out')
@@ -617,12 +621,34 @@ export class UserAuthController {
 			);
 		}
 
+		// Fetch spaces the user has access to
+		let spaces = [];
+
+		// Admins and SuperAdmins have access to all spaces
+		if(req.user.role === UserRole.SuperAdmin || req.user.role === UserRole.Admin) {
+			const allSpaces = await this.spaceService.findSpaces(req.user.organizationId)
+				.catch(err => {
+					console.log(err);
+					return [];
+				});
+			spaces = allSpaces.map(s => s.toMinimal());
+		} else {
+			// For regular users, get spaces they're members of (includes public spaces)
+			const userSpaces = await this.spaceService.findUserSpaces(req.user.id, req.user.organizationId)
+				.catch(err => {
+					console.log(err);
+					return [];
+				});
+			spaces = userSpaces.map(s => s.toMinimal());
+		}
+
 		return new ResponseEnvelope(
 			ResponseStatus.Success,
 			'User token refreshed.',
 			{
 				token: newToken,
-				user: new User(req.user).toPublic()
+				user: new User(req.user).toPublic(),
+				spaces
 			}
 		);
 	}

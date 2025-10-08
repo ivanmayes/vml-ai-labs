@@ -1,0 +1,21 @@
+<div class="space-page">
+	<p-toast></p-toast>
+
+	<div class="space-header" *ngIf="!loading && space">
+		<h1>{{ space.name }}</h1>
+		<p class="space-subtitle">Space ID: {{ space.id }}</p>
+		<p class="space-visibility">
+			<i class="pi" [ngClass]="space.isPublic ? 'pi-globe' : 'pi-lock'"></i>
+			{{ space.isPublic ? 'Public Space' : 'Private Space' }}
+		</p>
+	</div>
+
+	<div class="space-loading" *ngIf="loading">
+		<p-progressSpinner></p-progressSpinner>
+		<p>Loading space...</p>
+	</div>
+
+	<div class="space-content" *ngIf="!loading && !space">
+		<p>Space not found or you do not have access.</p>
+	</div>
+</div>

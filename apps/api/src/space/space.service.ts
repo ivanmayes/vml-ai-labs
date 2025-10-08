@@ -93,4 +93,19 @@ export class SpaceService {
 
 		return new SpacePublicDetailsDto(space.name);
 	}
+
+	public async findUserSpaces(userId: string, organizationId: string): Promise<Space[]> {
+		// Query spaces where the user is a member, including public spaces
+		// Only select minimal fields needed for listing
+		const spaces = await this.spaceRepository
+			.createQueryBuilder('space')
+			.select(['space.id', 'space.name', 'space.created', 'space.isPublic'])
+			.leftJoin('space_users', 'spaceUser', 'spaceUser.spaceId = space.id')
+			.where('space.organizationId = :organizationId', { organizationId })
+			.andWhere('(spaceUser.userId = :userId OR space.isPublic = true)', { userId })
+			.orderBy('space.created', 'DESC')
+			.getMany();
+
+		return spaces;
+	}
 }
