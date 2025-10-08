@@ -15,11 +15,22 @@ export class SpaceService {
 
 	constructor(private readonly http: HttpClient) {}
 
-	getSpaces(orgId: string, query?: string): Observable<any> {
+	getSpaces(orgId: string, query?: string, sortBy?: string, order?: string): Observable<any> {
 		let url = `${this.apiUrl}/organization/${orgId}/admin/spaces`;
+		const params: string[] = [];
 
 		if (query) {
-			url += `?query=${encodeURIComponent(query)}`;
+			params.push(`query=${encodeURIComponent(query)}`);
+		}
+		if (sortBy) {
+			params.push(`sortBy=${sortBy}`);
+		}
+		if (order) {
+			params.push(`order=${order}`);
+		}
+
+		if (params.length > 0) {
+			url += '?' + params.join('&');
 		}
 
 		return this.http.get<any>(url, { headers: this.defaultHeaders });

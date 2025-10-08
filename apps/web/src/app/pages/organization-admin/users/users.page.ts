@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { SessionQuery } from '../../../state/session/session.query';
@@ -6,6 +6,8 @@ import { OrganizationAdminService } from '../../../shared/services/organization-
 import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
 import { PromoteUserDialogComponent } from './components/promote-user-dialog/promote-user-dialog.component';
 import { environment } from '../../../../environments/environment';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
 	selector: 'app-users',
@@ -14,11 +16,15 @@ import { environment } from '../../../../environments/environment';
 	standalone: false,
 	providers: [ConfirmationService]
 })
-export class UsersPage implements OnInit {
+export class UsersPage implements OnInit, OnDestroy {
 	users: any[] = [];
 	loading: boolean = false;
 	currentUser: any;
 	organizationId: string;
+	currentSortField: string = 'email';
+	currentSortOrder: string = 'asc';
+	currentSearchQuery: string = '';
+	private searchSubject = new Subject<string>();
 
 	constructor(
 		private readonly adminService: OrganizationAdminService,
@@ -26,7 +32,16 @@ export class UsersPage implements OnInit {
 		private readonly messageService: MessageService,
 		private readonly dialogService: DialogService,
 		private readonly confirmationService: ConfirmationService
-	) {}
+	) {
+		// Debounce search input by 400ms
+		this.searchSubject.pipe(
+			debounceTime(400),
+			distinctUntilChanged()
+		).subscribe(query => {
+			this.currentSearchQuery = query;
+			this.loadUsers(query);
+		});
+	}
 
 	ngOnInit(): void {
 		this.currentUser = this.sessionQuery.getValue().user;
@@ -37,9 +52,15 @@ export class UsersPage implements OnInit {
 		}
 	}
 
-	loadUsers(searchQuery?: string): void {
+	loadUsers(searchQuery?: string, sortField?: string, sortOrder?: string): void {
 		this.loading = true;
-		this.adminService.getUsers(this.organizationId, 'email', 'asc', searchQuery)
+
+		// Use provided values or fall back to current state
+		const query = searchQuery !== undefined ? searchQuery : this.currentSearchQuery;
+		const field = sortField || this.currentSortField;
+		const order = sortOrder || this.currentSortOrder;
+
+		this.adminService.getUsers(this.organizationId, field, order, query)
 			.subscribe({
 				next: (response) => {
 					this.users = response.data || [];
@@ -60,7 +81,17 @@ export class UsersPage implements OnInit {
 
 	onSearch(event: Event): void {
 		const query = (event.target as HTMLInputElement).value;
-		this.loadUsers(query);
+		this.searchSubject.next(query);
+	}
+
+	ngOnDestroy(): void {
+		this.searchSubject.complete();
+	}
+
+	onSort(event: any): void {
+		this.currentSortField = event.field;
+		this.currentSortOrder = event.order === 1 ? 'asc' : 'desc';
+		this.loadUsers(this.currentSearchQuery, this.currentSortField, this.currentSortOrder);
 	}
 
 	openInviteDialog(): void {

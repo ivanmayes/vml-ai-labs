@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { SessionQuery } from '../../../state/session/session.query';
@@ -6,6 +6,8 @@ import { SpaceService } from '../../../shared/services/space.service';
 import { Space } from '../../../shared/models/space.model';
 import { SpaceFormDialogComponent } from './components/space-form-dialog/space-form-dialog.component';
 import { environment } from '../../../../environments/environment';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
 	selector: 'app-spaces',
@@ -14,10 +16,14 @@ import { environment } from '../../../../environments/environment';
 	standalone: false,
 	providers: [ConfirmationService]
 })
-export class SpacesPage implements OnInit {
+export class SpacesPage implements OnInit, OnDestroy {
 	spaces: Space[] = [];
 	loading: boolean = false;
 	organizationId: string;
+	currentSortField: string = 'created';
+	currentSortOrder: string = 'desc';
+	currentSearchQuery: string = '';
+	private searchSubject = new Subject<string>();
 
 	constructor(
 		private readonly spaceService: SpaceService,
@@ -25,7 +31,16 @@ export class SpacesPage implements OnInit {
 		private readonly messageService: MessageService,
 		private readonly dialogService: DialogService,
 		private readonly confirmationService: ConfirmationService
-	) {}
+	) {
+		// Debounce search input by 400ms
+		this.searchSubject.pipe(
+			debounceTime(400),
+			distinctUntilChanged()
+		).subscribe(query => {
+			this.currentSearchQuery = query;
+			this.loadSpaces(query);
+		});
+	}
 
 	ngOnInit(): void {
 		this.organizationId = environment.organizationId;
@@ -35,9 +50,15 @@ export class SpacesPage implements OnInit {
 		}
 	}
 
-	loadSpaces(searchQuery?: string): void {
+	loadSpaces(searchQuery?: string, sortField?: string, sortOrder?: string): void {
 		this.loading = true;
-		this.spaceService.getSpaces(this.organizationId, searchQuery)
+
+		// Use provided values or fall back to current state
+		const query = searchQuery !== undefined ? searchQuery : this.currentSearchQuery;
+		const field = sortField || this.currentSortField;
+		const order = sortOrder || this.currentSortOrder;
+
+		this.spaceService.getSpaces(this.organizationId, query, field, order)
 			.subscribe({
 				next: (response) => {
 					this.spaces = response.data || [];
@@ -58,7 +79,17 @@ export class SpacesPage implements OnInit {
 
 	onSearch(event: Event): void {
 		const query = (event.target as HTMLInputElement).value;
-		this.loadSpaces(query);
+		this.searchSubject.next(query);
+	}
+
+	ngOnDestroy(): void {
+		this.searchSubject.complete();
+	}
+
+	onSort(event: any): void {
+		this.currentSortField = event.field;
+		this.currentSortOrder = event.order === 1 ? 'asc' : 'desc';
+		this.loadSpaces(this.currentSearchQuery, this.currentSortField, this.currentSortOrder);
 	}
 
 	openCreateDialog(): void {

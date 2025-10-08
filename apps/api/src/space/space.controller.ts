@@ -36,10 +36,12 @@ export class SpaceController {
 	@UseGuards(AuthGuard(), RolesGuard, HasOrganizationAccessGuard)
 	public async getSpaces(
 		@Param('orgId') orgId: string,
-		@Query('query') query?: string
+		@Query('query') query?: string,
+		@Query('sortBy') sortBy?: string,
+		@Query('order') order?: string
 	) {
 		const spaces = await this.spaceService
-			.findSpaces(orgId, query)
+			.findSpaces(orgId, query, sortBy, order)
 			.catch(err => {
 				console.log(err);
 				return [];

@@ -31,7 +31,7 @@ export class SpaceService {
 		return this.spaceRepository.delete(id);
 	}
 
-	public async findSpaces(orgId: string, query?: string) {
+	public async findSpaces(orgId: string, query?: string, sortBy?: string, sortOrder?: string) {
 		const qb = this.spaceRepository
 			.createQueryBuilder('space')
 			.where('space.organizationId = :orgId', { orgId });
@@ -43,7 +43,10 @@ export class SpaceService {
 			});
 		}
 
-		qb.orderBy('space.created', 'DESC');
+		// Add sorting
+		const field = sortBy || 'created';
+		const order = (sortOrder?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC') as 'ASC' | 'DESC';
+		qb.orderBy(`space.${field}`, order);
 
 		return qb.getMany();
 	}

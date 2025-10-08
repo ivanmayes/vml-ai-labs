@@ -27,15 +27,21 @@
 		[rows]="10"
 		[showCurrentPageReport]="true"
 		currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
-		[globalFilterFields]="['email', 'profile.nameFirst', 'profile.nameLast']"
 		styleClass="p-datatable-striped"
+		(onSort)="onSort($event)"
 	>
 
 		<ng-template pTemplate="header">
 			<tr>
-				<th pSortableColumn="email">Email <p-sortIcon field="email"></p-sortIcon></th>
-				<th pSortableColumn="profile.nameFirst">Name <p-sortIcon field="profile.nameFirst"></p-sortIcon></th>
-				<th pSortableColumn="role">Role <p-sortIcon field="role"></p-sortIcon></th>
+				<th [pSortableColumn]="'email'" class="cursor-pointer">
+					Email <p-sortIcon [field]="'email'"></p-sortIcon>
+				</th>
+				<th [pSortableColumn]="'name'" class="cursor-pointer">
+					Name <p-sortIcon [field]="'name'"></p-sortIcon>
+				</th>
+				<th [pSortableColumn]="'role'" class="cursor-pointer">
+					Role <p-sortIcon [field]="'role'"></p-sortIcon>
+				</th>
 				<th>Status</th>
 				<th>Actions</th>
 			</tr>
