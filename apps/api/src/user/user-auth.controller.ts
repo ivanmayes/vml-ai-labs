@@ -44,6 +44,9 @@ import { Permissions } from './permission/permission.decorator';
 import { PermissionsGuard } from './permission/permission.guard';
 import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
 import { ResponseEnvelope, ResponseStatus } from '../_core/models';
+import { WPPOpen } from '../_core/third-party/wpp-open';
+import { WorkspaceHierarchy } from '../_core/third-party/wpp-open/models';
+import { WPPOpenLoginRequestDto } from './dtos/wpp-open-login-request.dto';
 
 export const basePath = 'user';
 export const SAMLLoginPath = 'auth/saml/:orgSlug/login';
@@ -349,6 +352,123 @@ export class UserAuthController {
 				profile: userCleaned
 			}
 		);
+	}
+
+	@Post('/auth/wpp-open/sign-in')
+	public async wppOpenSignIn(@Body() loginReq: WPPOpenLoginRequestDto) {
+		let error;
+		const result = await WPPOpen.validateToken(loginReq.token).catch(err => {
+			console.log(err);
+			return null;
+		});
+
+		if (!result) {
+			throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
+		}
+
+		const site = await this.organizationService
+			.findOne({
+				where: { id: loginReq.siteId }
+			})
+			.catch(err => {
+				console.log(err);
+				return null;
+			});
+
+		if (!site) {
+			throw new HttpException('Invalid siteId.', HttpStatus.BAD_REQUEST);
+		}
+
+		const scope: WorkspaceHierarchy = await WPPOpen
+			.getWorkspaceAncestor(loginReq.token, loginReq.workspaceId, loginReq.scopeId)
+			.catch(err => {
+				console.log(err);
+				return null;
+			});
+
+		if (!scope?.workspace) {
+			throw new HttpException('Invalid workspaceId.', HttpStatus.BAD_REQUEST);
+		}
+
+		if (loginReq.scopeId && scope.workspace.id !== loginReq.scopeId) {
+			throw new HttpException('Invalid scopeId.', HttpStatus.BAD_REQUEST);
+		}
+
+		const email = FraudPrevention.Forms.Normalization.normalizeEmail(result.email);
+		let user: User = await this.userService
+			.findOne({
+				where: {
+					emailNormalized: email,
+					organizationId: site.id
+				}
+			})
+			.catch(err => {
+				console.log(err);
+				error = err;
+				return null;
+			});
+
+		if (error) {
+			throw new HttpException('Error finding user.', HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		if (!user) {
+			const newUser = new User({
+				email: email,
+				emailNormalized: email,
+				organizationId: site.id,
+				activationStatus: ActivationStatus.Activated,
+				role: UserRole.User,
+				authenticationStrategyId: site.defaultAuthenticationStrategyId
+			});
+
+			user = await this.userService.addOne(newUser).catch(err => {
+				console.log(err);
+				return null;
+			});
+
+			if (!user) {
+				throw new HttpException('Error creating user.', HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		}
+
+		let responseData: { token?: string; redirect?: string } = {};
+
+		// Create a JWT
+		let token = this.jwtService.sign({
+			id: user.id,
+			email: user.email,
+			emailNormalized: user.emailNormalized,
+			siteId: site.id,
+			// In case we have deeper integration later
+			wppOpenToken: loginReq.token
+		});
+		// Update user
+		if (!user.authTokens) {
+			user.authTokens = [];
+		}
+		user.authTokens.push(token);
+		user.activationStatus = ActivationStatus.Activated;
+		user.singlePass = null;
+		user.singlePassExpire = null;
+
+		const userUpdateRequest = await this.userService.updateOne(user).catch(err => {
+			console.log(err);
+			return false;
+		});
+
+		if (!userUpdateRequest) {
+			throw new HttpException('Error saving auth token. You may not be signed in.', HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		responseData.token = token;
+
+
+		return {
+			status: 'succeeded',
+			...responseData,
+			profile: new User(user).toPublic(),
+		};
 	}
 
 	@Post('/auth/basic/code-sign-in')
