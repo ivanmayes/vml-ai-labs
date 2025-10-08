@@ -1,0 +1,60 @@
+.users-page {
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+
+		h1 {
+			margin: 0;
+			font-size: 1.75rem;
+			font-weight: 600;
+			color: var(--text-color);
+		}
+	}
+
+	.table-header {
+		display: flex;
+		justify-content: flex-end;
+		padding: 1rem 0;
+
+		.p-input-icon-left {
+			width: 300px;
+
+			input {
+				width: 100%;
+			}
+		}
+	}
+
+	.action-buttons {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.text-center {
+		text-align: center;
+		padding: 2rem;
+		color: var(--text-color-secondary);
+	}
+}
+
+:host ::ng-deep {
+	.p-datatable {
+		.p-datatable-thead > tr > th {
+			background-color: var(--surface-section);
+			color: var(--text-color);
+			font-weight: 600;
+		}
+
+		.p-datatable-tbody > tr {
+			&:hover {
+				background-color: var(--surface-hover);
+			}
+		}
+	}
+
+	.p-badge {
+		text-transform: capitalize;
+	}
+}

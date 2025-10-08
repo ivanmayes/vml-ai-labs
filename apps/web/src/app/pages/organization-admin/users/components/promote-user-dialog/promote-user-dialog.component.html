@@ -1,0 +1,69 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+	<div class="p-fluid">
+		<div class="user-info" *ngIf="user">
+			<p><strong>User:</strong> {{ user.email }}</p>
+			<p><strong>Current Role:</strong> <p-badge [value]="user.role" severity="info"></p-badge></p>
+		</div>
+
+		<p-divider></p-divider>
+
+		<div class="field">
+			<label for="role">New Role *</label>
+			<p-select
+				id="role"
+				formControlName="role"
+				[options]="availableRoles"
+				optionLabel="label"
+				optionValue="value"
+				placeholder="Select a role"
+			></p-select>
+			<small class="p-info">
+				Select the new role for this user. You can only assign roles up to your permission level.
+			</small>
+		</div>
+	</div>
+
+	<div class="dialog-footer">
+		<button
+			pButton
+			label="Cancel"
+			icon="pi pi-times"
+			class="p-button-text"
+			type="button"
+			(click)="onCancel()"
+			[disabled]="loading"
+		></button>
+		<button
+			pButton
+			label="Update Role"
+			icon="pi pi-check"
+			type="submit"
+			[loading]="loading"
+			[disabled]="form.invalid"
+		></button>
+	</div>
+</form>
+
+<style>
+.user-info {
+	padding: 1rem 0;
+
+	p {
+		margin: 0.5rem 0;
+	}
+}
+
+.dialog-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	margin-top: 1.5rem;
+}
+
+.p-info {
+	display: block;
+	margin-top: 0.5rem;
+	color: var(--text-color-secondary);
+	font-size: 0.875rem;
+}
+</style>

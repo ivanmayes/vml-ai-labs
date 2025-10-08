@@ -1,0 +1,59 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+	<div class="p-fluid">
+		<div class="field">
+			<label for="name">Space Name *</label>
+			<input
+				pInputText
+				id="name"
+				formControlName="name"
+				placeholder="Enter space name"
+				[class.ng-invalid]="form.get('name')?.invalid && form.get('name')?.touched"
+			/>
+			<small class="p-error" *ngIf="form.get('name')?.hasError('required') && form.get('name')?.touched">
+				Space name is required
+			</small>
+			<small class="p-error" *ngIf="form.get('name')?.hasError('minlength') && form.get('name')?.touched">
+				Space name must be at least 2 characters
+			</small>
+			<small class="p-info">
+				Choose a descriptive name for this space. Users will be assigned to spaces for organized access control.
+			</small>
+		</div>
+	</div>
+
+	<div class="dialog-footer">
+		<button
+			pButton
+			label="Cancel"
+			icon="pi pi-times"
+			class="p-button-text"
+			type="button"
+			(click)="onCancel()"
+			[disabled]="loading"
+		></button>
+		<button
+			pButton
+			[label]="mode === 'create' ? 'Create Space' : 'Update Space'"
+			icon="pi pi-check"
+			type="submit"
+			[loading]="loading"
+			[disabled]="form.invalid"
+		></button>
+	</div>
+</form>
+
+<style>
+.dialog-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	margin-top: 1.5rem;
+}
+
+.p-info {
+	display: block;
+	margin-top: 0.5rem;
+	color: var(--text-color-secondary);
+	font-size: 0.875rem;
+}
+</style>

@@ -22,6 +22,7 @@ import { OrganizationController } from './organization/organization.controller';
 import { AuthenticationStrategyController } from './authentication-strategy/authentication-strategy.controller';
 import { UserAuthController } from './user/user-auth.controller';
 import { SampleController } from './sample/sample.controller';
+import { SpaceController } from './space/space.controller';
 // CLI_CONTROLLERS_IMPORT
 
 Global()
@@ -43,6 +44,7 @@ Global()
 		OrganizationController,
 		AuthenticationStrategyController,
 		SampleController,
+		SpaceController,
 		// CLI_CONTROLLERS_REF
 	],
 	providers: [

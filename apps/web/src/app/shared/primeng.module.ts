@@ -40,6 +40,7 @@ import { MenuModule } from 'primeng/menu';
 import { ToastModule } from 'primeng/toast';
 import { OverlayModule } from 'primeng/overlay';
 import { PopoverModule } from 'primeng/popover';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 // Misc Components
 import { DividerModule } from 'primeng/divider';
@@ -54,7 +55,7 @@ import { ImageModule } from 'primeng/image';
 
 // Services
 import { DialogService } from 'primeng/dynamicdialog';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 
 const primeNgModules = [
 	// Form Components
@@ -75,6 +76,7 @@ const primeNgModules = [
 	// Dialog/Overlay Components
 	DialogModule,
 	DynamicDialogModule,
+	ConfirmDialogModule,
 	TooltipModule,
 	MenuModule,
 	ToastModule,
@@ -108,6 +110,6 @@ const primeNgModules = [
 @NgModule({
 	imports: [CommonModule, ...primeNgModules],
 	exports: [...primeNgModules],
-	providers: [DialogService, MessageService]
+	providers: [DialogService, MessageService, ConfirmationService]
 })
 export class PrimeNgModule {}

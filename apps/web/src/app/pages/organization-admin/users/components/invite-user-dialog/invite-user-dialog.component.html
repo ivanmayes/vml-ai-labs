@@ -1,0 +1,77 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+	<div class="p-fluid">
+		<div class="field">
+			<label for="email">Email *</label>
+			<input
+				pInputText
+				id="email"
+				formControlName="email"
+				placeholder="user@example.com"
+				[class.ng-invalid]="form.get('email')?.invalid && form.get('email')?.touched"
+			/>
+			<small class="p-error" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
+				Please enter a valid email address
+			</small>
+		</div>
+
+		<div class="field">
+			<label for="nameFirst">First Name *</label>
+			<input
+				pInputText
+				id="nameFirst"
+				formControlName="nameFirst"
+				placeholder="John"
+				[class.ng-invalid]="form.get('nameFirst')?.invalid && form.get('nameFirst')?.touched"
+			/>
+			<small class="p-error" *ngIf="form.get('nameFirst')?.invalid && form.get('nameFirst')?.touched">
+				First name is required
+			</small>
+		</div>
+
+		<div class="field">
+			<label for="nameLast">Last Name *</label>
+			<input
+				pInputText
+				id="nameLast"
+				formControlName="nameLast"
+				placeholder="Doe"
+				[class.ng-invalid]="form.get('nameLast')?.invalid && form.get('nameLast')?.touched"
+			/>
+			<small class="p-error" *ngIf="form.get('nameLast')?.invalid && form.get('nameLast')?.touched">
+				Last name is required
+			</small>
+		</div>
+
+		<div class="field">
+			<label for="role">Role *</label>
+			<p-select
+				id="role"
+				formControlName="role"
+				[options]="availableRoles"
+				optionLabel="label"
+				optionValue="value"
+				placeholder="Select a role"
+			></p-select>
+		</div>
+	</div>
+
+	<div class="dialog-footer">
+		<button
+			pButton
+			label="Cancel"
+			icon="pi pi-times"
+			class="p-button-text"
+			type="button"
+			(click)="onCancel()"
+			[disabled]="loading"
+		></button>
+		<button
+			pButton
+			label="Invite User"
+			icon="pi pi-check"
+			type="submit"
+			[loading]="loading"
+			[disabled]="form.invalid"
+		></button>
+	</div>
+</form>

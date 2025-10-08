@@ -10,6 +10,8 @@ import {
 import { UsersFilterDto } from './dtos/user-filter.dto';
 
 import { User } from './user.entity';
+import { UserRole } from './user-role.enum';
+import { Utils } from './user.utils';
 import { SortStrategy } from '../_core/models/sort-strategy';
 import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
 
@@ -215,5 +217,42 @@ export class UserService {
 		}
 
 		return qb.getMany();
+	}
+
+	public async promoteUser(userId: string, targetRole: UserRole, requestingUser: User) {
+		// Validate the requesting user can promote to the target role
+		if(!Utils.canUserAddRole(requestingUser.role, targetRole)) {
+			throw new Error(`You don't have permission to promote users to role: ${targetRole}`);
+		}
+
+		const user = await this.findOne({
+			where: { id: userId }
+		});
+
+		if(!user) {
+			throw new Error('User not found.');
+		}
+
+		// Ensure organization isolation
+		if(user.organizationId !== requestingUser.organizationId) {
+			throw new Error('You don\'t have access to this user.');
+		}
+
+		// Update the user's role
+		user.role = targetRole;
+		return this.updateOne(user);
+	}
+
+	public async banUser(userId: string, banned: boolean) {
+		const user = await this.findOne({
+			where: { id: userId }
+		});
+
+		if(!user) {
+			throw new Error('User not found.');
+		}
+
+		user.deactivated = banned;
+		return this.updateOne(user);
 	}
 }

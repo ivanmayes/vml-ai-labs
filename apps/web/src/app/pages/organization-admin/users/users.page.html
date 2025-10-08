@@ -1,0 +1,87 @@
+<div class="users-page">
+	<div class="page-header">
+		<h1>User Management</h1>
+		<button pButton label="Invite User" icon="pi pi-user-plus" (click)="openInviteDialog()"></button>
+	</div>
+
+	<p-table
+		#dt
+		[value]="users"
+		[loading]="loading"
+		[paginator]="true"
+		[rows]="10"
+		[showCurrentPageReport]="true"
+		currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
+		[globalFilterFields]="['email', 'profile.nameFirst', 'profile.nameLast']"
+		styleClass="p-datatable-striped"
+	>
+		<ng-template pTemplate="caption">
+			<div class="table-header">
+				<span class="p-input-icon-left">
+					<i class="pi pi-search"></i>
+					<input
+						pInputText
+						type="text"
+						(input)="dt.filterGlobal($any($event.target).value, 'contains')"
+						placeholder="Search users..."
+					/>
+				</span>
+			</div>
+		</ng-template>
+
+		<ng-template pTemplate="header">
+			<tr>
+				<th pSortableColumn="email">Email <p-sortIcon field="email"></p-sortIcon></th>
+				<th pSortableColumn="profile.nameFirst">Name <p-sortIcon field="profile.nameFirst"></p-sortIcon></th>
+				<th pSortableColumn="role">Role <p-sortIcon field="role"></p-sortIcon></th>
+				<th>Status</th>
+				<th>Actions</th>
+			</tr>
+		</ng-template>
+
+		<ng-template pTemplate="body" let-user>
+			<tr>
+				<td>{{ user.email }}</td>
+				<td>{{ user.profile?.nameFirst }} {{ user.profile?.nameLast }}</td>
+				<td>
+					<p-badge [value]="user.role" [severity]="getRoleBadgeSeverity(user.role)"></p-badge>
+				</td>
+				<td>
+					<p-badge
+						[value]="getStatusLabel(user.deactivated)"
+						[severity]="getStatusBadgeSeverity(user.deactivated)"
+					></p-badge>
+				</td>
+				<td>
+					<div class="action-buttons">
+						<button
+							pButton
+							icon="pi pi-user-edit"
+							class="p-button-rounded p-button-text p-button-sm"
+							pTooltip="Change Role"
+							[disabled]="!canManageUser(user)"
+							(click)="openPromoteDialog(user)"
+						></button>
+						<button
+							pButton
+							[icon]="user.deactivated ? 'pi pi-check' : 'pi pi-ban'"
+							class="p-button-rounded p-button-text p-button-sm"
+							[pTooltip]="user.deactivated ? 'Unban User' : 'Ban User'"
+							[disabled]="!canManageUser(user)"
+							(click)="banUser(user)"
+						></button>
+					</div>
+				</td>
+			</tr>
+		</ng-template>
+
+		<ng-template pTemplate="emptymessage">
+			<tr>
+				<td colspan="5" class="text-center">No users found</td>
+			</tr>
+		</ng-template>
+	</p-table>
+</div>
+
+<p-confirmDialog></p-confirmDialog>
+<p-toast></p-toast>

@@ -32,6 +32,8 @@ import { AuthenticationStrategyService } from '../authentication-strategy/authen
 
 import { UserAddDto } from './dtos/user-add.dto';
 import { UserUpdateDto } from './dtos/user-update.dto';
+import { UserPromoteDto } from './dtos/user-promote.dto';
+import { UserBanDto } from './dtos/user-ban.dto';
 import { Any, FindManyOptions } from 'typeorm';
 import { UsersFilterDto } from './dtos/user-filter.dto';
 import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
@@ -390,6 +392,97 @@ export class UserController {
 			ResponseStatus.Success,
 			undefined,
 			new User(user).toPublic()
+		);
+	}
+
+	@Post('promote')
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@UseGuards(AuthGuard(), RolesGuard, HasOrganizationAccessGuard)
+	public async promoteUser(
+		@Req() req: Request & { user: User },
+		@Param('orgId') orgId: string,
+		@Body() promoteDto: UserPromoteDto
+	) {
+		// Prevent self-promotion
+		if(req.user.id === promoteDto.userId) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Failure, `You cannot promote yourself.`),
+				HttpStatus.BAD_REQUEST
+			);
+		}
+
+		// Validate the requesting user can promote to the target role
+		if(!Utils.canUserAddRole(req.user.role, promoteDto.targetRole)) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Failure, `You don't have permission to promote users to role: '${promoteDto.targetRole}'.`),
+				HttpStatus.BAD_REQUEST
+			);
+		}
+
+		const updatedUser = await this.userService
+			.promoteUser(promoteDto.userId, promoteDto.targetRole, req.user)
+			.catch(err => {
+				console.log(err);
+				throw new HttpException(
+					new ResponseEnvelope(ResponseStatus.Failure, err.message || 'Error promoting user.'),
+					HttpStatus.INTERNAL_SERVER_ERROR
+				);
+			});
+
+		return new ResponseEnvelope(
+			ResponseStatus.Success,
+			'User promoted successfully.',
+			new User(updatedUser).toPublic()
+		);
+	}
+
+	@Post('ban')
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@UseGuards(AuthGuard(), RolesGuard, HasOrganizationAccessGuard)
+	public async banUser(
+		@Req() req: Request & { user: User },
+		@Param('orgId') orgId: string,
+		@Body() banDto: UserBanDto
+	) {
+		// Prevent self-banning
+		if(req.user.id === banDto.userId) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Failure, `You cannot ban yourself.`),
+				HttpStatus.BAD_REQUEST
+			);
+		}
+
+		// Verify the user belongs to the organization
+		const userToBan = await this.userService
+			.findOne({
+				where: { id: banDto.userId, organizationId: orgId }
+			})
+			.catch(err => {
+				console.log(err);
+				return null;
+			});
+
+		if(!userToBan) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Failure, `User not found.`),
+				HttpStatus.NOT_FOUND
+			);
+		}
+
+		const updatedUser = await this.userService
+			.banUser(banDto.userId, banDto.banned)
+			.catch(err => {
+				console.log(err);
+				throw new HttpException(
+					new ResponseEnvelope(ResponseStatus.Failure, 'Error updating user status.'),
+					HttpStatus.INTERNAL_SERVER_ERROR
+				);
+			});
+
+		return new ResponseEnvelope(
+			ResponseStatus.Success,
+			banDto.banned ? 'User banned successfully.' : 'User unbanned successfully.',
+			new User(updatedUser).toPublic()
 		);
 	}
 }
