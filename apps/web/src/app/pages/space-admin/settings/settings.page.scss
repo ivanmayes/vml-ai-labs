@@ -1,0 +1,90 @@
+.settings-container {
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.settings-header {
+	margin-bottom: 2rem;
+
+	h1 {
+		font-size: 1.75rem;
+		font-weight: 600;
+		color: var(--text-color);
+		margin: 0;
+	}
+}
+
+.settings-content {
+	:host ::ng-deep .p-card {
+		background: var(--surface-card);
+		border: 1px solid var(--surface-border);
+		box-shadow: var(--card-shadow);
+
+		.p-card-body {
+			padding: 2rem;
+		}
+	}
+}
+
+.form-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.form-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+
+	label {
+		font-weight: 500;
+		color: var(--text-color);
+		font-size: 0.875rem;
+
+		&.required::after {
+			content: ' *';
+			color: var(--red-500);
+		}
+	}
+
+	.help-text {
+		color: var(--text-color-secondary);
+		font-size: 0.8125rem;
+		margin-top: 0.25rem;
+	}
+
+	:host ::ng-deep {
+		.p-inputtext {
+			width: 100%;
+		}
+
+		.p-colorpicker {
+			.p-colorpicker-preview {
+				width: 2.5rem;
+				height: 2.5rem;
+			}
+		}
+	}
+}
+
+.form-actions {
+	margin-top: 2rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid var(--surface-border);
+	display: flex;
+	gap: 1rem;
+	justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+	.settings-container {
+		max-width: 100%;
+	}
+
+	.settings-content {
+		:host ::ng-deep .p-card .p-card-body {
+			padding: 1rem;
+		}
+	}
+}

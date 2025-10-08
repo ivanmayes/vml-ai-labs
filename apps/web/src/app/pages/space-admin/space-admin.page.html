@@ -1,0 +1,16 @@
+<div class="admin-layout">
+	<!-- Sidebar -->
+	<div class="admin-sidebar" [class.collapsed]="!sidebarVisible">
+		<div class="sidebar-header">
+			<h2>{{ spaceName }}</h2>
+			<p class="sidebar-subtitle">Space Admin</p>
+		</div>
+
+		<p-menu [model]="menuItems" styleClass="admin-menu"></p-menu>
+	</div>
+
+	<!-- Main Content -->
+	<div class="admin-content">
+		<router-outlet></router-outlet>
+	</div>
+</div>

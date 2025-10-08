@@ -54,6 +54,8 @@ import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { ImageModule } from 'primeng/image';
+import { TagModule } from 'primeng/tag';
+import { ColorPickerModule } from 'primeng/colorpicker';
 
 // Services
 import { DialogService } from 'primeng/dynamicdialog';
@@ -108,7 +110,9 @@ const primeNgModules = [
 	AvatarModule,
 	AvatarGroupModule,
 	SelectButtonModule,
-	ImageModule
+	ImageModule,
+	TagModule,
+	ColorPickerModule
 ];
 
 @NgModule({

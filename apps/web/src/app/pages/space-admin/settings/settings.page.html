@@ -1,0 +1,94 @@
+<div class="settings-container">
+	<p-toast></p-toast>
+
+	<div class="settings-header">
+		<h1>Space Settings</h1>
+	</div>
+
+	<div class="settings-content">
+		<p-card>
+			<form [formGroup]="settingsForm" (ngSubmit)="onSave()">
+				<div class="form-grid">
+					<!-- Space Name -->
+					<div class="form-field">
+						<label for="name" class="required">Space Name</label>
+						<input
+							pInputText
+							id="name"
+							formControlName="name"
+							placeholder="Enter space name"
+							[disabled]="loading || saving"
+							class="w-full"
+						/>
+						<small
+							*ngIf="settingsForm.get('name')?.invalid && settingsForm.get('name')?.touched"
+							class="p-error"
+						>
+							Space name is required.
+						</small>
+					</div>
+
+					<!-- Public/Private Toggle -->
+					<div class="form-field">
+						<label for="isPublic">Visibility</label>
+						<div class="flex align-items-center gap-2">
+							<p-toggleSwitch
+								id="isPublic"
+								formControlName="isPublic"
+								[disabled]="loading || saving"
+							></p-toggleSwitch>
+							<span class="ml-2">
+								{{ settingsForm.get('isPublic')?.value ? 'Public' : 'Private' }}
+							</span>
+						</div>
+						<small class="help-text">
+							{{ settingsForm.get('isPublic')?.value
+								? 'Anyone can view this space'
+								: 'Only invited users can access this space'
+							}}
+						</small>
+					</div>
+
+					<!-- Primary Color -->
+					<div class="form-field">
+						<label for="primaryColor">Primary Color</label>
+						<div class="flex align-items-center gap-2">
+							<p-colorPicker
+								[ngModel]="settingsForm.get('primaryColor')?.value"
+								(ngModelChange)="onColorChange($event)"
+								[ngModelOptions]="{standalone: true}"
+								[disabled]="loading || saving"
+								format="hex"
+							></p-colorPicker>
+							<input
+								pInputText
+								id="primaryColor"
+								formControlName="primaryColor"
+								placeholder="#000000"
+								[disabled]="loading || saving"
+								class="flex-1"
+							/>
+						</div>
+						<small
+							*ngIf="settingsForm.get('primaryColor')?.invalid && settingsForm.get('primaryColor')?.touched"
+							class="p-error"
+						>
+							Please enter a valid hex color code (e.g., #FF5733).
+						</small>
+					</div>
+				</div>
+
+				<!-- Action Buttons -->
+				<div class="form-actions">
+					<p-button
+						label="Save Changes"
+						icon="pi pi-check"
+						type="submit"
+						[disabled]="settingsForm.invalid || settingsForm.pristine || loading || saving"
+						[loading]="saving"
+					></p-button>
+				</div>
+			</form>
+		</p-card>
+	</div>
+</div>

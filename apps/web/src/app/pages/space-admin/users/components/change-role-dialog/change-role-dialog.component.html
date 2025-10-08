@@ -1,0 +1,43 @@
+<div class="change-role-dialog">
+	<form [formGroup]="roleForm" (ngSubmit)="onSave()">
+		<div class="form-content">
+			<div class="user-info">
+				<p class="info-label">Changing role for:</p>
+				<p class="user-email">{{ getUserDisplay() }}</p>
+			</div>
+
+			<!-- Role Selection -->
+			<div class="form-field">
+				<label for="role">New Role *</label>
+				<p-select
+					id="role"
+					formControlName="role"
+					[options]="roles"
+					optionLabel="label"
+					optionValue="value"
+					placeholder="Select a role"
+					styleClass="w-full"
+				></p-select>
+				<small class="help-text">
+					Admins can manage space settings and users. Users have regular access.
+				</small>
+			</div>
+		</div>
+
+		<!-- Dialog Actions -->
+		<div class="dialog-actions">
+			<p-button
+				label="Cancel"
+				severity="secondary"
+				(onClick)="onCancel()"
+				[text]="true"
+			></p-button>
+			<p-button
+				label="Save Changes"
+				type="submit"
+				[disabled]="roleForm.invalid || loading"
+				[loading]="loading"
+			></p-button>
+		</div>
+	</form>
+</div>

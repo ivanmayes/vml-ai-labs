@@ -9,7 +9,7 @@ import {
 
 import { Organization } from '../organization/organization.entity';
 
-export type PublicSpace = Pick<Space, 'id' | 'name' | 'created'>;
+export type PublicSpace = Pick<Space, 'id' | 'name' | 'created' | 'isPublic' | 'settings'>;
 
 @Entity('spaces')
 @Index(['organizationId'])
@@ -42,11 +42,23 @@ export class Space {
 	@Column({ type: 'timestamptz', default: () => 'NOW()' })
 	created: string;
 
+	@Column('jsonb', {
+		default: {}
+	})
+	settings: Record<string, any>;
+
+	@Column('boolean', {
+		default: true
+	})
+	isPublic: boolean;
+
 	public toPublic(): PublicSpace {
 		return {
 			id: this.id,
 			name: this.name,
-			created: this.created
+			created: this.created,
+			isPublic: this.isPublic,
+			settings: this.settings
 		};
 	}
 }

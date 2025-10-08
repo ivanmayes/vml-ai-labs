@@ -51,6 +51,10 @@ import { ShortNumberPipe } from './pipes/short-number.pipe';
 		ReactiveFormsModule
 	],
 	exports: [
+		CommonModule,
+		FormsModule,
+		ReactiveFormsModule,
+		RouterModule,
 		HeaderComponent,
 		AccountBarComponent,
 		NavigationBarComponent,

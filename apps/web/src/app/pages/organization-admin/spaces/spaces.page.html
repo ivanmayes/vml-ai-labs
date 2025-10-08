@@ -43,7 +43,11 @@
 
 		<ng-template pTemplate="body" let-space>
 			<tr>
-				<td>{{ space.name }}</td>
+				<td>
+					<a class="space-name-link" (click)="navigateToSpaceAdmin(space.id)">
+						{{ space.name }}
+					</a>
+				</td>
 				<td>{{ formatDate(space.created) }}</td>
 				<td>
 					<div class="action-buttons">

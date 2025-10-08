@@ -1,0 +1,57 @@
+<div class="invite-user-dialog">
+	<form [formGroup]="inviteForm" (ngSubmit)="onInvite()">
+		<div class="form-content">
+			<!-- Email Input -->
+			<div class="form-field">
+				<label for="email">Email Address *</label>
+				<input
+					pInputText
+					id="email"
+					formControlName="email"
+					placeholder="Enter user email address"
+					class="w-full"
+				/>
+				<small class="help-text">
+					Enter the email address of the user you want to invite. If the user doesn't exist, they will be created automatically.
+				</small>
+				<small class="error-text" *ngIf="inviteForm.get('email')?.invalid && inviteForm.get('email')?.touched">
+					<span *ngIf="inviteForm.get('email')?.errors?.['required']">Email is required</span>
+					<span *ngIf="inviteForm.get('email')?.errors?.['email']">Please enter a valid email address</span>
+				</small>
+			</div>
+
+			<!-- Role Selection -->
+			<div class="form-field">
+				<label for="role">Role *</label>
+				<p-select
+					id="role"
+					formControlName="role"
+					[options]="roles"
+					optionLabel="label"
+					optionValue="value"
+					placeholder="Select a role"
+					styleClass="w-full"
+				></p-select>
+				<small class="help-text">
+					Admins can manage space settings and users. Users have regular access.
+				</small>
+			</div>
+		</div>
+
+		<!-- Dialog Actions -->
+		<div class="dialog-actions">
+			<p-button
+				label="Cancel"
+				severity="secondary"
+				(onClick)="onCancel()"
+				[text]="true"
+			></p-button>
+			<p-button
+				label="Invite User"
+				type="submit"
+				[disabled]="inviteForm.invalid || loading"
+				[loading]="loading"
+			></p-button>
+		</div>
+	</form>
+</div>

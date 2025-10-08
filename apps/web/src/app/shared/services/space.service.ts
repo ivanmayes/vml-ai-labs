@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Space, CreateSpaceDto, UpdateSpaceDto } from '../models/space.model';
+import { Space, CreateSpaceDto, UpdateSpaceDto, SpaceUpdateSettingsDto, SpacePublicDetailsDto } from '../models/space.model';
 
 @Injectable({
 	providedIn: 'root'
@@ -55,6 +55,21 @@ export class SpaceService {
 	deleteSpace(orgId: string, spaceId: string): Observable<any> {
 		return this.http.delete<any>(
 			`${this.apiUrl}/organization/${orgId}/admin/spaces/${spaceId}`,
+			{ headers: this.defaultHeaders }
+		);
+	}
+
+	updateSettings(orgId: string, spaceId: string, dto: SpaceUpdateSettingsDto): Observable<any> {
+		return this.http.put<any>(
+			`${this.apiUrl}/organization/${orgId}/admin/spaces/${spaceId}/settings`,
+			dto,
+			{ headers: this.defaultHeaders }
+		);
+	}
+
+	getPublicDetails(spaceId: string): Observable<any> {
+		return this.http.get<any>(
+			`${this.apiUrl}/spaces/${spaceId}/public`,
 			{ headers: this.defaultHeaders }
 		);
 	}

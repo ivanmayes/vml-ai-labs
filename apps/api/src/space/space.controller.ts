@@ -21,6 +21,9 @@ import { HasOrganizationAccessGuard } from '../organization/guards/has-organizat
 import { SpaceService } from './space.service';
 import { Space } from './space.entity';
 import { SpaceCreateDto, SpaceUpdateDto } from './dtos';
+import { SpaceUpdateSettingsDto } from './dtos/space-update-settings.dto';
+import { SpaceAdminGuard } from './guards/space-admin.guard';
+import { SpaceAccessGuard } from './guards/space-access.guard';
 import { UserRole } from '../user/user-role.enum';
 import { User } from '../user/user.entity';
 import { ResponseEnvelope, ResponseStatus } from '../_core/models';
@@ -132,7 +135,8 @@ export class SpaceController {
 
 		const space = new Space({
 			id: existingSpace.id,
-			name: updateDto.name
+			name: updateDto.name,
+			isPublic: updateDto.isPublic !== undefined ? updateDto.isPublic : existingSpace.isPublic
 		});
 
 		const updated = await this.spaceService
@@ -206,6 +210,96 @@ export class SpaceController {
 		return new ResponseEnvelope(
 			ResponseStatus.Success,
 			'Space deleted successfully.'
+		);
+	}
+
+	@Put(':id/settings')
+	@UseGuards(AuthGuard(), RolesGuard, HasOrganizationAccessGuard, SpaceAdminGuard)
+	public async updateSettings(
+		@Req() req: Request & { user: User },
+		@Param('orgId') orgId: string,
+		@Param('id') id: string,
+		@Body() settingsDto: SpaceUpdateSettingsDto
+	) {
+		// Verify the space belongs to the organization
+		const existingSpace = await this.spaceService
+			.findOne({
+				where: { id, organizationId: orgId }
+			})
+			.catch(err => {
+				console.log(err);
+				return null;
+			});
+
+		if(!existingSpace) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Failure, `Space not found.`),
+				HttpStatus.NOT_FOUND
+			);
+		}
+
+		const updated = await this.spaceService
+			.updateSettings(id, settingsDto)
+			.catch(err => {
+				console.log(err);
+				if(err.message === 'Space not found') {
+					throw new HttpException(
+						new ResponseEnvelope(ResponseStatus.Failure, err.message),
+						HttpStatus.NOT_FOUND
+					);
+				}
+				return null;
+			});
+
+		if(!updated) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Failure, `Error updating space settings.`),
+				HttpStatus.INTERNAL_SERVER_ERROR
+			);
+		}
+
+		return new ResponseEnvelope(
+			ResponseStatus.Success,
+			'Space settings updated successfully.',
+			new Space(updated).toPublic()
+		);
+	}
+}
+
+@Controller('spaces')
+export class SpacePublicController {
+	constructor(private readonly spaceService: SpaceService) {}
+
+	@Get(':id/public')
+	@UseGuards(AuthGuard(), SpaceAccessGuard)
+	public async getPublicDetails(
+		@Req() req: Request & { user: User },
+		@Param('id') id: string
+	) {
+		const details = await this.spaceService
+			.getPublicDetails(id)
+			.catch(err => {
+				console.log(err);
+				if(err.message === 'Space not found') {
+					throw new HttpException(
+						new ResponseEnvelope(ResponseStatus.Failure, err.message),
+						HttpStatus.NOT_FOUND
+					);
+				}
+				return null;
+			});
+
+		if(!details) {
+			throw new HttpException(
+				new ResponseEnvelope(ResponseStatus.Failure, `Error retrieving space details.`),
+				HttpStatus.INTERNAL_SERVER_ERROR
+			);
+		}
+
+		return new ResponseEnvelope(
+			ResponseStatus.Success,
+			undefined,
+			details
 		);
 	}
 }

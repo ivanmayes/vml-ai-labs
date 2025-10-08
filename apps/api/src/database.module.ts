@@ -8,6 +8,7 @@ import { AuthenticationStrategy } from './authentication-strategy/authentication
 import { ApiKey } from './api-key/api-key.entity';
 import { ApiKeyLog } from './api-key/api-key-log.entity';
 import { Space } from './space/space.entity';
+import { SpaceUser } from './space-user/space-user.entity';
 // CLI_ENTITIES_IMPORT
 
 @Module({
@@ -35,6 +36,7 @@ import { Space } from './space/space.entity';
 				ApiKeyLog,
 				User,
 				Space,
+				SpaceUser,
 				// CLI_ENTITIES_REF
 			],
 			'default'

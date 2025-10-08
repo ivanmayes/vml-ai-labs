@@ -17,6 +17,7 @@ import { AuthService } from './user/auth/auth.service';
 import { AuthenticationStrategyService } from './authentication-strategy/authentication-strategy.service';
 import { OrganizationService } from './organization/organization.service';
 import { SpaceService } from './space/space.service';
+import { SpaceUserService } from './space-user/space-user.service';
 import { AuthenticationStrategyConsole } from './authentication-strategy/authentication-strategy.console';
 import { OrganizationConsole } from './organization/organization.console';
 import { ApiKeyConsole } from './api-key/api-key.console';
@@ -34,6 +35,7 @@ const providerList = [
 	AuthenticationStrategyService,
 	OrganizationService,
 	SpaceService,
+	SpaceUserService,
 	NotificationService,
 	// CLI_SERVICES_REF
 	// CRON services

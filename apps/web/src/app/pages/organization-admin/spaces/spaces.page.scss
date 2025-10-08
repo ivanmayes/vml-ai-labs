@@ -18,6 +18,19 @@
 		gap: 0.5rem;
 	}
 
+	.space-name-link {
+		color: var(--primary-color);
+		cursor: pointer;
+		text-decoration: none;
+		font-weight: 500;
+		transition: color 0.2s ease;
+
+		&:hover {
+			color: var(--primary-color-hover);
+			text-decoration: underline;
+		}
+	}
+
 	.text-center {
 		text-align: center;
 	}

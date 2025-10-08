@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { SessionQuery } from '../../../state/session/session.query';
@@ -30,7 +31,8 @@ export class SpacesPage implements OnInit, OnDestroy {
 		private readonly sessionQuery: SessionQuery,
 		private readonly messageService: MessageService,
 		private readonly dialogService: DialogService,
-		private readonly confirmationService: ConfirmationService
+		private readonly confirmationService: ConfirmationService,
+		private readonly router: Router
 	) {
 		// Debounce search input by 400ms
 		this.searchSubject.pipe(
@@ -172,5 +174,9 @@ export class SpacesPage implements OnInit, OnDestroy {
 
 	formatDate(dateString: string): string {
 		return new Date(dateString).toLocaleDateString();
+	}
+
+	navigateToSpaceAdmin(spaceId: string): void {
+		this.router.navigate(['/space', spaceId, 'admin']);
 	}
 }

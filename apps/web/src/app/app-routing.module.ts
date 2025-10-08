@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 import { AdminRoleGuard } from './shared/guards/admin-role.guard';
+import { SpaceAdminGuard } from './shared/guards/space-admin.guard';
 
 const routes: Routes = [
 	// Main Pages
@@ -10,6 +11,11 @@ const routes: Routes = [
 		path: 'organization/admin',
 		loadChildren: () => import('./pages/organization-admin/organization-admin.module').then(m => m.OrganizationAdminModule),
 		canActivate: [AdminRoleGuard]
+	},
+	{
+		path: 'space/:id/admin',
+		loadChildren: () => import('./pages/space-admin/space-admin.module').then(m => m.SpaceAdminPageModule),
+		canActivate: [SpaceAdminGuard]
 	},
 	{
 		path: 'sso/okta/:orgId/login',
