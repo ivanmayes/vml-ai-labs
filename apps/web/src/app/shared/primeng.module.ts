@@ -38,6 +38,8 @@ import { AccordionModule } from 'primeng/accordion';
 import { TooltipModule } from 'primeng/tooltip';
 import { MenuModule } from 'primeng/menu';
 import { ToastModule } from 'primeng/toast';
+import { OverlayModule } from 'primeng/overlay';
+import { PopoverModule } from 'primeng/popover';
 
 // Misc Components
 import { DividerModule } from 'primeng/divider';
@@ -76,6 +78,8 @@ const primeNgModules = [
 	TooltipModule,
 	MenuModule,
 	ToastModule,
+	OverlayModule,
+	PopoverModule,
 	MessageModule,
 
 	// Data Components

@@ -1,22 +1,38 @@
+/**
+ * App Layout Styles
+ *
+ * UX Design decisions:
+ * - Fixed sidebar (64px) with content area offset to prevent overlap
+ * - Content area scrolls independently without creating layout issues
+ * - No forced scrolling on empty pages - natural content flow
+ * - Responsive: sidebar overlays on mobile (already fixed in sidebar.scss)
+ */
+
 .app-container {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
   background-color: var(--p-surface-ground);
 }
 
+app-sidebar {
+  flex-shrink: 0;
+}
+
 .main-content {
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   height: 100vh;
   position: relative;
 
+  /* Full width when no sidebar (logged out) */
   &.full-width {
-    grid-column: 1 / -1;
+    margin-left: 0;
   }
 
+  /* Custom scrollbar styling */
   &::-webkit-scrollbar {
     width: 8px;
   }
@@ -33,6 +49,9 @@
       background: var(--p-surface-400);
     }
   }
+
+  /* Ensure smooth scrolling */
+  scroll-behavior: smooth;
 }
 
 .loading {
@@ -48,13 +67,10 @@
   z-index: 9999;
 }
 
-// Responsive adjustments
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .app-container {
-    grid-template-columns: 1fr;
-  }
-  
   .main-content {
-    margin-left: 0;
+    /* No left margin on mobile - sidebar is overlaid */
+    margin-left: 0 !important;
   }
 }

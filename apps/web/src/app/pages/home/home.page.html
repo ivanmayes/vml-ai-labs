@@ -1,6 +1,148 @@
-<div class="page-container">
-	<h3 class="page-title">Home</h3>
-	<div class="content-area">
-		<pre class="data-display">{{sampleData | json}}</pre>
-	</div>
+<!--
+  Home Page - Welcome & Quick Start
+
+  UX Design decisions:
+  - Hero section provides welcoming introduction to the boilerplate
+  - Setup cards guide users through essential configuration steps
+  - Clear visual hierarchy with icons, titles, and descriptions
+  - Responsive grid layout adapts to different screen sizes
+  - Actionable buttons for each setup step
+-->
+<div class="home-page">
+	<!-- Hero Section -->
+	<section class="hero-section">
+		<div class="hero-content">
+			<h1 class="hero-title">Welcome to Your Boilerplate</h1>
+			<p class="hero-subtitle">
+				A modern Angular application starter with PrimeNG components, state management, and authentication built-in.
+				Get started by configuring your application and exploring the features below.
+			</p>
+			<div class="hero-actions">
+				<p-button
+					label="Get Started"
+					icon="pi pi-arrow-down"
+					iconPos="right"
+					(onClick)="scrollToSetup()"
+				/>
+			</div>
+		</div>
+	</section>
+
+	<!-- Setup Cards Section -->
+	<section class="setup-section" #setupSection>
+		<h2 class="section-title">Quick Setup Guide</h2>
+		<p class="section-description">
+			Follow these steps to configure your application and start building
+		</p>
+
+		<div class="setup-grid">
+			<!-- Setup Card 1: API Configuration -->
+			<p-card styleClass="setup-card">
+				<ng-template pTemplate="header">
+					<div class="card-icon-header">
+						<i class="pi pi-server card-icon"></i>
+					</div>
+				</ng-template>
+				<ng-template pTemplate="content">
+					<h3 class="card-title">Configure Your API</h3>
+					<p class="card-description">
+						Set up your backend API endpoints and environment configuration.
+						Update the environment files to connect to your backend services.
+					</p>
+					<ul class="card-checklist">
+						<li><i class="pi pi-check-circle"></i> Update environment.ts files</li>
+						<li><i class="pi pi-check-circle"></i> Configure API base URL</li>
+						<li><i class="pi pi-check-circle"></i> Set up authentication endpoints</li>
+					</ul>
+				</ng-template>
+			</p-card>
+
+			<!-- Setup Card 2: Theme Customization -->
+			<p-card styleClass="setup-card">
+				<ng-template pTemplate="header">
+					<div class="card-icon-header">
+						<i class="pi pi-palette card-icon"></i>
+					</div>
+				</ng-template>
+				<ng-template pTemplate="content">
+					<h3 class="card-title">Customize Theme</h3>
+					<p class="card-description">
+						Personalize your application's look and feel with our comprehensive design system
+						and PrimeNG theme variables.
+					</p>
+					<ul class="card-checklist">
+						<li><i class="pi pi-check-circle"></i> Modify color palette</li>
+						<li><i class="pi pi-check-circle"></i> Adjust typography settings</li>
+						<li><i class="pi pi-check-circle"></i> Configure component themes</li>
+					</ul>
+				</ng-template>
+			</p-card>
+
+			<!-- Setup Card 3: Add Your First Page -->
+			<p-card styleClass="setup-card">
+				<ng-template pTemplate="header">
+					<div class="card-icon-header">
+						<i class="pi pi-file-plus card-icon"></i>
+					</div>
+				</ng-template>
+				<ng-template pTemplate="content">
+					<h3 class="card-title">Add Your First Page</h3>
+					<p class="card-description">
+						Learn how to create new pages and routes in your Angular application.
+						Use our page templates to get started quickly.
+					</p>
+					<ul class="card-checklist">
+						<li><i class="pi pi-check-circle"></i> Generate page component</li>
+						<li><i class="pi pi-check-circle"></i> Configure routing</li>
+						<li><i class="pi pi-check-circle"></i> Add to navigation menu</li>
+					</ul>
+				</ng-template>
+			</p-card>
+
+			<!-- Setup Card 4: Deploy Your App -->
+			<p-card styleClass="setup-card">
+				<ng-template pTemplate="header">
+					<div class="card-icon-header">
+						<i class="pi pi-cloud-upload card-icon"></i>
+					</div>
+				</ng-template>
+				<ng-template pTemplate="content">
+					<h3 class="card-title">Deploy Your App</h3>
+					<p class="card-description">
+						Ready to go live? Follow our deployment guide to publish your application
+						to various hosting platforms.
+					</p>
+					<ul class="card-checklist">
+						<li><i class="pi pi-check-circle"></i> Build for production</li>
+						<li><i class="pi pi-check-circle"></i> Configure hosting</li>
+						<li><i class="pi pi-check-circle"></i> Set up CI/CD pipeline</li>
+					</ul>
+				</ng-template>
+			</p-card>
+		</div>
+	</section>
+
+	<!-- Features Overview Section -->
+	<section class="features-section">
+		<h2 class="section-title">What's Included</h2>
+		<div class="features-grid">
+			<div class="feature-item" *ngFor="let feature of features">
+				<i [class]="'pi pi-' + feature.icon + ' feature-icon'"></i>
+				<h4 class="feature-title">{{ feature.title }}</h4>
+				<p class="feature-description">{{ feature.description }}</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Debug Data Section (collapsible) -->
+	<section class="debug-section" *ngIf="sampleData">
+		<p-accordion>
+			<p-accordion-panel>
+				<p-accordion-header>Debug: Sample API Data</p-accordion-header>
+				<p-accordion-content>
+					<pre class="data-display">{{ sampleData | json }}</pre>
+				</p-accordion-content>
+			</p-accordion-panel>
+		</p-accordion>
+	</section>
 </div>

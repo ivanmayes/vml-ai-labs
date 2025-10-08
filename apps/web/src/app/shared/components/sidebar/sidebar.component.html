@@ -1,15 +1,23 @@
-<nav class="sidebar">
+<!--
+  Compact sidebar navigation with icon-only buttons
+  UX Design decisions:
+  - 64px width for comfortable touch targets while staying compact
+  - Fixed positioning to avoid affecting content scroll
+  - Icons with tooltips on hover for clarity without labels
+  - User avatar at bottom with enhanced popover menu
+  - Accessibility: ARIA labels, keyboard navigation, focus states
+-->
+<nav class="sidebar" role="navigation" aria-label="Main navigation">
 	<!-- Logo Section -->
 	<div class="sidebar-header">
-		<p-button
-			icon="pi pi-th-large"
-			[text]="true"
-			class="logo-button"
+		<img
+			src="assets/logo.png"
+			alt="Logo"
+			class="sidebar-logo"
 			[routerLink]="['/home']"
 			[pTooltip]="(settings$ | async)?.name || 'Home'"
 			tooltipPosition="right"
-		>
-		</p-button>
+		/>
 	</div>
 
 	<!-- Navigation Items -->
@@ -17,71 +25,71 @@
 		<ng-container *ngFor="let item of sidebarService.navigationItems()">
 			<p-button
 				[icon]="'pi pi-' + item.icon"
-				[text]="true"
+				[text]="!(item.route && isActiveRoute(item.route))"
+				[severity]="(item.route && isActiveRoute(item.route)) ? 'primary' : undefined"
 				class="nav-item"
-				[class.active]="item.route && isActiveRoute(item.route)"
 				(onClick)="handleItemClick(item)"
 				[pTooltip]="item.label"
 				tooltipPosition="right"
+				[attr.aria-label]="'Navigate to ' + item.label"
+				[attr.aria-current]="item.route && isActiveRoute(item.route) ? 'page' : null"
 			>
+				<!-- Badge for notifications/counts -->
 				<span
 					class="item-badge"
 					*ngIf="item.badge"
 					[ngClass]="'badge-' + (item.badgeColor || 'primary')"
+					[attr.aria-label]="item.badge + ' notifications'"
 				>
 					{{ item.badge }}
 				</span>
 			</p-button>
 
+			<!-- Optional divider between sections -->
 			<p-divider
 				*ngIf="item.dividerAfter"
 				class="nav-divider"
-			></p-divider>
+			/>
 		</ng-container>
 	</div>
 
 	<!-- User Section at Bottom -->
 	<div class="sidebar-footer">
-		<!-- Theme Toggle -->
-		<!-- <p-button
-      [icon]="themeService.isDarkMode() ? 'pi pi-sun' : 'pi pi-moon'"
-      [text]="true"
-      class="theme-toggle"
-      (onClick)="themeService.toggleTheme()"
-      [pTooltip]="'Switch to ' + (themeService.isDarkMode() ? 'light' : 'dark') + ' mode'"
-      tooltipPosition="right">
-    </p-button> -->
-
-		<!-- User Menu -->
+		<!-- User Menu with Enhanced OverlayPanel -->
 		<div class="user-section" *ngIf="user$ | async as user">
-			<p-button
-				[text]="true"
-				(onClick)="userMenu.toggle($event)"
-				[pTooltip]="user.email"
-				tooltipPosition="right"
-			>
+			<div class="user-avatar" (click)="userOverlay.toggle($event)" [pTooltip]="user.email" tooltipPosition="right">
 				{{ getUserInitial(user) }}
-			</p-button>
+			</div>
 
-			<p-menu #userMenu [model]="userMenuItems" [popup]="true">
-				<ng-template pTemplate="start">
-					<div class="user-menu-header">
+			<!-- Enhanced user popover with better styling -->
+			<p-popover #userOverlay [dismissable]="true" styleClass="user-overlay-panel">
+				<div class="user-menu-content">
+					<!-- User Info Section -->
+					<div class="user-info-section">
 						<div class="user-avatar-large">
 							{{ getUserInitial(user) }}
 						</div>
 						<div class="user-details">
 							<div class="user-email">{{ user.email }}</div>
-							<div
-								class="app-name"
-								*ngIf="settings$ | async as settings"
-							>
+							<div class="app-name" *ngIf="settings$ | async as settings">
 								{{ settings.name }}
 							</div>
 						</div>
 					</div>
-					<p-divider></p-divider>
-				</ng-template>
-			</p-menu>
+
+					<p-divider />
+
+					<!-- Logout Button -->
+					<button
+						class="menu-item-button"
+						(click)="logout(); userOverlay.hide()"
+						[attr.aria-label]="'Logout'"
+					>
+						<i class="pi pi-sign-out"></i>
+						<span>Logout</span>
+					</button>
+				</div>
+			</p-popover>
 		</div>
 	</div>
 </nav>
