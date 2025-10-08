@@ -1,14 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
-// Import the new design system first
+// Import the design system
 @import './theme/design-system/index';
 
-// Angular Material prebuilt theme (as fallback for components not yet migrated)
-@Import '~@angular/material/prebuilt-themes/azure-blue.css';
-
-// Google Fonts
+// Google Fonts (Roboto still used for typography)
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-// Legacy utilities and variables (to be migrated)
+// Utilities and variables
 @import './theme/utils';
 @import './theme/variables';
