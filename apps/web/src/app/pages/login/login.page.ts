@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OktaAuth } from '@okta/okta-auth-js';
 import { Observable } from 'rxjs';
@@ -14,10 +15,21 @@ import { environment } from '../../../environments/environment';
 
 /**
  * Login Page
- * This page houses the different possible authentication strategies that
- * a user can use to login to the system.  Any authenticated page or api call with an invalid token
- * redirects the user to this page.  Depending on the user's email, different modules surface to
- * complete the authentication
+ * Modern, accessible login experience with two-step verification
+ *
+ * UX Flow:
+ * 1. User enters email address
+ * 2. System determines auth strategy (basic OTP, Okta SSO, or SAML)
+ * 3. For basic auth: User enters 6-digit OTP code
+ * 4. For SSO: User is redirected to SSO provider
+ *
+ * Features:
+ * - Reactive forms with validation
+ * - PrimeNG InputOtp for optimal code entry
+ * - Auto-submit on code completion
+ * - Resend code functionality
+ * - Comprehensive error handling
+ * - ARIA accessibility labels
  */
 @Component({
     selector: 'app-login',
@@ -27,16 +39,31 @@ import { environment } from '../../../environments/environment';
     standalone: false
 })
 export class LoginComponent implements OnInit, OnDestroy {
+	// Observables
 	public siteSettings$: Observable<GlobalSettings>;
-	public email: string;
-	public emailError: any;
-	public settingsError: string;
 	public loading$: Observable<boolean>;
+
+	// Forms
+	public emailForm: FormGroup;
+	public otpForm: FormGroup;
+
+	// State management
 	public state: 'enter-email' | 'basic' | 'okta' = 'enter-email';
+	public email: string;
 	public authConfig: VerifyResponse;
+
+	// Error handling
+	public emailError: any;
+	public otpError: boolean = false;
+	public settingsError: string;
+	public resendSuccess: boolean = false;
+	public isSubmitting: boolean = false;
+
+	// Configuration
 	public exclusiveServer = environment.exclusive;
 
 	constructor(
+		private readonly formBuilder: FormBuilder,
 		private readonly globalQuery: GlobalQuery,
 		private readonly globalService: GlobalService,
 		private readonly sessionQuery: SessionQuery,
@@ -46,6 +73,25 @@ export class LoginComponent implements OnInit, OnDestroy {
 	) {
 		this.siteSettings$ = this.globalQuery.select('settings');
 		this.loading$ = this.sessionQuery.selectLoading();
+
+		// Initialize email form with validation
+		this.emailForm = this.formBuilder.group({
+			email: ['', [Validators.required, Validators.email]]
+		});
+
+		// Initialize OTP form
+		// Note: InputOtp component expects a string of digits
+		this.otpForm = this.formBuilder.group({
+			code: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]]
+		});
+
+		// Subscribe to OTP form changes for auto-submit
+		this.otpForm.get('code')?.valueChanges.subscribe(value => {
+			// Auto-submit when 6 digits are entered
+			if (value && value.length === 6) {
+				this.activateCode();
+			}
+		});
 	}
 
 	async ngOnInit() {
@@ -101,27 +147,112 @@ export class LoginComponent implements OnInit, OnDestroy {
 	}
 
 	/**
-	 * Fires when the user submits their email address to the API.
-	 * Depending on what we get back, we show the right auth strategy to finish the login.
+	 * Handles email form submission
+	 * UX: Validates email and requests verification code from API
+	 * Routes to appropriate auth strategy based on organization configuration
 	 */
 	public submit() {
+		// Reset error state
 		this.emailError = undefined;
 
-		// Request a code from the API
-		this.sessionService.requestCode(this.email?.toLowerCase()).subscribe(
+		// Prevent submission if form is invalid
+		if (this.emailForm.invalid) {
+			this.emailForm.markAllAsTouched();
+			return;
+		}
+
+		// Get email value from form
+		this.email = this.emailForm.get('email')?.value?.toLowerCase();
+
+		// Request verification code or SSO redirect from API
+		this.sessionService.requestCode(this.email).subscribe(
 			response => {
 				this.authConfig = response;
 
+				// Route to appropriate auth strategy
 				if (response?.data?.strategy === 'okta') {
-					// Redirect to the okta login site
+					// Redirect to Okta SSO login
 					this.oktaLoginRedirect(this.authConfig);
 				} else if (response?.data?.strategy === 'saml2.0') {
+					// Redirect to SAML SSO provider
 					window.location.href = response?.data?.authenticationUrl;
 				} else {
+					// Show basic auth OTP verification
 					this.state = response?.data?.strategy as any;
+					// Reset OTP form for new code entry
+					this.otpForm.reset();
+					this.otpError = false;
 				}
 			},
 			err => this.handleError(err?.error?.statusCode)
+		);
+	}
+
+	/**
+	 * Handles OTP code verification
+	 * UX: Validates 6-digit code and completes authentication
+	 * Auto-called when user enters 6th digit for seamless experience
+	 */
+	public activateCode() {
+		// Reset error state
+		this.otpError = false;
+
+		// Prevent submission if form is invalid or already loading
+		if (this.otpForm.invalid || this.isSubmitting) {
+			return;
+		}
+
+		this.isSubmitting = true;
+
+		// Get OTP code from form
+		const code = this.otpForm.get('code')?.value;
+
+		// Submit code to API for verification
+		this.sessionService.activateEmail(this.email, code).subscribe(
+			() => {
+				// Success - proceed to logged in state
+				this.isSubmitting = false;
+				this.loggedIn();
+			},
+			err => {
+				// Show error and allow retry
+				this.isSubmitting = false;
+				this.otpError = true;
+				this.sessionService.setLoading(false);
+				// Clear error after 4 seconds for cleaner UX
+				setTimeout(() => (this.otpError = false), 4000);
+				// Reset form to allow new code entry
+				this.otpForm.patchValue({ code: '' });
+			}
+		);
+	}
+
+	/**
+	 * Resends verification code to user's email
+	 * UX: Provides escape hatch if code doesn't arrive or expires
+	 */
+	public resendCode() {
+		// Reset success state
+		this.resendSuccess = false;
+		this.otpError = false;
+
+		// Request new code
+		this.sessionService.requestCode(this.email).subscribe(
+			response => {
+				// Update auth config with new token (for dev mode display)
+				this.authConfig = response;
+				// Show success feedback
+				this.resendSuccess = true;
+				// Hide success message after 3 seconds
+				setTimeout(() => (this.resendSuccess = false), 3000);
+				// Reset OTP form for new code entry
+				this.otpForm.reset();
+			},
+			err => {
+				// Show error if resend fails
+				this.otpError = true;
+				setTimeout(() => (this.otpError = false), 4000);
+			}
 		);
 	}
 
@@ -205,12 +336,22 @@ export class LoginComponent implements OnInit, OnDestroy {
 	}
 
 	/**
-	 * Default Error Handler
-	 * @param err
+	 * Handles page reload for error recovery
+	 * UX: Provides user action when system errors occur
+	 */
+	public reloadPage() {
+		window.location.reload();
+	}
+
+	/**
+	 * Handles email submission errors
+	 * UX: Shows contextual error messages with auto-dismiss
+	 * @param err Error code from API
 	 */
 	public async handleError(err: string) {
 		this.emailError = err;
 		this.sessionService.setLoading(false);
+		// Auto-dismiss error after 4 seconds
 		setTimeout(() => (this.emailError = undefined), 4000);
 	}
 }

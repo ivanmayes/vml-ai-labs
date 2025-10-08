@@ -19,6 +19,10 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { DatePickerModule } from 'primeng/datepicker';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { SliderModule } from 'primeng/slider';
+import { InputOtpModule } from 'primeng/inputotp';
+
+// Message Components
+import { MessageModule } from 'primeng/message';
 
 // Data Components
 import { TableModule } from 'primeng/table';
@@ -64,6 +68,7 @@ const primeNgModules = [
 	DatePickerModule,
 	AutoCompleteModule,
 	SliderModule,
+	InputOtpModule,
 
 	// Dialog/Overlay Components
 	DialogModule,
@@ -71,6 +76,7 @@ const primeNgModules = [
 	TooltipModule,
 	MenuModule,
 	ToastModule,
+	MessageModule,
 
 	// Data Components
 	TableModule,
