@@ -1,30 +1,10 @@
-// Design System Main Entry Point
-// Import all design system modules in the correct order
+// PrimeNG Theme Customizations
+@use './primeng-theme';
 
-// 1. Design tokens (spacing, transitions, etc.)
-@import './tokens';
-
-// 2. Color palette
-@import './palette';
-
-// 3. Theme definitions (light/dark)
-@import './themes';
-
-// 4. Typography system
-@import './typography';
-
-// 5. PrimeNG theme customizations
-@import './primeng-theme';
-
-// Global styles
+// Global base styles
 html {
-  // Smooth scrolling
   scroll-behavior: smooth;
-  
-  // Prevent text size adjustment on mobile
   -webkit-text-size-adjust: 100%;
-  
-  // Box sizing
   box-sizing: border-box;
 }
 
@@ -35,256 +15,36 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--theme-background);
-  color: var(--theme-text-primary);
-  transition: background-color var(--transition-base) var(--ease-in-out),
-              color var(--transition-base) var(--ease-in-out);
+  font-family: var(--p-font-family);
+  background-color: var(--p-surface-ground);
+  color: var(--p-text-color);
 }
 
-// Scrollbar styling
+// Custom scrollbar styling
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--theme-scrollbar-track);
+  background: var(--p-surface-100);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--theme-scrollbar-thumb);
-  border-radius: var(--radius-sm);
-  
+  background: var(--p-surface-300);
+  border-radius: 4px;
+
   &:hover {
-    background: var(--theme-text-secondary);
+    background: var(--p-surface-400);
   }
 }
 
-// Focus visible (for keyboard navigation)
+// Focus visible for keyboard navigation
 :focus-visible {
-  outline: var(--focus-ring-width) solid var(--theme-focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: 2px;
 }
 
-// Remove default focus for mouse users
 :focus:not(:focus-visible) {
   outline: none;
-}
-
-// Utility classes for elevation
-.elevation-0 {
-  box-shadow: var(--theme-elevation-0);
-}
-
-.elevation-1 {
-  box-shadow: var(--theme-elevation-1);
-}
-
-.elevation-2 {
-  box-shadow: var(--theme-elevation-2);
-}
-
-.elevation-3 {
-  box-shadow: var(--theme-elevation-3);
-}
-
-.elevation-4 {
-  box-shadow: var(--theme-elevation-4);
-}
-
-.elevation-6 {
-  box-shadow: var(--theme-elevation-6);
-}
-
-.elevation-8 {
-  box-shadow: var(--theme-elevation-8);
-}
-
-.elevation-12 {
-  box-shadow: var(--theme-elevation-12);
-}
-
-.elevation-16 {
-  box-shadow: var(--theme-elevation-16);
-}
-
-.elevation-24 {
-  box-shadow: var(--theme-elevation-24);
-}
-
-// Surface backgrounds
-.surface {
-  background-color: var(--theme-surface);
-  color: var(--theme-text-primary);
-}
-
-.surface-variant {
-  background-color: var(--theme-surface-variant);
-  color: var(--theme-text-primary);
-}
-
-.background {
-  background-color: var(--theme-background);
-  color: var(--theme-text-primary);
-}
-
-.background-paper {
-  background-color: var(--theme-background-paper);
-  color: var(--theme-text-primary);
-}
-
-// Color utilities
-.bg-primary {
-  background-color: var(--theme-primary);
-  color: var(--theme-on-primary);
-}
-
-.bg-secondary {
-  background-color: var(--theme-secondary);
-  color: var(--theme-on-secondary);
-}
-
-.bg-error {
-  background-color: var(--theme-error);
-  color: var(--theme-on-error);
-}
-
-.bg-warning {
-  background-color: var(--theme-warning);
-  color: var(--theme-on-warning);
-}
-
-.bg-info {
-  background-color: var(--theme-info);
-  color: var(--theme-on-info);
-}
-
-.bg-success {
-  background-color: var(--theme-success);
-  color: var(--theme-on-success);
-}
-
-// Border utilities
-.border {
-  border: var(--border-width-thin) solid var(--theme-border);
-}
-
-.border-top {
-  border-top: var(--border-width-thin) solid var(--theme-border);
-}
-
-.border-right {
-  border-right: var(--border-width-thin) solid var(--theme-border);
-}
-
-.border-bottom {
-  border-bottom: var(--border-width-thin) solid var(--theme-border);
-}
-
-.border-left {
-  border-left: var(--border-width-thin) solid var(--theme-border);
-}
-
-.border-none {
-  border: none !important;
-}
-
-// Border radius utilities
-.rounded-none {
-  border-radius: 0 !important;
-}
-
-.rounded-xs {
-  border-radius: var(--radius-xs) !important;
-}
-
-.rounded-sm {
-  border-radius: var(--radius-sm) !important;
-}
-
-.rounded-md {
-  border-radius: var(--radius-md) !important;
-}
-
-.rounded-lg {
-  border-radius: var(--radius-lg) !important;
-}
-
-.rounded-xl {
-  border-radius: var(--radius-xl) !important;
-}
-
-.rounded-xxl {
-  border-radius: var(--radius-xxl) !important;
-}
-
-.rounded-full {
-  border-radius: var(--radius-full) !important;
-}
-
-// Opacity utilities
-.opacity-disabled {
-  opacity: var(--opacity-disabled) !important;
-}
-
-.opacity-hover {
-  opacity: var(--opacity-hover) !important;
-}
-
-.opacity-focus {
-  opacity: var(--opacity-focus) !important;
-}
-
-.opacity-selected {
-  opacity: var(--opacity-selected) !important;
-}
-
-// Transition utilities
-.transition-fast {
-  transition-duration: var(--transition-fast) !important;
-}
-
-.transition-base {
-  transition-duration: var(--transition-base) !important;
-}
-
-.transition-slow {
-  transition-duration: var(--transition-slow) !important;
-}
-
-.transition-none {
-  transition: none !important;
-}
-
-// Z-index utilities
-.z-dropdown {
-  z-index: var(--z-index-dropdown) !important;
-}
-
-.z-sticky {
-  z-index: var(--z-index-sticky) !important;
-}
-
-.z-fixed {
-  z-index: var(--z-index-fixed) !important;
-}
-
-.z-modal-backdrop {
-  z-index: var(--z-index-modal-backdrop) !important;
-}
-
-.z-modal {
-  z-index: var(--z-index-modal) !important;
-}
-
-.z-popover {
-  z-index: var(--z-index-popover) !important;
-}
-
-.z-tooltip {
-  z-index: var(--z-index-tooltip) !important;
-}
-
-.z-toast {
-  z-index: var(--z-index-toast) !important;
 }

@@ -41,7 +41,7 @@ import Lara from '@primeng/themes/lara';
 					cssLayer: false
 				}
 			},
-			ripple: true,
+			ripple: false,
 			inputVariant: 'outlined'
 		})
 	],
