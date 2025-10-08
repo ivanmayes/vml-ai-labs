@@ -12,7 +12,27 @@ import { RequestInterceptor } from './_core/interceptors/request.interceptor';
 
 // PrimeNG Configuration
 import { providePrimeNG } from 'primeng/config';
+import { definePreset } from '@primeng/themes';
 import Lara from '@primeng/themes/lara';
+
+// Define custom blue theme based on Lara
+const LaraBlue = definePreset(Lara, {
+	semantic: {
+		primary: {
+			50: '{blue.50}',
+			100: '{blue.100}',
+			200: '{blue.200}',
+			300: '{blue.300}',
+			400: '{blue.400}',
+			500: '{blue.500}',
+			600: '{blue.600}',
+			700: '{blue.700}',
+			800: '{blue.800}',
+			900: '{blue.900}',
+			950: '{blue.950}'
+		}
+	}
+});
 
 @NgModule({
 	declarations: [AppComponent],
@@ -34,14 +54,14 @@ import Lara from '@primeng/themes/lara';
 		},
 		providePrimeNG({
 			theme: {
-				preset: Lara,
+				preset: LaraBlue,
 				options: {
 					prefix: 'p',
 					darkModeSelector: '.p-dark',
 					cssLayer: false
 				}
 			},
-			ripple: false,
+			ripple: true,
 			inputVariant: 'outlined'
 		})
 	],

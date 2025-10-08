@@ -10,6 +10,54 @@
   // Border radius adjustments for modern UI
   --p-border-radius: 6px;
   --p-rounded-border-radius: 2rem;
+
+  // Primary Color - Blue Palette (Material Blue)
+  --p-primary-50: #e3f2fd;
+  --p-primary-100: #bbdefb;
+  --p-primary-200: #90caf9;
+  --p-primary-300: #64b5f6;
+  --p-primary-400: #42a5f5;
+  --p-primary-500: #2196f3;
+  --p-primary-600: #1e88e5;
+  --p-primary-700: #1976d2;
+  --p-primary-800: #1565c0;
+  --p-primary-900: #0d47a1;
+  --p-primary-950: #0a3d91;
+
+  // Set the main primary color variable
+  --p-primary-color: var(--p-primary-500);
+  --p-primary-contrast-color: #ffffff;
+
+  // Button primary colors
+  --p-button-primary-background: var(--p-primary-500);
+  --p-button-primary-hover-background: var(--p-primary-600);
+  --p-button-primary-active-background: var(--p-primary-700);
+  --p-button-primary-border-color: var(--p-primary-500);
+  --p-button-primary-hover-border-color: var(--p-primary-600);
+  --p-button-primary-active-border-color: var(--p-primary-700);
+  --p-button-primary-color: #ffffff;
+  --p-button-primary-hover-color: #ffffff;
+  --p-button-primary-active-color: #ffffff;
+
+  // Link colors
+  --p-button-link-color: var(--p-primary-color);
+  --p-button-link-hover-color: var(--p-primary-600);
+  --p-button-link-active-color: var(--p-primary-700);
+
+  // Text button primary colors
+  --p-button-text-primary-hover-background: var(--p-primary-50);
+  --p-button-text-primary-active-background: var(--p-primary-100);
+  --p-button-text-primary-color: var(--p-primary-color);
+
+  // Outlined button primary colors
+  --p-button-outlined-primary-hover-background: var(--p-primary-50);
+  --p-button-outlined-primary-active-background: var(--p-primary-100);
+  --p-button-outlined-primary-border-color: var(--p-primary-500);
+  --p-button-outlined-primary-color: var(--p-primary-color);
+
+  // Focus ring
+  --p-button-primary-focus-ring-color: var(--p-primary-500);
+  --p-focus-ring-color: var(--p-primary-500);
 }
 
 // Dark theme overrides
@@ -24,7 +72,85 @@
   --p-text-color: #fafafa;
   --p-text-secondary-color: #d4d4d8;
   --p-text-muted-color: #a1a1aa;
+
+  // Use a brighter blue for dark mode visibility
+  --p-primary-color: var(--p-primary-400);
+  --p-primary-contrast-color: #000000;
+
+  // Button adjustments for dark mode
+  --p-button-primary-background: var(--p-primary-500);
+  --p-button-primary-hover-background: var(--p-primary-400);
+  --p-button-primary-active-background: var(--p-primary-300);
 }
 
 // Component-specific customizations
+.p-button {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.02857em;
+  transition: all 0.2s ease-in-out;
+}
+
+.p-inputtext,
+.p-textarea,
+.p-dropdown,
+.p-multiselect {
+  &:enabled:focus {
+    box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.2);
+  }
+}
+
+.p-dialog {
+  .p-dialog-header {
+    padding: 1.25rem 1.5rem;
+    font-weight: 500;
+  }
+
+  .p-dialog-content {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+  }
+
+  .p-dialog-footer {
+    padding: 1rem 1.5rem;
+  }
+}
+
+.p-toast {
+  .p-toast-message {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.p-menu {
+  .p-menuitem-link {
+    transition: background-color 0.2s, color 0.2s;
+
+    &:hover {
+      background-color: var(--p-surface-100);
+    }
+  }
+}
+
+.p-datatable {
+  .p-datatable-thead > tr > th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+}
+
+.p-card {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+
+  .p-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .p-card-subtitle {
+    color: var(--p-text-secondary-color);
+    font-size: 0.875rem;
+  }
+}
 

@@ -1,9 +1,9 @@
 <p-toast></p-toast>
 
 <div class="app-container" *ngIf="loaded">
-	<app-sidebar></app-sidebar>
+	<app-sidebar *ngIf="isLoggedIn$ | async"></app-sidebar>
 
-	<main class="main-content">
+	<main class="main-content" [class.full-width]="!(isLoggedIn$ | async)">
 		<router-outlet></router-outlet>
 	</main>
 </div>

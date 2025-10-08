@@ -1,12 +1,11 @@
 <div class="login-container content-group" *ngIf="siteSettings$ | async as settings">
 	<div class="lockup">
-		<img [src]="(siteSettings$ | async)?.logo || 'assets/vmly-r-logo.svg'" />
+		<img [src]="(siteSettings$ | async)?.logo || 'assets/logo.png'" />
 	</div>
 
 	<form class="enter-email" *ngIf="state === 'enter-email'" (submit)="submit()">
 		<div class="input-group">
 			<div class="p-field">
-				<label for="email">Email</label>
 				<input
 					#emailField="ngModel"
 					pInputText
@@ -23,7 +22,7 @@
 
 		<p-button
 			type="submit"
-			label="Enter"
+			label="Submit"
 			styleClass="submit button-small"
 			[disabled]="!email || !emailField.valid || (loading$ | async)"
 			[loading]="loading$ | async"

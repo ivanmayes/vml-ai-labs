@@ -31,6 +31,7 @@ import { Hierarchy } from '../../../api/src/_core/third-party/wpp-open/models';
 export class AppComponent {
 	public loaded = false;
 	public headerSettings$: Observable<HeaderSettings>;
+	public isLoggedIn$: Observable<boolean>;
 
 	// Detect keypresses for setting admin mode
 	@HostListener('document:keydown', ['$event'])
@@ -52,6 +53,7 @@ export class AppComponent {
 		@Inject(DOCUMENT) private readonly document: Document
 	) {
 		this.headerSettings$ = this.globalQuery.select('header');
+		this.isLoggedIn$ = this.sessionQuery.isLoggedIn$;
 		this.initializeApp().catch(err => {
 			console.log(err);
 		});

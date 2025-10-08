@@ -4,7 +4,7 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: var(--theme-background);
+  background-color: var(--p-surface-ground);
 }
 
 .main-content {
@@ -12,21 +12,25 @@
   overflow-x: hidden;
   height: 100vh;
   position: relative;
-  
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+
   &::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   &::-webkit-scrollbar-track {
-    background: var(--theme-scrollbar-track);
+    background: var(--p-surface-100);
   }
-  
+
   &::-webkit-scrollbar-thumb {
-    background: var(--theme-scrollbar-thumb);
-    border-radius: var(--radius-sm);
-    
+    background: var(--p-surface-300);
+    border-radius: 4px;
+
     &:hover {
-      background: var(--theme-text-secondary);
+      background: var(--p-surface-400);
     }
   }
 }
@@ -40,8 +44,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--theme-background);
-  z-index: var(--z-index-modal);
+  background-color: var(--p-surface-ground);
+  z-index: 9999;
 }
 
 // Responsive adjustments

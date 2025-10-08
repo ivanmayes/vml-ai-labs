@@ -1,6 +1,6 @@
 # Theme System - PrimeNG v20
 
-This application uses PrimeNG v20's programmatic theming system with the Lara preset.
+This application uses PrimeNG v20's programmatic theming system with the Lara preset and a custom blue primary color palette (Material Blue).
 
 ## Architecture
 
@@ -34,6 +34,26 @@ theme/
 ```
 
 ## Customization
+
+### Color Palette
+
+The application uses a **Material Blue** color palette for the primary color:
+
+```scss
+--p-primary-50: #e3f2fd;   // Lightest blue
+--p-primary-100: #bbdefb;
+--p-primary-200: #90caf9;
+--p-primary-300: #64b5f6;
+--p-primary-400: #42a5f5;
+--p-primary-500: #2196f3;  // Main primary color
+--p-primary-600: #1e88e5;
+--p-primary-700: #1976d2;
+--p-primary-800: #1565c0;
+--p-primary-900: #0d47a1;  // Darkest blue
+--p-primary-950: #0a3d91;
+```
+
+These colors are defined in `_primeng-theme.scss` and can be customized to match your brand.
 
 ### CSS Variables
 PrimeNG v20 exposes CSS variables that can be overridden. Common variables:
