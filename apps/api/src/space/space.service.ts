@@ -30,4 +30,21 @@ export class SpaceService {
 	public async delete(id: string) {
 		return this.spaceRepository.delete(id);
 	}
+
+	public async findSpaces(orgId: string, query?: string) {
+		const qb = this.spaceRepository
+			.createQueryBuilder('space')
+			.where('space.organizationId = :orgId', { orgId });
+
+		// Add search filter if query is provided
+		if(query && query.trim()) {
+			qb.andWhere('LOWER(space.name) LIKE LOWER(:query)', {
+				query: `%${query}%`
+			});
+		}
+
+		qb.orderBy('space.created', 'DESC');
+
+		return qb.getMany();
+	}
 }

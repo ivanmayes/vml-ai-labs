@@ -63,30 +63,56 @@ export class InviteUserDialogComponent implements OnInit {
 		const formValue = this.form.value;
 		const organizationId = this.config.data?.organizationId;
 
-		// For now, we'll need to get the auth strategy ID from somewhere
-		// This is a simplified version - you might need to fetch this from the org
-		const authStrategyId = 'default-strategy-id'; // TODO: Get actual auth strategy
+		// Get the auth strategy ID - we need to fetch this from the organization
+		// For now, fetch the organization's authentication strategies
+		this.adminService.getOrganization(organizationId).subscribe({
+			next: (org) => {
+				// Use the first available authentication strategy
+				const authStrategyId = org.authenticationStrategies?.[0]?.id;
 
-		this.adminService.inviteUser(
-			organizationId,
-			formValue.email,
-			formValue.role,
-			authStrategyId,
-			{
-				nameFirst: formValue.nameFirst,
-				nameLast: formValue.nameLast
-			}
-		).subscribe({
-			next: () => {
-				this.loading = false;
-				this.ref.close(true);
+				if (!authStrategyId) {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'No authentication strategy found for organization',
+						life: 3000
+					});
+					this.loading = false;
+					return;
+				}
+
+				this.adminService.inviteUser(
+					organizationId,
+					formValue.email,
+					formValue.role,
+					authStrategyId,
+					{
+						nameFirst: formValue.nameFirst,
+						nameLast: formValue.nameLast
+					}
+				).subscribe({
+					next: () => {
+						this.loading = false;
+						this.ref.close(true);
+					},
+					error: (error) => {
+						console.error('Error inviting user:', error);
+						this.messageService.add({
+							severity: 'error',
+							summary: 'Error',
+							detail: error.error?.message || 'Failed to invite user',
+							life: 3000
+						});
+						this.loading = false;
+					}
+				});
 			},
 			error: (error) => {
-				console.error('Error inviting user:', error);
+				console.error('Error fetching organization:', error);
 				this.messageService.add({
 					severity: 'error',
 					summary: 'Error',
-					detail: error.error?.message || 'Failed to invite user',
+					detail: 'Failed to fetch organization details',
 					life: 3000
 				});
 				this.loading = false;

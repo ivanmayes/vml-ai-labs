@@ -29,6 +29,7 @@ export class GetUserOptions {
 export class GetAllUserOptions {
 	sortBy: string;
 	sortOrder: SortStrategy;
+	query?: string;
 }
 @Injectable()
 export class UserService {
@@ -203,10 +204,20 @@ export class UserService {
 	}
 
 	public async getAllUsers(options: GetAllUserOptions) {
-		const { sortBy, sortOrder } = options;
+		const { sortBy, sortOrder, query } = options;
 		const qb = this.userRepository
 			.createQueryBuilder('user')
 			.leftJoinAndSelect('user.authenticationStrategy', 'authenticationStrategy');
+
+		// Add search filter if query is provided
+		if(query && query.trim()) {
+			qb.where(
+				`(LOWER(user.email) LIKE LOWER(:query) OR
+				 LOWER(user.profile ->> 'nameFirst') LIKE LOWER(:query) OR
+				 LOWER(user.profile ->> 'nameLast') LIKE LOWER(:query))`,
+				{ query: `%${query}%` }
+			);
+		}
 
 		if(sortBy && sortBy != 'name') {
 			qb.orderBy(`user.${sortBy}`, sortOrder ?? 'ASC');

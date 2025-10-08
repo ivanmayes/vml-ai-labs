@@ -55,7 +55,8 @@ export class UserController {
 	public async getUsers(
 		@Param('orgId') orgId: string,
 		@Query('sortBy') sortBy: string,
-		@Query('order') sortOrder: string
+		@Query('order') sortOrder: string,
+		@Query('query') query?: string
 	) {
 		const organization: Organization = await this.organizationService
 			.findOne({
@@ -78,7 +79,8 @@ export class UserController {
 
 		const options: GetAllUserOptions = {
 			sortOrder: sortOrder == 'asc' ? SortStrategy.ASC : SortStrategy.DESC,
-			sortBy: sortBy || ''
+			sortBy: sortBy || '',
+			query: query || ''
 		};
 
 		const users = (await this.userService.getAllUsers(options)

@@ -1,69 +1,45 @@
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
-	<div class="p-fluid">
-		<div class="user-info" *ngIf="user">
-			<p><strong>User:</strong> {{ user.email }}</p>
-			<p><strong>Current Role:</strong> <p-badge [value]="user.role" severity="info"></p-badge></p>
-		</div>
+	<span class="p-text-secondary block mb-8">Change the user's role in the organization.</span>
 
-		<p-divider></p-divider>
-
-		<div class="field">
-			<label for="role">New Role *</label>
-			<p-select
-				id="role"
-				formControlName="role"
-				[options]="availableRoles"
-				optionLabel="label"
-				optionValue="value"
-				placeholder="Select a role"
-			></p-select>
-			<small class="p-info">
-				Select the new role for this user. You can only assign roles up to your permission level.
-			</small>
-		</div>
+	<div class="flex items-center gap-4 mb-4">
+		<label class="font-semibold w-24">User</label>
+		<span class="flex-auto">{{ user?.email }}</span>
 	</div>
 
-	<div class="dialog-footer">
-		<button
-			pButton
+	<div class="flex items-center gap-4 mb-4">
+		<label class="font-semibold w-24">Current</label>
+		<p-badge [value]="user?.role" [severity]="'info'" class="flex-auto"></p-badge>
+	</div>
+
+	<div class="flex items-center gap-4 mb-8">
+		<label for="role" class="font-semibold w-24">New Role</label>
+		<p-select
+			id="role"
+			formControlName="role"
+			[options]="availableRoles"
+			optionLabel="label"
+			optionValue="value"
+			placeholder="Select a role"
+			class="flex-auto"
+		></p-select>
+	</div>
+
+	<div class="flex justify-end gap-2">
+		<p-button
 			label="Cancel"
-			icon="pi pi-times"
-			class="p-button-text"
+			[text]="true"
+			severity="secondary"
 			type="button"
 			(click)="onCancel()"
 			[disabled]="loading"
-		></button>
-		<button
-			pButton
+		/>
+		<p-button
 			label="Update Role"
-			icon="pi pi-check"
+			[outlined]="true"
+			severity="secondary"
 			type="submit"
 			[loading]="loading"
 			[disabled]="form.invalid"
-		></button>
+		/>
 	</div>
 </form>
-
-<style>
-.user-info {
-	padding: 1rem 0;
-
-	p {
-		margin: 0.5rem 0;
-	}
-}
-
-.dialog-footer {
-	display: flex;
-	justify-content: flex-end;
-	gap: 0.5rem;
-	margin-top: 1.5rem;
-}
-
-.p-info {
-	display: block;
-	margin-top: 0.5rem;
-	color: var(--text-color-secondary);
-	font-size: 0.875rem;
-}
-</style>

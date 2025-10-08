@@ -54,7 +54,7 @@ export type PublicUser = Pick<User, 'id' | 'email'> & {
 	nameFirst?: string;
 	nameLast?: string;
 	//examplePermissions?: ExamplePermission[]
-	// deactivated: boolean;
+	deactivated: boolean;
 	email: string;
 	role: UserRole;
 	// authenticationStrategyId: string;
@@ -188,7 +188,7 @@ export class User {
 			email: this.email,
 			nameFirst: this.profile?.nameFirst,
 			nameLast: this.profile?.nameLast,
-			//deactivated: this.deactivated,
+			deactivated: this.deactivated,
 			//authenticationStrategyId: this.authenticationStrategyId,
 			role: this.role,
 			profile: this.profile

@@ -20,6 +20,8 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { SliderModule } from 'primeng/slider';
 import { InputOtpModule } from 'primeng/inputotp';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 
 // Message Components
 import { MessageModule } from 'primeng/message';
@@ -72,6 +74,8 @@ const primeNgModules = [
 	AutoCompleteModule,
 	SliderModule,
 	InputOtpModule,
+	IconFieldModule,
+	InputIconModule,
 
 	// Dialog/Overlay Components
 	DialogModule,

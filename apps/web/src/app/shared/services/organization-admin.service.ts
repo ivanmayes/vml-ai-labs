@@ -24,7 +24,14 @@ export class OrganizationAdminService {
 
 	constructor(private readonly http: HttpClient) {}
 
-	getUsers(orgId: string, sortBy?: string, order?: string): Observable<any> {
+	getOrganization(orgId: string): Observable<any> {
+		return this.http.get<any>(
+			`${this.apiUrl}/organization/${orgId}/settings`,
+			{ headers: this.defaultHeaders }
+		);
+	}
+
+	getUsers(orgId: string, sortBy?: string, order?: string, query?: string): Observable<any> {
 		let url = `${this.apiUrl}/admin/organization/${orgId}/user`;
 		const params: string[] = [];
 
@@ -33,6 +40,9 @@ export class OrganizationAdminService {
 		}
 		if (order) {
 			params.push(`order=${order}`);
+		}
+		if (query) {
+			params.push(`query=${encodeURIComponent(query)}`);
 		}
 
 		if (params.length > 0) {

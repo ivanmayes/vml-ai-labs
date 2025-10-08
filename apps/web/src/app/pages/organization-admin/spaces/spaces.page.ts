@@ -35,9 +35,9 @@ export class SpacesPage implements OnInit {
 		}
 	}
 
-	loadSpaces(): void {
+	loadSpaces(searchQuery?: string): void {
 		this.loading = true;
-		this.spaceService.getSpaces(this.organizationId)
+		this.spaceService.getSpaces(this.organizationId, searchQuery)
 			.subscribe({
 				next: (response) => {
 					this.spaces = response.data || [];
@@ -54,6 +54,11 @@ export class SpacesPage implements OnInit {
 					this.loading = false;
 				}
 			});
+	}
+
+	onSearch(event: Event): void {
+		const query = (event.target as HTMLInputElement).value;
+		this.loadSpaces(query);
 	}
 
 	openCreateDialog(): void {

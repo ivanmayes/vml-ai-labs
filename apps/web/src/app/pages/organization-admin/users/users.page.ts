@@ -37,9 +37,9 @@ export class UsersPage implements OnInit {
 		}
 	}
 
-	loadUsers(): void {
+	loadUsers(searchQuery?: string): void {
 		this.loading = true;
-		this.adminService.getUsers(this.organizationId, 'email', 'asc')
+		this.adminService.getUsers(this.organizationId, 'email', 'asc', searchQuery)
 			.subscribe({
 				next: (response) => {
 					this.users = response.data || [];
@@ -56,6 +56,11 @@ export class UsersPage implements OnInit {
 					this.loading = false;
 				}
 			});
+	}
+
+	onSearch(event: Event): void {
+		const query = (event.target as HTMLInputElement).value;
+		this.loadUsers(query);
 	}
 
 	openInviteDialog(): void {

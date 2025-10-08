@@ -38,12 +38,8 @@ export class PromoteUserDialogComponent implements OnInit {
 	setupAvailableRoles(): void {
 		const currentUserRole = this.config.data?.currentUserRole;
 
-		// All possible roles
+		// Only Admin and Super Admin roles
 		const allRoles = [
-			{ label: 'Guest', value: 'guest' },
-			{ label: 'Analyst', value: 'analyst' },
-			{ label: 'Reviewer', value: 'reviewer' },
-			{ label: 'Manager', value: 'manager' },
 			{ label: 'Admin', value: 'admin' },
 			{ label: 'Super Admin', value: 'super-admin' }
 		];
@@ -52,8 +48,8 @@ export class PromoteUserDialogComponent implements OnInit {
 		if (currentUserRole === 'super-admin') {
 			this.availableRoles = allRoles;
 		} else if (currentUserRole === 'admin') {
-			// Admins can manage roles up to admin level
-			this.availableRoles = allRoles.filter(r => r.value !== 'super-admin');
+			// Admins can only assign admin role
+			this.availableRoles = allRoles.filter(r => r.value === 'admin');
 		} else {
 			this.availableRoles = [];
 		}

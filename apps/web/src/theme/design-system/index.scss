@@ -6,6 +6,7 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   box-sizing: border-box;
+  font-size: 14px;
 }
 
 *, *::before, *::after {
@@ -15,6 +16,7 @@ html {
 body {
   margin: 0;
   padding: 0;
+  font-size: 14px;
   font-family: var(--p-font-family);
   background-color: var(--p-surface-ground);
   color: var(--p-text-color);

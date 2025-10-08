@@ -1,8 +1,23 @@
 <div class="users-page">
-	<div class="page-header">
-		<h1>User Management</h1>
-		<button pButton label="Invite User" icon="pi pi-user-plus" (click)="openInviteDialog()"></button>
-	</div>
+	<h1 class="mb-4">User Management</h1>
+
+	<p-toolbar styleClass="mb-4">
+		<ng-template pTemplate="start">
+			<p-iconfield iconPosition="left">
+				<p-inputicon styleClass="pi pi-search"></p-inputicon>
+				<input
+					pInputText
+					type="text"
+					(input)="onSearch($event)"
+					placeholder="Search users..."
+					class="w-80"
+				/>
+			</p-iconfield>
+		</ng-template>
+		<ng-template pTemplate="end">
+			<button pButton label="Invite User" icon="pi pi-user-plus" (click)="openInviteDialog()"></button>
+		</ng-template>
+	</p-toolbar>
 
 	<p-table
 		#dt
@@ -15,19 +30,6 @@
 		[globalFilterFields]="['email', 'profile.nameFirst', 'profile.nameLast']"
 		styleClass="p-datatable-striped"
 	>
-		<ng-template pTemplate="caption">
-			<div class="table-header">
-				<span class="p-input-icon-left">
-					<i class="pi pi-search"></i>
-					<input
-						pInputText
-						type="text"
-						(input)="dt.filterGlobal($any($event.target).value, 'contains')"
-						placeholder="Search users..."
-					/>
-				</span>
-			</div>
-		</ng-template>
 
 		<ng-template pTemplate="header">
 			<tr>

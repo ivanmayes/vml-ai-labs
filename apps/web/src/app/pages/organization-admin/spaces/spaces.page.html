@@ -1,8 +1,23 @@
 <div class="spaces-page">
-	<div class="page-header">
-		<h1>Spaces Management</h1>
-		<button pButton label="Create Space" icon="pi pi-plus" (click)="openCreateDialog()"></button>
-	</div>
+	<h1 class="mb-4">Spaces Management</h1>
+
+	<p-toolbar styleClass="mb-4">
+		<ng-template pTemplate="start">
+			<p-iconfield iconPosition="left">
+				<p-inputicon styleClass="pi pi-search"></p-inputicon>
+				<input
+					pInputText
+					type="text"
+					(input)="onSearch($event)"
+					placeholder="Search spaces..."
+					class="w-80"
+				/>
+			</p-iconfield>
+		</ng-template>
+		<ng-template pTemplate="end">
+			<button pButton label="Create Space" icon="pi pi-plus" (click)="openCreateDialog()"></button>
+		</ng-template>
+	</p-toolbar>
 
 	<p-table
 		[value]="spaces"
@@ -52,7 +67,7 @@
 					<div class="empty-state">
 						<i class="pi pi-inbox" style="font-size: 3rem; color: var(--text-color-secondary);"></i>
 						<p>No spaces found</p>
-						<button pButton label="Create Your First Space" icon="pi pi-plus" (click)="openCreateDialog()"></button>
+						<button pButton label="Create a Space" icon="pi pi-plus" (click)="openCreateDialog()"></button>
 					</div>
 				</td>
 			</tr>

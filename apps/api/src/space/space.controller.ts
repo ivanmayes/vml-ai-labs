@@ -9,7 +9,8 @@ import {
 	UseGuards,
 	HttpException,
 	HttpStatus,
-	Req
+	Req,
+	Query
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -34,13 +35,11 @@ export class SpaceController {
 	@Roles(UserRole.SuperAdmin, UserRole.Admin)
 	@UseGuards(AuthGuard(), RolesGuard, HasOrganizationAccessGuard)
 	public async getSpaces(
-		@Param('orgId') orgId: string
+		@Param('orgId') orgId: string,
+		@Query('query') query?: string
 	) {
 		const spaces = await this.spaceService
-			.find({
-				where: { organizationId: orgId },
-				order: { created: 'DESC' }
-			})
+			.findSpaces(orgId, query)
 			.catch(err => {
 				console.log(err);
 				return [];
