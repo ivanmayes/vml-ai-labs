@@ -189,7 +189,11 @@ export class UserAuthController {
 					'login-code',
 					user.organizationId,
 					{ to: user.email },
-					{ 'SINGLE_PASS': singlePass }
+					{ 'SINGLE_PASS': singlePass },
+					null,
+					null,
+					null,
+					organization?.name
 				)
 				.catch(err => {
 					console.log(err);
@@ -414,8 +418,7 @@ export class UserAuthController {
 		const spaces: Space[] = await this.spaceService
 			.find({
 				where: {
-					approvedWPPOpenTenantIds: ArrayContains([idToMatch]),
-					isPublic: true
+					approvedWPPOpenTenantIds: ArrayContains([idToMatch])
 				}
 			})
 			.catch(err => {

@@ -48,7 +48,8 @@ export class NotificationService {
 		mergeTags: Record<string, string>,
 		campaignId?: string,
 		config?: NotificationConfig,
-		locale: Locale = Locale.enUS
+		locale: Locale = Locale.enUS,
+		organizationName?: string
 	) {
 		let where: FindOptionsWhere<Notification>[] = [
 			{
@@ -92,7 +93,7 @@ export class NotificationService {
 		}
 
 		if(!config || config?.type === NotificationType.Email) {
-			return this.sendEmail(templates, organizationId, recipients, mergeTags, campaignId, config, locale);
+			return this.sendEmail(templates, organizationId, recipients, mergeTags, campaignId, config, locale, organizationName);
 		} else {
 			throw new Error(`Notification type ${config.type} not implemented.`)
 		}
@@ -105,7 +106,8 @@ export class NotificationService {
 		mergeTags: Record<string, string>,
 		campaignId?: string,
 		config?: NotificationConfig,
-		locale: Locale = Locale.enUS
+		locale: Locale = Locale.enUS,
+		organizationName?: string
 	) {
 		let template: Notification;
 
@@ -143,6 +145,9 @@ export class NotificationService {
 
 		// Use system default sender or config override.
 		let sender = Config.system.email.name + ` <${Config.system.email.address}>`;
+		if(organizationName) {
+			sender = organizationName + ` <${Config.system.email.address}>`;
+		}
 		if(config?.emailFrom) {
 			sender = config.emailFrom;
 		}
