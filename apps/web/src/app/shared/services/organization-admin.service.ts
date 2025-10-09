@@ -81,4 +81,12 @@ export class OrganizationAdminService {
 			{ headers: this.defaultHeaders }
 		);
 	}
+
+	updateOrganization(orgId: string, data: any): Observable<any> {
+		return this.http.put<any>(
+			`${this.apiUrl}/organization/${orgId}`,
+			data,
+			{ headers: this.defaultHeaders }
+		);
+	}
 }

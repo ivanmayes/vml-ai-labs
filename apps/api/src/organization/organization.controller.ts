@@ -146,9 +146,58 @@ export class OrganizationController {
 			'authenticationStrategies'
 		]);
 
+		console.log(organization);
+
 		return {
-			...publicOrg,
-			//campaigns: campaigns?.map(c => new Campaign(c).toPublic()),
+			data: {
+				...publicOrg,
+				//campaigns: campaigns?.map(c => new Campaign(c).toPublic()),
+			}
+		};
+	}
+
+	@Put(':orgId')
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@UseGuards(AuthGuard(), RolesGuard, HasOrganizationAccessGuard)
+	public async updateOrganization(
+		@Param('orgId') id: string,
+		@Body() updateData: Partial<Organization>
+	) {
+		const organization: Organization = await this.organizationService
+			.getOrganizationRaw(id)
+			.catch(err => {
+				console.log(err);
+				return null;
+			});
+
+		if(!organization) {
+			throw new HttpException(`Organization not found.`, HttpStatus.NOT_FOUND);
+		}
+
+		// Only allow updating specific fields
+		const toUpdate = new Organization({
+			id: organization.id
+		});
+
+		if(updateData.name !== undefined) {
+			toUpdate.name = updateData.name;
+		}
+
+		if(updateData.redirectToSpace !== undefined) {
+			toUpdate.redirectToSpace = updateData.redirectToSpace;
+		}
+
+		const result = await this.organizationService.updateOne(toUpdate).catch(err => {
+			console.log(err);
+			return null;
+		});
+
+		if(!result) {
+			throw new HttpException('Error updating organization.', HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		return {
+			data: result.toPublic()
 		};
 	}
 }

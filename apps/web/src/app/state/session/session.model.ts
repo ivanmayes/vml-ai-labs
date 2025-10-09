@@ -50,4 +50,5 @@ export interface WppOpenLoginResponse extends DefaultResponse<any> {
 	status: string;
 	token: string;
 	profile: PublicUser;
+	spaceId?: string;
 }

@@ -16,6 +16,10 @@ const routes: Routes = [
 				loadChildren: () => import('./spaces/spaces.module').then(m => m.SpacesPageModule)
 			},
 			{
+				path: 'settings',
+				loadChildren: () => import('./settings/settings.module').then(m => m.SettingsPageModule)
+			},
+			{
 				path: '',
 				redirectTo: 'users',
 				pathMatch: 'full'

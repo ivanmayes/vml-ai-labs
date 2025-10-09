@@ -19,6 +19,11 @@ export class OrganizationAdminPage implements OnInit {
 			label: 'Spaces',
 			icon: 'pi pi-th-large',
 			routerLink: '/organization/admin/spaces'
+		},
+		{
+			label: 'Settings',
+			icon: 'pi pi-cog',
+			routerLink: '/organization/admin/settings'
 		}
 	];
 

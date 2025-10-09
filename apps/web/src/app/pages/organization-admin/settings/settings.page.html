@@ -1,0 +1,54 @@
+<div class="settings-page">
+	<h1 class="mb-4">Organization Settings</h1>
+
+	<div class="settings-content" *ngIf="!loading">
+		<!-- Organization Name -->
+		<div class="setting-item">
+			<div class="setting-header">
+				<h3>Organization Name</h3>
+			</div>
+			<p class="setting-description mb-2">
+				The display name for your organization.
+			</p>
+			<div class="flex align-items-center gap-2">
+				<input
+					pInputText
+					[(ngModel)]="organizationName"
+					placeholder="Enter organization name"
+					[disabled]="saving"
+					class="flex-1"
+				/>
+				<p-button
+					label="Save"
+					icon="pi pi-check"
+					(onClick)="onOrganizationNameChange()"
+					[disabled]="saving || !organizationName || organizationName === originalOrganizationName"
+					[loading]="saving"
+				></p-button>
+			</div>
+		</div>
+
+		<!-- Redirect to Space Toggle -->
+		<div class="setting-item">
+			<div class="setting-header">
+				<h3>Redirect to Space</h3>
+				<p-toggleSwitch
+					[(ngModel)]="redirectToSpace"
+					(onChange)="onRedirectToSpaceChange()"
+					[disabled]="saving"
+				></p-toggleSwitch>
+			</div>
+			<p class="setting-description">
+				When enabled, users logging in via WPP Open will be automatically redirected to the matching space
+				if they land on the root URL. This only applies when the workspace ID matches an approved space.
+			</p>
+		</div>
+	</div>
+
+	<div class="loading-state" *ngIf="loading">
+		<p-progressSpinner></p-progressSpinner>
+		<p>Loading settings...</p>
+	</div>
+</div>
+
+<p-toast></p-toast>

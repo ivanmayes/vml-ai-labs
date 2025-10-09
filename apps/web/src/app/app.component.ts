@@ -106,6 +106,10 @@ export class AppComponent {
 						});
 					} else {
 						console.log('Open Response', resp);
+						// Store spaceId for potential redirect after token refresh
+						if(resp['spaceId']) {
+							sessionStorage.setItem('wppOpenSpaceId', resp['spaceId']);
+						}
 						this.initializeApp().catch(err => {
 							console.log(err);
 						});
@@ -140,6 +144,18 @@ export class AppComponent {
 		if (this.location.path().indexOf('login') === -1) {
 			this.sessionService.getUserStatus(this.sessionQuery.getToken()).subscribe(
 				() => {
+					// Check if we should redirect to a space
+					const wppOpenSpaceId = sessionStorage.getItem('wppOpenSpaceId');
+					const currentPath = this.location.path();
+
+					// Only redirect if on root URL (empty or just '/')
+					if (wppOpenSpaceId && (!currentPath || currentPath === '/' || currentPath === '')) {
+						sessionStorage.removeItem('wppOpenSpaceId');
+						this.router.navigate(['/space', wppOpenSpaceId], {
+							replaceUrl: true
+						});
+					}
+
 					this.loaded = true;
 				},
 				() => {

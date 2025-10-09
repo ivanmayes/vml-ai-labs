@@ -418,6 +418,18 @@ export class UserAuthController {
 			throw new HttpException('Error finding spaces.', HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
+		// Check if we should redirect to a space
+		let redirectSpaceId: string = null;
+		if (organization.redirectToSpace && spaces.length > 0) {
+			// Find space that matches the workspace ID
+			const matchingSpace = spaces.find(s =>
+				s.approvedWPPOpenTenantIds?.includes(scope.workspace.id)
+			);
+			if (matchingSpace) {
+				redirectSpaceId = matchingSpace.id;
+			}
+		}
+
 		const email = FraudPrevention.Forms.Normalization.normalizeEmail(result.email);
 		let user: User = await this.userService
 			.findOne({
@@ -476,7 +488,7 @@ export class UserAuthController {
 			}
 		}
 
-		let responseData: { token?: string; redirect?: string } = {};
+		let responseData: { token?: string; redirect?: string; spaceId?: string } = {};
 
 		// Create a JWT
 		let token = this.jwtService.sign({
@@ -506,6 +518,9 @@ export class UserAuthController {
 		}
 
 		responseData.token = token;
+		if (redirectSpaceId) {
+			responseData.spaceId = redirectSpaceId;
+		}
 
 		return {
 			status: 'succeeded',
