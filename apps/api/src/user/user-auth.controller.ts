@@ -443,7 +443,8 @@ export class UserAuthController {
 				emailNormalized: email,
 				organizationId: organization.id,
 				activationStatus: ActivationStatus.Activated,
-				role: UserRole.User
+				role: UserRole.User,
+				authenticationStrategyId: organization.defaultAuthenticationStrategyId ?? null
 			});
 
 			user = await this.userService.addOne(newUser).catch(err => {

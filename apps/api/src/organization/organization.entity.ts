@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, Index, OneToMany } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, Index, OneToMany, OneToOne, ManyToOne, JoinColumn } from 'typeorm';
 import {
 	AuthenticationStrategy,
 	PublicAuthenticationStrategy
@@ -59,6 +59,19 @@ export class Organization {
 		}
 	)
 	authenticationStrategies?: AuthenticationStrategy[];
+
+	@Column('text', { nullable: true })
+	defaultAuthenticationStrategyId: string;
+	@ManyToOne(
+		() => AuthenticationStrategy,
+		authenticationStrategy => authenticationStrategy.id,
+		{
+			//onDelete: 'CASCADE',
+			nullable: true
+		}
+	)
+	@JoinColumn({ name: 'defaultAuthenticationStrategyId' })
+	defaultAuthenticationStrategy?: AuthenticationStrategy;
 
 	@OneToMany(
 		() => User,

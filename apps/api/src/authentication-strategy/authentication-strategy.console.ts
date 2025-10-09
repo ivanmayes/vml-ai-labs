@@ -147,6 +147,17 @@ export class AuthenticationStrategyConsole {
 			throw Utils.formatMessage(`Error saving Authentication Strategy.`, ErrorLevel.Error);
 		}
 
+		// Set as default if one isn't set.
+		if(!organization.defaultAuthenticationStrategyId) {
+			organization.defaultAuthenticationStrategyId = authenticationStrategy.id;
+			await this.organizationService
+				.save(organization)
+				.catch(err => {
+					console.log(err);
+					return null;
+				});
+		}
+
 		return authenticationStrategy;
 	}
 }
