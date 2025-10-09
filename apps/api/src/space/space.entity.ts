@@ -54,6 +54,9 @@ export class Space {
 	})
 	isPublic: boolean;
 
+	@Column('text', { array: true, default: '{}' })
+	approvedWPPOpenTenantIds: string[];
+
 	public toPublic(): PublicSpace {
 		return {
 			id: this.id,

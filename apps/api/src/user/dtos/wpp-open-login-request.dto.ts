@@ -16,7 +16,7 @@ export class WPPOpenLoginRequestDto {
 
 	@IsUUID('4')
 	@IsNotEmpty()
-	siteId: string;
+	organizationId: string;
 
 	@IsNotEmpty()
 	@IsString()

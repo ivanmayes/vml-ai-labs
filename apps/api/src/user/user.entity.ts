@@ -21,6 +21,7 @@ import { OktaOauthToken } from './dtos/okta-login-request.dto';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { Permission, PublicPermission } from './permission/permission.entity';
 import { UserRole } from './user-role.enum';
+import { SpaceUser } from '../space-user/space-user.entity';
 
 // import { ExamplePermission } from '../examples/example-permission.entity';
 
@@ -130,22 +131,25 @@ export class User {
 	@Column('timestamptz', { nullable: true })
 	singlePassExpire: string = null;
 
-	@Column('uuid', { nullable: false })
-	authenticationStrategyId: string = null;
+	@Column('uuid', { nullable: true })
+	authenticationStrategyId?: string = null;
 	@ManyToOne(
 		() => AuthenticationStrategy,
 		{
-			nullable: false,
+			nullable: true,
 			onDelete: 'CASCADE'
 		}
 	)
 	@JoinColumn({ name: 'authenticationStrategyId' })
-	authenticationStrategy: AuthenticationStrategy | Partial<AuthenticationStrategy>;
+	authenticationStrategy?: AuthenticationStrategy | Partial<AuthenticationStrategy>;
 
 	@Column('text', { array: true, nullable: true })
 	authTokens: string[] = null;
 
 	oktaOauthToken?: OktaOauthToken = null;
+	
+	@Column('text', { nullable: true })
+	authChallenge?: string;
 
 	@Column({ type: 'timestamptz', default: () => 'NOW()' })
 	lastSeen: string = null;
@@ -179,8 +183,15 @@ export class User {
 	)
 	permissions?: Permission[] | Partial<Permission>[] = null;
 
-	@Column('text', { nullable: true })
-	authChallenge?: string;
+	@OneToMany(
+		() => SpaceUser,
+		spaceUser => spaceUser.user,
+		{
+			cascade: true
+		}
+	)
+	@JoinTable({ name: 'spaceUsers' })
+	public userSpaces?: SpaceUser[] | Partial<SpaceUser[]>;
 
 	public toPublic(excludes: Array<keyof User> = []): PublicUser {
 		const pub: Partial<PublicUser> = {

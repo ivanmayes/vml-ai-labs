@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtService } from '@nestjs/jwt';
-import { Any, MoreThan, Raw } from 'typeorm';
+import { Any, ArrayContains, MoreThan, Raw } from 'typeorm';
 import axios from 'axios';
 import { Response } from 'express';
 
@@ -45,10 +45,13 @@ import { PermissionsGuard } from './permission/permission.guard';
 import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
 import { ResponseEnvelope, ResponseStatus } from '../_core/models';
 import { WPPOpen } from '../_core/third-party/wpp-open';
-import { WorkspaceHierarchy } from '../_core/third-party/wpp-open/models';
+import { WorkspaceHierarchy, WPPOpenTokenResponse } from '../_core/third-party/wpp-open/models';
 import { WPPOpenLoginRequestDto } from './dtos/wpp-open-login-request.dto';
 import { SpaceUserService } from '../space-user/space-user.service';
 import { SpaceService } from '../space/space.service';
+import { Space } from '../space/space.entity';
+import { SpaceRole } from '../space-user/space-role.enum';
+import { SpaceUser } from '../space-user/space-user.entity';
 
 export const basePath = 'user';
 export const SAMLLoginPath = 'auth/saml/:orgSlug/login';
@@ -127,7 +130,7 @@ export class UserAuthController {
 			);
 		}
 
-		const authStrategyType: AuthenticationStrategyType = user.authenticationStrategy.type;
+		const authStrategyType: AuthenticationStrategyType = user.authenticationStrategy?.type;
 
 		// act according to strategy
 		if(authStrategyType === AuthenticationStrategyType.Okta) {
@@ -361,7 +364,7 @@ export class UserAuthController {
 	@Post('/auth/wpp-open/sign-in')
 	public async wppOpenSignIn(@Body() loginReq: WPPOpenLoginRequestDto) {
 		let error;
-		const result = await WPPOpen.validateToken(loginReq.token).catch(err => {
+		const result: WPPOpenTokenResponse = await WPPOpen.validateToken(loginReq.token).catch(err => {
 			console.log(err);
 			return null;
 		});
@@ -370,17 +373,17 @@ export class UserAuthController {
 			throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
 		}
 
-		const site = await this.organizationService
+		const organization: Organization = await this.organizationService
 			.findOne({
-				where: { id: loginReq.siteId }
+				where: { id: loginReq.organizationId }
 			})
 			.catch(err => {
 				console.log(err);
 				return null;
 			});
 
-		if (!site) {
-			throw new HttpException('Invalid siteId.', HttpStatus.BAD_REQUEST);
+		if (!organization) {
+			throw new HttpException('Invalid organizationId.', HttpStatus.BAD_REQUEST);
 		}
 
 		const scope: WorkspaceHierarchy = await WPPOpen
@@ -398,13 +401,31 @@ export class UserAuthController {
 			throw new HttpException('Invalid scopeId.', HttpStatus.BAD_REQUEST);
 		}
 
+		const spaces: Space[] = await this.spaceService
+			.find({
+				where: {
+					approvedWPPOpenTenantIds: ArrayContains([scope.workspace.id]),
+					isPublic: true
+				}
+			})
+			.catch(err => {
+				console.log(err);
+				error = err;
+				return [];
+			});
+
+		if (error) {
+			throw new HttpException('Error finding spaces.', HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
 		const email = FraudPrevention.Forms.Normalization.normalizeEmail(result.email);
 		let user: User = await this.userService
 			.findOne({
 				where: {
 					emailNormalized: email,
-					organizationId: site.id
-				}
+					organizationId: organization.id
+				},
+				relations: ['userSpaces']
 			})
 			.catch(err => {
 				console.log(err);
@@ -420,10 +441,9 @@ export class UserAuthController {
 			const newUser = new User({
 				email: email,
 				emailNormalized: email,
-				organizationId: site.id,
+				organizationId: organization.id,
 				activationStatus: ActivationStatus.Activated,
-				role: UserRole.User,
-				authenticationStrategyId: site.defaultAuthenticationStrategyId
+				role: UserRole.User
 			});
 
 			user = await this.userService.addOne(newUser).catch(err => {
@@ -436,6 +456,25 @@ export class UserAuthController {
 			}
 		}
 
+		for(const space of spaces) {
+			if(!space.isPublic) {
+				continue;
+			}
+			if (!user.userSpaces?.find(s => s.spaceId === space.id)) {
+				const newSpaceUser = new SpaceUser({
+					role: SpaceRole.SpaceUser,
+					userId: user.id,
+					spaceId: space.id
+				});
+
+				if(!user.userSpaces) {
+					user.userSpaces = [];
+				}
+
+				user.userSpaces.push(newSpaceUser);
+			}
+		}
+
 		let responseData: { token?: string; redirect?: string } = {};
 
 		// Create a JWT
@@ -443,7 +482,7 @@ export class UserAuthController {
 			id: user.id,
 			email: user.email,
 			emailNormalized: user.emailNormalized,
-			siteId: site.id,
+			organizationId: organization.id,
 			// In case we have deeper integration later
 			wppOpenToken: loginReq.token
 		});
@@ -467,11 +506,10 @@ export class UserAuthController {
 
 		responseData.token = token;
 
-
 		return {
 			status: 'succeeded',
 			...responseData,
-			profile: new User(user).toPublic(),
+			profile: new User(user).toPublic()
 		};
 	}
 
