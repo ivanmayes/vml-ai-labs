@@ -33,8 +33,6 @@ interface Feature {
 export class HomeComponent implements OnInit, OnDestroy {
 	@ViewChild('setupSection') setupSection: ElementRef;
 
-	public sampleData: any;
-
 	/**
 	 * Features included in the boilerplate
 	 * Displayed in the features overview section
@@ -78,19 +76,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 	) {}
 
 	async ngOnInit() {
-		// Fetch sample data from API
-		const data = await this.http.get(environment.apiUrl + '/sample')
-			.toPromise()
-			.catch((err) => {
-				console.log(err);
-				return null;
-			});
-
-		if (!data) {
-			console.error('Failed to query collection');
-		}
-
-		this.sampleData = data;
 	}
 
 	ngOnDestroy() {
