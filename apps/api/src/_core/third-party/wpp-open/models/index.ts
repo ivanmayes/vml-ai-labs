@@ -35,7 +35,7 @@ export class HierarchyItem {
 	@IsString()
 	@IsNotEmpty()
 	azId: string;
-	
+
 	@IsOptional()
 	@IsString()
 	parentAzId?: string;
@@ -52,6 +52,14 @@ export class HierarchyItem {
 	@IsOptional()
 	@IsString()
 	customTypeName?: string;
+
+	@IsOptional()
+	@IsString()
+	mdId?: string;
+
+	@IsOptional()
+	@IsString({ each: true })
+	categories?: string[];
 }
 
 export class Hierarchy {
