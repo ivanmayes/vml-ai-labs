@@ -61,7 +61,7 @@ export class Organization {
 	authenticationStrategies?: AuthenticationStrategy[];
 
 	@Column('text', { nullable: true })
-	defaultAuthenticationStrategyId: string;
+	defaultAuthenticationStrategyId?: string;
 	@ManyToOne(
 		() => AuthenticationStrategy,
 		authenticationStrategy => authenticationStrategy.id,
