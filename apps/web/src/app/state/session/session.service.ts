@@ -29,7 +29,8 @@ export class SessionService {
 		scopeId?: string,
 		projectRemoteId?: string,
 		projectRemoteName?: string,
-		hierarchy?: Hierarchy
+		hierarchy?: Hierarchy,
+		tenantId?: string
 	) {
 		const headers = this.defaultHeaders;
 		this.sessionStore.setLoading(true);
@@ -44,7 +45,8 @@ export class SessionService {
 					scopeId,
 					projectRemoteId,
 					projectRemoteName,
-					hierarchy
+					hierarchy,
+					tenantId
 				},
 				{
 					headers

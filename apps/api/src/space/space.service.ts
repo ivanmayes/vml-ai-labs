@@ -54,7 +54,7 @@ export class SpaceService {
 
 	public async updateSettings(
 		spaceId: string,
-		updates: { name?: string; isPublic?: boolean; settings?: Record<string, any> }
+		updates: { name?: string; isPublic?: boolean; settings?: Record<string, any>; approvedWPPOpenTenantIds?: string[] }
 	) {
 		const space = await this.spaceRepository.findOne({ where: { id: spaceId } });
 
@@ -76,6 +76,10 @@ export class SpaceService {
 				...space.settings,
 				...updates.settings
 			};
+		}
+
+		if(updates.approvedWPPOpenTenantIds !== undefined) {
+			space.approvedWPPOpenTenantIds = updates.approvedWPPOpenTenantIds;
 		}
 
 		return this.spaceRepository.save(space);

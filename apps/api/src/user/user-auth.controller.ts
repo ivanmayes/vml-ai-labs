@@ -401,10 +401,20 @@ export class UserAuthController {
 			throw new HttpException('Invalid scopeId.', HttpStatus.BAD_REQUEST);
 		}
 
+		// Log tenant ID for debugging
+		const tenantIdToMatch = loginReq.tenantId;
+		console.log('🔑 [WPP Open] Tenant ID from login:', tenantIdToMatch);
+		console.log('🔑 [WPP Open] Workspace ID from login:', scope.workspace.id);
+		console.log('🏢 [WPP Open] Organization redirectToSpace:', organization.redirectToSpace);
+
+		// Use tenant ID if provided, otherwise fall back to workspace ID
+		const idToMatch = tenantIdToMatch || scope.workspace.id;
+		console.log('🎯 [WPP Open] Using ID for matching:', idToMatch);
+
 		const spaces: Space[] = await this.spaceService
 			.find({
 				where: {
-					approvedWPPOpenTenantIds: ArrayContains([scope.workspace.id]),
+					approvedWPPOpenTenantIds: ArrayContains([idToMatch]),
 					isPublic: true
 				}
 			})
@@ -418,16 +428,30 @@ export class UserAuthController {
 			throw new HttpException('Error finding spaces.', HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
+		console.log('🔍 [WPP Open] Found spaces matching ID:', spaces.length);
+		if (spaces.length > 0) {
+			console.log('📋 [WPP Open] Matching spaces:', spaces.map(s => ({
+				id: s.id,
+				name: s.name,
+				approvedWPPOpenTenantIds: s.approvedWPPOpenTenantIds
+			})));
+		}
+
 		// Check if we should redirect to a space
 		let redirectSpaceId: string = null;
 		if (organization.redirectToSpace && spaces.length > 0) {
-			// Find space that matches the workspace ID
+			// Find space that matches the tenant/workspace ID
 			const matchingSpace = spaces.find(s =>
-				s.approvedWPPOpenTenantIds?.includes(scope.workspace.id)
+				s.approvedWPPOpenTenantIds?.includes(idToMatch)
 			);
 			if (matchingSpace) {
 				redirectSpaceId = matchingSpace.id;
+				console.log('✅ [WPP Open] Redirect space ID set to:', redirectSpaceId);
+			} else {
+				console.log('⚠️ [WPP Open] No matching space found despite query results');
 			}
+		} else {
+			console.log('ℹ️ [WPP Open] Not redirecting - redirectToSpace:', organization.redirectToSpace, 'spaces found:', spaces.length);
 		}
 
 		const email = FraudPrevention.Forms.Normalization.normalizeEmail(result.email);

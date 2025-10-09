@@ -76,6 +76,43 @@
 							Please enter a valid hex color code (e.g., #FF5733).
 						</small>
 					</div>
+
+					<!-- Approved WPP Open Tenant IDs -->
+					<div class="form-field">
+						<label for="tenantIds">WPP Open Tenant IDs</label>
+						<div class="tenant-ids-container">
+							<div class="tenant-ids-list" *ngIf="tenantIds.length > 0">
+								<p-chip
+									*ngFor="let tenantId of tenantIds; let i = index"
+									[label]="tenantId"
+									[removable]="!loading && !saving"
+									(onRemove)="removeTenantId(i)"
+									styleClass="mr-2 mb-2"
+								></p-chip>
+							</div>
+							<div class="flex align-items-center gap-2 mt-2">
+								<input
+									pInputText
+									[(ngModel)]="newTenantId"
+									[ngModelOptions]="{standalone: true}"
+									placeholder="Enter tenant ID"
+									[disabled]="loading || saving"
+									(keyup.enter)="addTenantId()"
+									class="flex-1"
+								/>
+								<p-button
+									label="Add"
+									icon="pi pi-plus"
+									(onClick)="addTenantId()"
+									[disabled]="loading || saving || !newTenantId"
+									size="small"
+								></p-button>
+							</div>
+						</div>
+						<small class="help-text">
+							Enter WPP Open tenant/workspace IDs that are authorized to access this space.
+						</small>
+					</div>
 				</div>
 
 				<!-- Action Buttons -->

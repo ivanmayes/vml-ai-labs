@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsBoolean, IsObject, Matches } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsObject, IsArray, Matches } from 'class-validator';
 
 export class SpaceUpdateSettingsDto {
 	@IsOptional()
@@ -14,6 +14,11 @@ export class SpaceUpdateSettingsDto {
 	settings?: {
 		primaryColor?: string;
 	};
+
+	@IsOptional()
+	@IsArray()
+	@IsString({ each: true })
+	approvedWPPOpenTenantIds?: string[];
 }
 
 // Hex color validator
