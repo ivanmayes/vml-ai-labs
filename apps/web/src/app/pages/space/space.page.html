@@ -15,7 +15,18 @@
 		<p>Loading space...</p>
 	</div>
 
-	<div class="space-content" *ngIf="!loading && !space">
+	<div class="access-denied-container" *ngIf="!loading && accessDenied">
+		<p-card>
+			<div class="access-denied-content">
+				<i class="pi pi-lock access-denied-icon"></i>
+				<h2>Access Denied</h2>
+				<p>You do not have permission to access this space.</p>
+				<p class="access-denied-hint">Please contact your administrator if you believe this is an error.</p>
+			</div>
+		</p-card>
+	</div>
+
+	<div class="space-content" *ngIf="!loading && !space && !accessDenied">
 		<p>Space not found or you do not have access.</p>
 	</div>
 </div>

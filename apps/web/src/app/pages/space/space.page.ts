@@ -17,6 +17,7 @@ export class SpacePage implements OnInit {
 	space: Space | null = null;
 	loading: boolean = true;
 	organizationId: string = environment.organizationId;
+	accessDenied: boolean = false;
 
 	constructor(
 		private route: ActivatedRoute,
@@ -35,6 +36,7 @@ export class SpacePage implements OnInit {
 
 	loadSpace(): void {
 		this.loading = true;
+		this.accessDenied = false;
 
 		this.spaceService.getSpace(this.spaceId).subscribe({
 			next: (response) => {
@@ -43,12 +45,18 @@ export class SpacePage implements OnInit {
 			},
 			error: (error) => {
 				console.error('Error loading space:', error);
-				this.messageService.add({
-					severity: 'error',
-					summary: 'Error',
-					detail: error.error?.message || 'Failed to load space',
-					life: 3000
-				});
+
+				if (error.status === 403) {
+					this.accessDenied = true;
+				} else {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: error.error?.message || 'Failed to load space',
+						life: 3000
+					});
+				}
+
 				this.loading = false;
 			}
 		});
