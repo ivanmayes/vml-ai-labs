@@ -54,20 +54,10 @@ export class AppComponent {
 	) {
 		this.headerSettings$ = this.globalQuery.select('header');
 		this.isLoggedIn$ = this.sessionQuery.isLoggedIn$;
-		this.initializeApp().catch(err => {
-			console.log(err);
-		});
 	}
 
 	async ngOnInit() {
 		// WPP Open support.
-		// Install @wppopen/core@^3.0.0
-		// Uncomment imports above
-		// Uncomment below
-		// Uncomment in session.service.ts
-		// Uncomment in core.module.ts
-		// Remove .disabled from wpp-open.service.ts
-
 
 		// Likely in an iframe.
 		// Attempt to login with WPP Open token.
@@ -114,8 +104,19 @@ export class AppComponent {
 						this.router.navigate([resp['redirect']], {
 							replaceUrl: true
 						});
+					} else {
+						console.log('Open Response', resp);
+						this.initializeApp().catch(err => {
+							console.log(err);
+						});
 					}
 				});
+
+
+		} else {
+			this.initializeApp().catch(err => {
+				console.log(err);
+			});
 		}
 	}
 

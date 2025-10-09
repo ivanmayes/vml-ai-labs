@@ -44,3 +44,10 @@ export interface LoginResponse extends DefaultResponse<any> {
 		redirect?: string;
 	};
 }
+
+
+export interface WppOpenLoginResponse extends DefaultResponse<any> {
+	status: string;
+	token: string;
+	profile: PublicUser;
+}
