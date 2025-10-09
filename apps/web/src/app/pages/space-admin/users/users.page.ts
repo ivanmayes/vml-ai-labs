@@ -28,6 +28,7 @@ export class UsersPage implements OnInit, OnDestroy {
 	currentPage: number = 1;
 	rowsPerPage: number = 10;
 	private searchSubject = new Subject<string>();
+	Array = Array;
 
 	constructor(
 		private route: ActivatedRoute,

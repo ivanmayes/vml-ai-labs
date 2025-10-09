@@ -5,7 +5,7 @@
 		<h1>Space Settings</h1>
 	</div>
 
-	<div class="settings-content">
+	<div class="settings-content" *ngIf="!loading">
 		<p-card>
 			<form [formGroup]="settingsForm" (ngSubmit)="onSave()">
 				<div class="form-grid">
@@ -126,6 +126,57 @@
 					></p-button>
 				</div>
 			</form>
+		</p-card>
+	</div>
+
+	<!-- Skeleton Loading State -->
+	<div class="settings-content" *ngIf="loading">
+		<p-card>
+			<div class="form-grid">
+				<!-- Space Name Skeleton -->
+				<div class="form-field">
+					<p-skeleton width="8rem" height="1.5rem" styleClass="mb-2"></p-skeleton>
+					<p-skeleton width="100%" height="2.5rem"></p-skeleton>
+				</div>
+
+				<!-- Visibility Toggle Skeleton -->
+				<div class="form-field">
+					<p-skeleton width="6rem" height="1.5rem" styleClass="mb-2"></p-skeleton>
+					<div class="flex align-items-center gap-2">
+						<p-skeleton width="3rem" height="1.5rem" borderRadius="16px"></p-skeleton>
+						<p-skeleton width="4rem" height="1rem"></p-skeleton>
+					</div>
+					<p-skeleton width="80%" height="0.875rem" styleClass="mt-2"></p-skeleton>
+				</div>
+
+				<!-- Primary Color Skeleton -->
+				<div class="form-field">
+					<p-skeleton width="8rem" height="1.5rem" styleClass="mb-2"></p-skeleton>
+					<div class="flex align-items-center gap-2">
+						<p-skeleton width="2.5rem" height="2.5rem" borderRadius="4px"></p-skeleton>
+						<p-skeleton width="100%" height="2.5rem"></p-skeleton>
+					</div>
+				</div>
+
+				<!-- Tenant IDs Skeleton -->
+				<div class="form-field">
+					<p-skeleton width="12rem" height="1.5rem" styleClass="mb-2"></p-skeleton>
+					<div class="flex gap-2 mb-2">
+						<p-skeleton width="8rem" height="2rem" borderRadius="16px"></p-skeleton>
+						<p-skeleton width="8rem" height="2rem" borderRadius="16px"></p-skeleton>
+					</div>
+					<div class="flex align-items-center gap-2 mt-2">
+						<p-skeleton width="100%" height="2.5rem"></p-skeleton>
+						<p-skeleton width="5rem" height="2.5rem"></p-skeleton>
+					</div>
+					<p-skeleton width="70%" height="0.875rem" styleClass="mt-2"></p-skeleton>
+				</div>
+			</div>
+
+			<!-- Action Button Skeleton -->
+			<div class="form-actions mt-4">
+				<p-skeleton width="10rem" height="2.5rem"></p-skeleton>
+			</div>
 		</p-card>
 	</div>
 </div>

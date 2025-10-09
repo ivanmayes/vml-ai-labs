@@ -21,8 +21,7 @@
 
 	<p-table
 		#dt
-		[value]="users"
-		[loading]="loading"
+		[value]="loading ? Array(5).fill({}) : users"
 		[paginator]="true"
 		[rows]="10"
 		[showCurrentPageReport]="true"
@@ -48,7 +47,7 @@
 		</ng-template>
 
 		<ng-template pTemplate="body" let-user>
-			<tr>
+			<tr *ngIf="!loading">
 				<td>{{ user.email }}</td>
 				<td>{{ user.profile?.nameFirst }} {{ user.profile?.nameLast }}</td>
 				<td>
@@ -80,6 +79,13 @@
 						></button>
 					</div>
 				</td>
+			</tr>
+			<tr *ngIf="loading">
+				<td><p-skeleton /></td>
+				<td><p-skeleton /></td>
+				<td><p-skeleton /></td>
+				<td><p-skeleton /></td>
+				<td><p-skeleton /></td>
 			</tr>
 		</ng-template>
 

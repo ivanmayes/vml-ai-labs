@@ -25,6 +25,7 @@ export class UsersPage implements OnInit, OnDestroy {
 	currentSortOrder: string = 'asc';
 	currentSearchQuery: string = '';
 	private searchSubject = new Subject<string>();
+	Array = Array;
 
 	constructor(
 		private readonly adminService: OrganizationAdminService,

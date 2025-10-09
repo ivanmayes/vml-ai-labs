@@ -25,6 +25,7 @@ export class SpacesPage implements OnInit, OnDestroy {
 	currentSortOrder: string = 'desc';
 	currentSearchQuery: string = '';
 	private searchSubject = new Subject<string>();
+	Array = Array;
 
 	constructor(
 		private readonly spaceService: SpaceService,

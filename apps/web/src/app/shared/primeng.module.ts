@@ -56,6 +56,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { ImageModule } from 'primeng/image';
 import { TagModule } from 'primeng/tag';
 import { ColorPickerModule } from 'primeng/colorpicker';
+import { SkeletonModule } from 'primeng/skeleton';
 
 // Services
 import { DialogService } from 'primeng/dynamicdialog';
@@ -112,7 +113,8 @@ const primeNgModules = [
 	SelectButtonModule,
 	ImageModule,
 	TagModule,
-	ColorPickerModule
+	ColorPickerModule,
+	SkeletonModule
 ];
 
 @NgModule({

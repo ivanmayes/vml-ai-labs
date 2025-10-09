@@ -20,8 +20,7 @@
 	</p-toolbar>
 
 	<p-table
-		[value]="users"
-		[loading]="loading"
+		[value]="loading ? Array(5).fill({}) : users"
 		[lazy]="true"
 		[paginator]="true"
 		[rows]="rowsPerPage"
@@ -51,7 +50,7 @@
 		</ng-template>
 
 		<ng-template pTemplate="body" let-user>
-			<tr>
+			<tr *ngIf="!loading">
 				<td>{{ user.user?.email || 'N/A' }}</td>
 				<td>
 					<span *ngIf="user.user?.firstName || user.user?.lastName; else noName">
@@ -84,6 +83,13 @@
 						></button>
 					</div>
 				</td>
+			</tr>
+			<tr *ngIf="loading">
+				<td><p-skeleton /></td>
+				<td><p-skeleton /></td>
+				<td><p-skeleton /></td>
+				<td><p-skeleton /></td>
+				<td><p-skeleton /></td>
 			</tr>
 		</ng-template>
 
