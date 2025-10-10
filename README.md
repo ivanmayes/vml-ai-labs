@@ -81,9 +81,8 @@ STRAPI_HOST=http://localhost:1337
 STRAPI_TOKEN=YOUR-STRAPI-TOKEN
 ```
 - Create a local postgres database matching `your_api_database_name` in the env.
-- Fill in AWS credentials and `YOUR-STRAPI-TOKEN`.
-- Run `npm run start:dev` to synchronize the initial database structure.
-- Run `npm run console:dev InstallOrganization` to set up an initial organization and user.
+- Run `cd apps/api && npm run start:dev` to synchronize the initial database structure.
+- Run `cd apps/api && npm run console:dev InstallOrganization` to set up an initial organization and user.
   - Choose a name.
   - Accept the default slug.
     - Note the `organizationId` in the logs
@@ -100,7 +99,7 @@ STRAPI_TOKEN=YOUR-STRAPI-TOKEN
 - If not still running, run `npm run start:dev`.
 
 ## Web
-- From `apps/api`.
+- From `apps/web`.
 - Run `npm i`.
 - Create an `.env` file similar to below:
 ```
