@@ -1,0 +1,74 @@
+<div class="settings-page">
+	<p-toast></p-toast>
+
+	<h1 class="mb-4">Organization Settings</h1>
+
+	<div class="settings-content" *ngIf="!loading">
+		<!-- Organization Name -->
+		<div class="setting-item">
+			<div class="setting-header">
+				<h3>Organization Name</h3>
+			</div>
+			<p class="setting-description mb-2">
+				The display name for your organization.
+			</p>
+			<div class="flex align-items-center gap-2">
+				<input
+					pInputText
+					[(ngModel)]="organizationName"
+					placeholder="Enter organization name"
+					[disabled]="saving"
+					class="flex-1"
+				/>
+				<p-button
+					label="Save"
+					icon="pi pi-check"
+					(onClick)="onOrganizationNameChange()"
+					[disabled]="saving || !organizationName || organizationName === originalOrganizationName"
+					[loading]="saving"
+				></p-button>
+			</div>
+		</div>
+
+		<!-- Redirect to Space Toggle -->
+		<div class="setting-item">
+			<div class="setting-header">
+				<h3>Redirect to Space</h3>
+				<p-toggleSwitch
+					[(ngModel)]="redirectToSpace"
+					(onChange)="onRedirectToSpaceChange()"
+					[disabled]="saving"
+				></p-toggleSwitch>
+			</div>
+			<p class="setting-description">
+				When enabled, users logging in via WPP Open will be automatically redirected to the matching space
+				if they land on the root URL. This only applies when the workspace ID matches an approved space.
+			</p>
+		</div>
+	</div>
+
+	<!-- Skeleton Loading State -->
+	<div class="settings-content" *ngIf="loading">
+		<!-- Organization Name Skeleton -->
+		<div class="setting-item">
+			<div class="setting-header">
+				<p-skeleton width="12rem" height="1.75rem"></p-skeleton>
+			</div>
+			<p-skeleton width="80%" height="1rem" styleClass="mb-2"></p-skeleton>
+			<div class="flex align-items-center gap-2">
+				<p-skeleton width="100%" height="2.5rem" styleClass="flex-1"></p-skeleton>
+				<p-skeleton width="5rem" height="2.5rem"></p-skeleton>
+			</div>
+		</div>
+
+		<!-- Redirect to Space Toggle Skeleton -->
+		<div class="setting-item">
+			<div class="setting-header">
+				<p-skeleton width="10rem" height="1.75rem"></p-skeleton>
+				<p-skeleton width="3rem" height="1.5rem" borderRadius="16px"></p-skeleton>
+			</div>
+			<p-skeleton width="90%" height="1rem"></p-skeleton>
+			<p-skeleton width="85%" height="1rem" styleClass="mt-1"></p-skeleton>
+		</div>
+	</div>
+</div>

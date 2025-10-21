@@ -19,6 +19,8 @@ export class SettingsPage implements OnInit {
 	organizationId: string = environment.organizationId;
 	loading: boolean = false;
 	saving: boolean = false;
+	tenantIds: string[] = [];
+	newTenantId: string = '';
 
 	constructor(
 		private fb: FormBuilder,
@@ -84,6 +86,7 @@ export class SettingsPage implements OnInit {
 						isPublic: space.isPublic !== undefined ? space.isPublic : true,
 						primaryColor: space.settings?.primaryColor || '#000000'
 					});
+					this.tenantIds = (space as any).approvedWPPOpenTenantIds || [];
 					// Mark form as pristine after loading initial values
 					this.settingsForm.markAsPristine();
 				} else {
@@ -124,7 +127,8 @@ export class SettingsPage implements OnInit {
 			isPublic: formValue.isPublic,
 			settings: {
 				primaryColor: formValue.primaryColor
-			}
+			},
+			approvedWPPOpenTenantIds: this.tenantIds
 		};
 
 		this.spaceService.updateSettings(this.organizationId, this.spaceId, updateDto).subscribe({
@@ -150,5 +154,21 @@ export class SettingsPage implements OnInit {
 				this.saving = false;
 			}
 		});
+	}
+
+	addTenantId(): void {
+		if (this.newTenantId && this.newTenantId.trim()) {
+			const trimmedId = this.newTenantId.trim();
+			if (!this.tenantIds.includes(trimmedId)) {
+				this.tenantIds.push(trimmedId);
+				this.newTenantId = '';
+				this.settingsForm.markAsDirty();
+			}
+		}
+	}
+
+	removeTenantId(index: number): void {
+		this.tenantIds.splice(index, 1);
+		this.settingsForm.markAsDirty();
 	}
 }

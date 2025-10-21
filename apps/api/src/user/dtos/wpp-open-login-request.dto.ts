@@ -41,4 +41,8 @@ export class WPPOpenLoginRequestDto {
 	@ValidateNested()
 	@Type(() => Hierarchy)
 	hierarchy?: Hierarchy;
+
+	@IsOptional()
+	@IsString()
+	tenantId?: string;
 }

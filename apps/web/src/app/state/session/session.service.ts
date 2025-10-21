@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SessionStore } from './session.store';
-import { catchError, tap } from 'rxjs/operators';
-import { LoginResponse, VerifyResponse } from './session.model';
+import { catchError, map, tap } from 'rxjs/operators';
+import { LoginResponse, VerifyResponse, WppOpenLoginResponse } from './session.model';
 import { environment } from '../../../environments/environment';
 import { HttpHeaders, HttpClient } from '@angular/common/http';
 import { throwError } from 'rxjs';
@@ -24,41 +24,45 @@ export class SessionService {
 
 	public wppOpenLogin(
 		token: string,
-		siteId: string,
+		organizationId: string,
 		workspaceId?: string,
 		scopeId?: string,
 		projectRemoteId?: string,
 		projectRemoteName?: string,
-		hierarchy?: Hierarchy
+		hierarchy?: Hierarchy,
+		tenantId?: string
 	) {
 		const headers = this.defaultHeaders;
 		this.sessionStore.setLoading(true);
 
 		return this.httpClient
-			.post<LoginResponse>(
+			.post<WppOpenLoginResponse>(
 				`${environment.apiUrl}/user/auth/wpp-open/sign-in`,
 				{
 					token,
-					siteId: siteId,
+					organizationId: organizationId,
 					workspaceId,
 					scopeId,
 					projectRemoteId,
 					projectRemoteName,
-					hierarchy
+					hierarchy,
+					tenantId
 				},
 				{
 					headers
 				}
 			)
 			.pipe(
-				tap(resp => {
+				map(resp => {
 					this.sessionStore.login({
 						initialUrl: resp?.data?.redirect,
-						token: resp?.data?.token,
-						user: resp?.data?.user
+						token: resp?.token,
+						user: resp?.profile
 					});
 
 					this.sessionStore.setLoading(false);
+
+					return resp;
 				}),
 				catchError(err => {
 					this.sessionStore.setLoading(false);

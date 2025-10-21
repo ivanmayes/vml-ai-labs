@@ -9,7 +9,7 @@ import {
 
 import { Organization } from '../organization/organization.entity';
 
-export type PublicSpace = Pick<Space, 'id' | 'name' | 'created' | 'isPublic' | 'settings'>;
+export type PublicSpace = Pick<Space, 'id' | 'name' | 'created' | 'isPublic' | 'settings' | 'approvedWPPOpenTenantIds'>;
 
 export type MinimalSpace = Pick<Space, 'id' | 'name' | 'created' | 'isPublic'>;
 
@@ -63,7 +63,8 @@ export class Space {
 			name: this.name,
 			created: this.created,
 			isPublic: this.isPublic,
-			settings: this.settings
+			settings: this.settings,
+			approvedWPPOpenTenantIds: this.approvedWPPOpenTenantIds || []
 		};
 	}
 

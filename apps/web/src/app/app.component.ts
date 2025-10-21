@@ -54,20 +54,10 @@ export class AppComponent {
 	) {
 		this.headerSettings$ = this.globalQuery.select('header');
 		this.isLoggedIn$ = this.sessionQuery.isLoggedIn$;
-		this.initializeApp().catch(err => {
-			console.log(err);
-		});
 	}
 
 	async ngOnInit() {
 		// WPP Open support.
-		// Install @wppopen/core@^3.0.0
-		// Uncomment imports above
-		// Uncomment below
-		// Uncomment in session.service.ts
-		// Uncomment in core.module.ts
-		// Remove .disabled from wpp-open.service.ts
-
 
 		// Likely in an iframe.
 		// Attempt to login with WPP Open token.
@@ -98,6 +88,14 @@ export class AppComponent {
 					return null;
 				});
 
+
+			// Log tenant ID for easy configuration
+			const tenantId = context?.tenant?.id;
+			if(tenantId) {
+				console.log('🔑 WPP Open Tenant ID:', tenantId);
+				console.log('💡 Add this ID to Space Settings → WPP Open Tenant IDs to enable access');
+			}
+
 			this.sessionService
 				.wppOpenLogin(
 					token,
@@ -106,7 +104,8 @@ export class AppComponent {
 					workspaceScope?.scopeId,
 					context?.project?.id,
 					context?.project?.name,
-					context?.hierarchy
+					context?.hierarchy,
+					tenantId
 				)
 				.pipe(take(1))
 				.subscribe((resp) => {
@@ -114,12 +113,23 @@ export class AppComponent {
 						this.router.navigate([resp['redirect']], {
 							replaceUrl: true
 						});
+					} else {
+						console.log('Open Response', resp);
+						this.initializeApp(resp['spaceId']).catch(err => {
+							console.log(err);
+						});
 					}
 				});
+
+
+		} else {
+			this.initializeApp().catch(err => {
+				console.log(err);
+			});
 		}
 	}
 
-	private async initializeApp() {
+	private async initializeApp(spaceId?: string) {
 		const settings = await this.loadOrgSettings().catch(err => {
 			console.log(err);
 			localStorage.removeItem(ORG_SETTINGS);
@@ -130,15 +140,28 @@ export class AppComponent {
 			console.error('Configuration error. Unable to load or parse API_MAP.');
 		}
 
-		// Once logged in, load settings and start up services
-		this.sessionQuery.isLoggedIn$.pipe(filter(isLoggedIn => isLoggedIn === true)).subscribe(() => {
-			this.loadGlobalSettings();
-		});
-
 		// Refresh our token before we do anything else
 		if (this.location.path().indexOf('login') === -1) {
 			this.sessionService.getUserStatus(this.sessionQuery.getToken()).subscribe(
-				() => {
+				async () => {
+					// Check if we should redirect to a space
+					const wppOpenSpaceId = spaceId;
+					const currentPath = this.location.path();
+
+					await this.loadGlobalSettings();
+
+					// Only redirect if on root URL (empty or just '/')
+					console.log('Current Path:', currentPath, 'WPP Open Space ID:', wppOpenSpaceId);
+					if (wppOpenSpaceId && (!currentPath || currentPath === '/' || currentPath === '/home' || currentPath === '')) {
+						console.log('Redirecting to WPP Open Space ID:', wppOpenSpaceId);
+						await this.router.navigate(['/space', wppOpenSpaceId], {
+							replaceUrl: true
+						});
+
+						this.loaded = true;
+						return;
+					}
+
 					this.loaded = true;
 				},
 				() => {
@@ -158,8 +181,8 @@ export class AppComponent {
 		}
 	}
 
-	loadGlobalSettings() {
-		this.globalService.get().subscribe(
+	async loadGlobalSettings() {
+		return await this.globalService.get().subscribe(
 			settings => {
 				console.log('Loaded Global Settings', settings);
 			},

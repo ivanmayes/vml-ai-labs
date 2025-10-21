@@ -3,17 +3,6 @@
 	margin: 0 auto;
 }
 
-.settings-header {
-	margin-bottom: 2rem;
-
-	h1 {
-		font-size: 1.75rem;
-		font-weight: 600;
-		color: var(--text-color);
-		margin: 0;
-	}
-}
-
 .settings-content {
 	:host ::ng-deep .p-card {
 		background: var(--surface-card);

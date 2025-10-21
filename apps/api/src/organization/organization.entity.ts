@@ -15,7 +15,7 @@ export interface LogoAsset {
 
 export type PublicOrganization = Pick<
 	Organization,
-	'id' | 'name' | 'slug' | 'settings' | 'created'
+	'id' | 'name' | 'slug' | 'settings' | 'created' | 'redirectToSpace'
 > & {
 	authenticationStrategies?: PublicAuthenticationStrategy[];
 };
@@ -50,6 +50,12 @@ export class Organization {
 		default: false
 	})
 	enabled: boolean;
+
+	@Column('boolean', {
+		nullable: false,
+		default: false
+	})
+	redirectToSpace: boolean;
 
 	@OneToMany(
 		() => AuthenticationStrategy,
@@ -102,7 +108,8 @@ export class Organization {
 			name: this.name,
 			slug: this.slug,
 			settings: this.settings,
-			created: this.created
+			created: this.created,
+			redirectToSpace: this.redirectToSpace ?? false
 		};
 
 		if(

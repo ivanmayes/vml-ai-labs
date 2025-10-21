@@ -5,6 +5,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { CardModule } from 'primeng/card';
 
 import { SpacePage } from './space.page';
 
@@ -23,7 +24,8 @@ const routes: Routes = [
 		FormsModule,
 		ReactiveFormsModule,
 		ToastModule,
-		ProgressSpinnerModule
+		ProgressSpinnerModule,
+		CardModule
 	]
 })
 export class SpacePageModule {}

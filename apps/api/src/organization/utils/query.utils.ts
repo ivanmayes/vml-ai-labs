@@ -20,6 +20,7 @@ export class Query {
 		selects.push(`${alias}.slug`);
 		selects.push(`${alias}.enabled`);
 		selects.push(`${alias}.settings`);
+		selects.push(`${alias}."redirectToSpace"`);
 
 		if (targets.includes(OrganizationSelect.AuthenticationStrategies)) {
 			selects.push(
