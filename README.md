@@ -111,3 +111,11 @@ API_SETTINGS={"localhost":[{"name":"Test (Local)","endpoint":"http://localhost:8
 - Fill in `YOUR-ORGANIZATION-ID`.
 - Run `npm run start:dev`.
 - The app should be live [here](http://localhost:4200)
+
+## Deploying
+Sample github actions workflows are provided in `.github/workflows-disabled`.
+If you're deploying on Heroku, these should be good for most use cases.  
+
+Be sure to change `YOUR-APP-NAME` in the `web.yml` and `api.yml` file to your actual Heroku app names.
+
+When you're ready to activate the actions, rename the folder to `.github/workflows`.

@@ -1,3 +1,4 @@
+import path from 'path';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -24,7 +25,10 @@ import { SpaceUser } from './space-user/space-user.entity';
 			},
 			entities: [__dirname + '/**/*.entity{.ts,.js}'],
 			synchronize: process.env.DATABASE_SYNCHRONIZE === 'true' || false,
-			logging: <any>process.env.LOGGING || false
+			logging: <any>process.env.LOGGING || false,
+			autoLoadEntities: true,
+			migrations: [path.resolve(__dirname + '/../migrations-js') + '/*.js'],
+			migrationsRun: process.env.DATABASE_MIGRATE_ON_STARTUP === 'true' || false
 		}),
 		TypeOrmModule.forFeature(
 			[
