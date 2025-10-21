@@ -7,7 +7,7 @@
     "start": "npm run config && node server.js",
     "start:dev": "npm run config && node --max_old_space_size=8192 node_modules/@angular/cli/bin/ng serve --configuration=development",
     "heroku-prebuild": "cp .npmrc.example .npmrc",
-	"heroku-postbuild": "ts-node src/environments/set-env.ts",
+    "heroku-postbuild": "ts-node src/environments/set-env.ts",
     "build": "npm run config && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "npm run config && ng test"
@@ -15,6 +15,7 @@
   "private": true,
   "dependencies": {
     "@angular/animations": "^20.2.4",
+    "@angular/cdk": "^20.2.9",
     "@angular/common": "^20.2.4",
     "@angular/compiler": "^20.2.4",
     "@angular/core": "^20.2.4",
