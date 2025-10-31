@@ -1,0 +1,40 @@
+name: Deploy Web to Heroku Prod
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/web.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+      - name: Build web
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          API_SETTINGS: ${{ secrets.API_SETTINGS }}
+        run: |
+          export NODE_OPTIONS="--max_old_space_size=4096"
+          cd apps/api
+          npm i --ignore-scripts
+          cd ../web
+          cp .npmrc.example .npmrc
+          npm i --ignore-scripts
+          npm run build
+          git config user.email "michael.may@vmlyrcommerce.com"
+          git config user.name "Michael May"
+          git config http.postBuffer 524288000
+          git add -f dist
+          git commit -m "Built latest;"
+          cd ..
+      - name: Add web remote origin
+        run: git remote add heroku-prod https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/YOUR-APP-NAME.git
+      - name: Deploy web to Heroku
+        run: git push heroku-prod `git subtree split --prefix=apps/web main`:refs/heads/master --force
