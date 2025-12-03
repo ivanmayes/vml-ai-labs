@@ -93,11 +93,12 @@ export class AuthService {
 	}
 
 	/**
-	 * Removes all the user's auth tokens (log out).
+	 * Removes a single auth token (log out current session only).
 	 *
 	 * @param id The user's id.
+	 * @param token The token to remove.
 	 */
-	public async removeAuthTokens(id: string) {
+	public async removeAuthTokens(id: string, token: string) {
 		const conn = this.dataSource;
 		const result = await conn
 			.query(
@@ -106,12 +107,13 @@ export class AuthService {
 							UPDATE
 								users
 							SET
-								"authTokens" = '{}'
+								"authTokens" = array_remove("authTokens", :token)
 							WHERE
 								id = :id
 						`,
 					{
-						id
+						id,
+						token
 					},
 					{}
 				)
@@ -122,7 +124,7 @@ export class AuthService {
 			});
 
 		if(!result) {
-			throw new Error('Error removing tokens.');
+			throw new Error('Error removing token.');
 		}
 
 		return result;

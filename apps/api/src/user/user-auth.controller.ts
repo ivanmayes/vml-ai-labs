@@ -71,7 +71,8 @@ export class UserAuthController {
 	@Post('sign-out')
 	@UseGuards(AuthGuard())
 	public async signOut(@Request() req: any) {
-		const result = await this.authService.removeAuthTokens(req.user.id)
+		const token = req.headers.authorization?.split(' ')[1];
+		const result = await this.authService.removeAuthTokens(req.user.id, token)
 			.catch(err => {
 				console.log(err);
 				return null;
