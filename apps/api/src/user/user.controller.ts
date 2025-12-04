@@ -111,12 +111,10 @@ export class UserController {
 			);
 		}
 
-		const authenticationStrategy = await this.authenticationStrategyService
-			.find({
-				where: {
-					id: addReq.authenticationStrategyId,
-					organizationId: orgId
-				},
+		// Get the organization to check for default auth strategy
+		const organization: Organization = await this.organizationService
+			.findOne({
+				where: { id: orgId },
 				loadEagerRelations: false
 			})
 			.catch(err => {
@@ -124,11 +122,57 @@ export class UserController {
 				return null;
 			});
 
-		if(!authenticationStrategy) {
+		if(!organization) {
 			throw new HttpException(
-				new ResponseEnvelope(ResponseStatus.Failure, `Invalid Authentication Strategy provided.`),
-				HttpStatus.BAD_REQUEST
+				new ResponseEnvelope(ResponseStatus.Failure, `Organization not found.`),
+				HttpStatus.NOT_FOUND
 			);
+		}
+
+		let authenticationStrategyId: string = null;
+
+		if(addReq.authenticationStrategyId) {
+			// Validate the provided auth strategy exists
+			const authStrategy = await this.authenticationStrategyService
+				.findOne({
+					where: {
+						id: addReq.authenticationStrategyId,
+						organizationId: orgId
+					},
+					loadEagerRelations: false
+				})
+				.catch(err => {
+					console.log(err);
+					return null;
+				});
+
+			if(!authStrategy) {
+				throw new HttpException(
+					new ResponseEnvelope(ResponseStatus.Failure, `Invalid Authentication Strategy provided.`),
+					HttpStatus.BAD_REQUEST
+				);
+			}
+			authenticationStrategyId = authStrategy.id;
+		} else if(organization.defaultAuthenticationStrategyId) {
+			// Use the organization's default auth strategy
+			authenticationStrategyId = organization.defaultAuthenticationStrategyId;
+		} else {
+			// Try to find any available auth strategy for the organization
+			const authStrategy = await this.authenticationStrategyService
+				.findOne({
+					where: {
+						organizationId: orgId
+					},
+					loadEagerRelations: false
+				})
+				.catch(err => {
+					console.log(err);
+					return null;
+				});
+
+			if(authStrategy) {
+				authenticationStrategyId = authStrategy.id;
+			}
 		}
 
 		if(addReq.permissions?.length && req.user.role !== UserRole.SuperAdmin) {
@@ -149,7 +193,7 @@ export class UserController {
 					emailNormalized: FraudPrevention.Forms.Normalization.normalizeEmail(addReq.email),
 					role: addReq.role,
 					organizationId: orgId,
-					authenticationStrategyId: addReq.authenticationStrategyId,
+					authenticationStrategyId: authenticationStrategyId,
 					deactivated: addReq.deactivated,
 					profile: addReq.profile,
 					permissions: addReq.permissions
@@ -166,8 +210,6 @@ export class UserController {
 				HttpStatus.INTERNAL_SERVER_ERROR
 			);
 		}
-
-		user.authenticationStrategy = authenticationStrategy[0];
 
 
 		return new ResponseEnvelope(

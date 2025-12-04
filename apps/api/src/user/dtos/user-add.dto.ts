@@ -25,9 +25,9 @@ export class UserAddDto {
 	@IsEnum(UserRole)
 	role: UserRole;
 
-	@IsNotEmpty()
+	@IsOptional()
 	@IsUUID()
-	authenticationStrategyId: string;
+	authenticationStrategyId?: string;
 
 	@IsBoolean()
 	@IsOptional()

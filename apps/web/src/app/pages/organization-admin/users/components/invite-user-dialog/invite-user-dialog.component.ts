@@ -30,7 +30,7 @@ export class InviteUserDialogComponent implements OnInit {
 	initForm(): void {
 		this.form = this.fb.group({
 			email: ['', [Validators.required, Validators.email]],
-			role: ['admin', Validators.required],
+			role: ['user', Validators.required],
 			nameFirst: ['', Validators.required],
 			nameLast: ['', Validators.required]
 		});
@@ -39,18 +39,23 @@ export class InviteUserDialogComponent implements OnInit {
 	setupAvailableRoles(): void {
 		const currentUserRole = this.config.data?.currentUserRole;
 
-		// Define role hierarchy
+		// Define all roles in hierarchy order (highest to lowest privilege)
+		// Role index determines what each role can assign (can only assign roles at same level or below)
 		const allRoles = [
-			{ label: 'Admin', value: 'admin' },
-			{ label: 'Super Admin', value: 'super-admin' }
+			{ label: 'Super Admin', value: 'super-admin', index: 0 },
+			{ label: 'Admin', value: 'admin', index: 1 },
+			{ label: 'Manager', value: 'manager', index: 2 },
+			{ label: 'User', value: 'user', index: 3 },
+			{ label: 'Guest', value: 'guest', index: 4 }
 		];
 
-		// Filter roles based on current user's role
-		if (currentUserRole === 'super-admin') {
-			this.availableRoles = allRoles;
-		} else if (currentUserRole === 'admin') {
-			this.availableRoles = allRoles.filter(r => r.value === 'admin');
-		}
+		// Map current user role to index
+		const roleIndex = allRoles.find(r => r.value === currentUserRole)?.index ?? 999;
+
+		// Filter to roles the current user can assign (same level or below)
+		this.availableRoles = allRoles
+			.filter(r => r.index >= roleIndex)
+			.map(({ label, value }) => ({ label, value }));
 	}
 
 	onSubmit(): void {
@@ -63,56 +68,27 @@ export class InviteUserDialogComponent implements OnInit {
 		const formValue = this.form.value;
 		const organizationId = this.config.data?.organizationId;
 
-		// Get the auth strategy ID - we need to fetch this from the organization
-		// For now, fetch the organization's authentication strategies
-		this.adminService.getOrganization(organizationId).subscribe({
-			next: (org) => {
-				// Use the first available authentication strategy
-				const authStrategyId = org.authenticationStrategies?.[0]?.id;
-
-				if (!authStrategyId) {
-					this.messageService.add({
-						severity: 'error',
-						summary: 'Error',
-						detail: 'No authentication strategy found for organization',
-						life: 3000
-					});
-					this.loading = false;
-					return;
-				}
-
-				this.adminService.inviteUser(
-					organizationId,
-					formValue.email,
-					formValue.role,
-					authStrategyId,
-					{
-						nameFirst: formValue.nameFirst,
-						nameLast: formValue.nameLast
-					}
-				).subscribe({
-					next: () => {
-						this.loading = false;
-						this.ref.close(true);
-					},
-					error: (error) => {
-						console.error('Error inviting user:', error);
-						this.messageService.add({
-							severity: 'error',
-							summary: 'Error',
-							detail: error.error?.message || 'Failed to invite user',
-							life: 3000
-						});
-						this.loading = false;
-					}
-				});
+		// Invite the user - backend will auto-select auth strategy if not provided
+		this.adminService.inviteUser(
+			organizationId,
+			formValue.email,
+			formValue.role,
+			undefined, // Let backend pick auth strategy
+			{
+				nameFirst: formValue.nameFirst,
+				nameLast: formValue.nameLast
+			}
+		).subscribe({
+			next: () => {
+				this.loading = false;
+				this.ref.close(true);
 			},
 			error: (error) => {
-				console.error('Error fetching organization:', error);
+				console.error('Error inviting user:', error);
 				this.messageService.add({
 					severity: 'error',
 					summary: 'Error',
-					detail: 'Failed to fetch organization details',
+					detail: error.error?.message || 'Failed to invite user',
 					life: 3000
 				});
 				this.loading = false;
