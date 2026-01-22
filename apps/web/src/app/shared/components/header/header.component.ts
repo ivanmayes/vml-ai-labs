@@ -14,6 +14,7 @@ import { GlobalQuery } from '../../../state/global/global.query';
  * This component handles the view for the header bar for the site, including the navigation and user profile.
  */
 @Component({
+	standalone: false,
 	selector: 'app-header',
 	templateUrl: './header.component.html',
 	styleUrls: ['./header.component.scss'],

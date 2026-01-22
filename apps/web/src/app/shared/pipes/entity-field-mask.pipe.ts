@@ -3,6 +3,7 @@ import { GlobalQuery } from '../../state/global/global.query';
 import { resolveDotNotationPath } from '../../_core/utils/object.utils';
 
 @Pipe({
+	standalone: false,
     name: 'entityFieldMask',
     
 })

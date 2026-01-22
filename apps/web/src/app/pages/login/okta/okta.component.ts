@@ -6,6 +6,7 @@ import { SessionService } from '../../../state/session/session.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
+	standalone: false,
     selector: 'app-auth-okta',
     templateUrl: './okta.component.html',
     styleUrls: ['./okta.component.scss'],

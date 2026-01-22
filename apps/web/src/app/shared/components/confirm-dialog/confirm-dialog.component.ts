@@ -18,6 +18,7 @@ export interface ConfirmDialogData {
  * Supports type confirmation as well
  */
 @Component({
+	standalone: false,
     selector: 'app-confirm-dialog',
     templateUrl: './confirm-dialog.component.html',
     styleUrls: ['./confirm-dialog.component.scss'],

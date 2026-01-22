@@ -5,6 +5,7 @@ import { SpaceService } from '../../../../../shared/services/space.service';
 import { MessageService } from 'primeng/api';
 
 @Component({
+	standalone: false,
 	selector: 'app-space-form-dialog',
 	templateUrl: './space-form-dialog.component.html',
 	

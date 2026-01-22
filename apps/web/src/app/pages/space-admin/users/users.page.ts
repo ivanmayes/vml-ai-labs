@@ -11,6 +11,7 @@ import { InviteUserDialogComponent } from './components/invite-user-dialog/invit
 import { ChangeRoleDialogComponent } from './components/change-role-dialog/change-role-dialog.component';
 
 @Component({
+	standalone: false,
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],

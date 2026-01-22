@@ -14,6 +14,7 @@ import { fade } from '../../../_core/utils/animations.utils';
  * Ideally, only devs would use this and everyone else would be using SSO
  */
 @Component({
+	standalone: false,
 	selector: 'app-auth-basic',
 	templateUrl: './basic.component.html',
 	styleUrls: ['./basic.component.scss'],

@@ -6,6 +6,7 @@ import { MessageService } from 'primeng/api';
 import { environment } from '../../../environments/environment';
 
 @Component({
+	standalone: false,
 	selector: 'app-space',
 	templateUrl: './space.page.html',
 	styleUrls: ['./space.page.scss'],

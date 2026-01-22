@@ -14,6 +14,7 @@ import type { PublicUser } from '../../../../../../../api/src/user/user.entity';
  * This component handles the navigation of the header.
  */
 @Component({
+	standalone: false,
 	selector: 'app-navigation-bar',
 	templateUrl: './navigation-bar.component.html',
 	styleUrls: ['./navigation-bar.component.scss'],

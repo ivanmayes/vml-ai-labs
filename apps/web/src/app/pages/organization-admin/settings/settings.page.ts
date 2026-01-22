@@ -4,6 +4,7 @@ import { OrganizationAdminService } from '../../../shared/services/organization-
 import { environment } from '../../../../environments/environment';
 
 @Component({
+	standalone: false,
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],

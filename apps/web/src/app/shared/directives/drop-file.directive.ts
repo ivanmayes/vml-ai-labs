@@ -5,6 +5,7 @@ import { Directive, Output, Input, EventEmitter, HostBinding, HostListener } fro
  * A directive to enable the user to drag and drop a file onto an area in order to upload the file.
  */
 @Directive({
+	standalone: false,
     selector: '[appDropFile]',
     
 })

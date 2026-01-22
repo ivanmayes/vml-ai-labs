@@ -14,6 +14,7 @@ export interface SelectDialogData {
  * Give the user some options, get result.
  */
 @Component({
+	standalone: false,
     selector: 'app-select-dialog',
     templateUrl: './select-dialog.component.html',
     styleUrls: ['./select-dialog.component.scss'],

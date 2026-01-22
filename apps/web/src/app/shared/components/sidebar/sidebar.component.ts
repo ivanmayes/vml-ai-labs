@@ -21,6 +21,7 @@ import { GlobalSettings } from '../../../state/global/global.model';
  * - Active route highlighting provides clear navigation feedback
  */
 @Component({
+	standalone: false,
 	selector: 'app-sidebar',
 	templateUrl: './sidebar.component.html',
 	styleUrls: ['./sidebar.component.scss'],

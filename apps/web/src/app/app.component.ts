@@ -22,6 +22,7 @@ import { OsContext } from '@wppopen/core';
 import { Hierarchy } from '../../../api/src/_core/third-party/wpp-open/models';
 
 @Component({
+	standalone: false,
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],

@@ -7,6 +7,7 @@ import { Space } from '../../../shared/models/space.model';
 import { environment } from '../../../../environments/environment';
 
 @Component({
+	standalone: false,
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],

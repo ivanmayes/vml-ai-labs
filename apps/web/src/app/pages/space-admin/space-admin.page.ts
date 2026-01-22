@@ -5,6 +5,7 @@ import { Space } from '../../shared/models/space.model';
 import { environment } from '../../../environments/environment';
 
 @Component({
+	standalone: false,
 	selector: 'app-space-admin',
 	templateUrl: './space-admin.page.html',
 	styleUrls: ['./space-admin.page.scss'],

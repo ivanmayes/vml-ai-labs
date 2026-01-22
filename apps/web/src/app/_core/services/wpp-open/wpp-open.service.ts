@@ -3,7 +3,7 @@ import {
 	FramedAppParentMethods,
 	OsContext,
 } from '@wppopen/core';
-import { connectToParent } from 'penpal';
+import { connectToParent, AsyncMethodReturns } from 'penpal';
 import { environment } from '../../../../environments/environment';
 import { Injectable } from '@angular/core';
 
@@ -11,9 +11,8 @@ import { Injectable } from '@angular/core';
 	providedIn: 'root',
 })
 export class WppOpenService {
-	private connection: Awaited<
-		ReturnType<typeof connectToParent<FramedAppParentMethods>>
-	> | null = null;
+	private connection: AsyncMethodReturns<FramedAppParentMethods> | null =
+		null;
 	private connecting = false;
 	private connected = false;
 

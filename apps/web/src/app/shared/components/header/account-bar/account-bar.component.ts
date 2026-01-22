@@ -15,6 +15,7 @@ import { ThemeService } from '../../../services/theme.service';
  * This component handles the user profile / account button on the header bar.
  */
 @Component({
+	standalone: false,
     selector: 'app-account-bar',
     templateUrl: './account-bar.component.html',
     styleUrls: ['./account-bar.component.scss'],

@@ -12,6 +12,7 @@ import { SessionQuery } from '../../state/session/session.query';
  * Used mostly to pull in images from the SIMPL API
  */
 @Pipe({
+	standalone: false,
     name: 'secure',
     
 })

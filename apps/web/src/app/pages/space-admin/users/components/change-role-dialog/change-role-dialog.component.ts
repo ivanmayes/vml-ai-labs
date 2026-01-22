@@ -5,6 +5,7 @@ import { SpaceRole } from '../../../../../shared/models/space-role.enum';
 import { SpaceUser } from '../../../../../shared/models/space-user.model';
 
 @Component({
+	standalone: false,
 	selector: 'app-change-role-dialog',
 	templateUrl: './change-role-dialog.component.html',
 	styleUrls: ['./change-role-dialog.component.scss'],

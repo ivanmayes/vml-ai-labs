@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 
 @Component({
+	standalone: false,
 	selector: 'app-organization-admin',
 	templateUrl: './organization-admin.page.html',
 	styleUrls: ['./organization-admin.page.scss'],

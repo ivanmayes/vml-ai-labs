@@ -5,6 +5,7 @@ import { Directive, OnInit, Renderer2, Input, ElementRef } from '@angular/core';
  * This directive will make a component's height extend down to the bottom of the page based on where it is located
  */
 @Directive({
+	standalone: false,
 	selector: '[appFillHeight]',
 })
 export class FillHeightDirective implements OnInit {

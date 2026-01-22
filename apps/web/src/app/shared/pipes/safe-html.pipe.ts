@@ -6,6 +6,7 @@ import { DomSanitizer } from '@angular/platform-browser';
  * This pipe allows for safe HTML content to be inserted into the DOM
  */
 @Pipe({
+	standalone: false,
     name: 'safeHtml',
     
 })

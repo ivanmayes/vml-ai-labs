@@ -32,6 +32,7 @@ import { environment } from '../../../environments/environment';
  * - ARIA accessibility labels
  */
 @Component({
+	standalone: false,
     selector: 'app-login',
     templateUrl: './login.page.html',
     styleUrls: ['./login.page.scss'],

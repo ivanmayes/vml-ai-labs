@@ -5,6 +5,7 @@ import { OrganizationAdminService } from '../../../../../shared/services/organiz
 import { MessageService } from 'primeng/api';
 
 @Component({
+	standalone: false,
 	selector: 'app-promote-user-dialog',
 	templateUrl: './promote-user-dialog.component.html',
 	

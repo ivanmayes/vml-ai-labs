@@ -6,6 +6,7 @@ import { joinWithProp } from '../../_core/utils/array.utils';
  * Takes an array and joins it into a string with a custom separator
  */
 @Pipe({
+	standalone: false,
     name: 'joinWithProp',
     
 })
