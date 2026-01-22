@@ -1,4 +1,8 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import {
+	HttpClient,
+	HttpErrorResponse,
+	HttpHeaders,
+} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { GlobalStore } from './global.store';
@@ -17,14 +21,14 @@ import { UserRole } from '../../../../../api/src/user/user-role.enum';
 export class GlobalService {
 	public basePath = environment.apiUrl;
 	public defaultHeaders = new HttpHeaders({
-		Accept: 'application/json'
+		Accept: 'application/json',
 	});
 
 	constructor(
 		private globalStore: GlobalStore,
 		private httpClient: HttpClient,
 		private titleService: Title,
-		private messageService: MessageService
+		private messageService: MessageService,
 	) {}
 
 	/**
@@ -34,18 +38,21 @@ export class GlobalService {
 		this.globalStore.setLoading(true);
 
 		return this.httpClient
-			.get<GlobalSettings>(`${environment.apiUrl}/organization/${environment.organizationId}/settings`, {
-				headers: this.defaultHeaders
-			})
+			.get<GlobalSettings>(
+				`${environment.apiUrl}/organization/${environment.organizationId}/settings`,
+				{
+					headers: this.defaultHeaders,
+				},
+			)
 			.pipe(
-				tap(settings => {
+				tap((settings) => {
 					this.globalStore.update({
 						settings: {
-							...settings
-						}
+							...settings,
+						},
 					});
 					this.globalStore.setLoading(false);
-				})
+				}),
 			);
 	}
 
@@ -57,14 +64,17 @@ export class GlobalService {
 		this.globalStore.setLoading(true);
 
 		return this.httpClient
-			.get<any>(`${environment.apiUrl}/organization/${environment.organizationId}/public`, { headers: this.defaultHeaders })
+			.get<any>(
+				`${environment.apiUrl}/organization/${environment.organizationId}/public`,
+				{ headers: this.defaultHeaders },
+			)
 			.pipe(
-				tap(settings => {
+				tap((settings) => {
 					this.globalStore.update({
-						settings
+						settings,
 					});
 					this.globalStore.setLoading(false);
-				})
+				}),
 			);
 	}
 
@@ -72,19 +82,23 @@ export class GlobalService {
 		this.globalStore.setLoading(true);
 
 		return this.httpClient
-			.put<any>(`${environment.apiUrl}/organization/${environment.organizationId}/settings`, settings, {
-				headers: this.defaultHeaders
-			})
+			.put<any>(
+				`${environment.apiUrl}/organization/${environment.organizationId}/settings`,
+				settings,
+				{
+					headers: this.defaultHeaders,
+				},
+			)
 			.pipe(
-				tap(settings => {
+				tap((settings) => {
 					this.globalStore.update({
 						settings: {
 							...this.globalStore.getValue().settings,
-							settings
-						}
+							settings,
+						},
 					});
 					this.globalStore.setLoading(false);
-				})
+				}),
 			);
 	}
 
@@ -95,7 +109,7 @@ export class GlobalService {
 	setAdminMode(state?: boolean) {
 		console.log('Setting Admin mode', state);
 		this.globalStore.update({
-			adminMode: state || !this.globalStore.getValue().adminMode
+			adminMode: state || !this.globalStore.getValue().adminMode,
 		});
 	}
 
@@ -106,8 +120,8 @@ export class GlobalService {
 		this.globalStore.update({
 			header: {
 				...this.globalStore.getValue().header,
-				visible: false
-			}
+				visible: false,
+			},
 		});
 	}
 
@@ -118,8 +132,8 @@ export class GlobalService {
 		this.globalStore.update({
 			header: {
 				...this.globalStore.getValue().header,
-				visible: true
-			}
+				visible: true,
+			},
 		});
 	}
 
@@ -127,12 +141,15 @@ export class GlobalService {
 		this.globalStore.update({
 			header: {
 				...this.globalStore.getValue().header,
-				...headerSettings
-			}
+				...headerSettings,
+			},
 		});
 	}
 
-	getOrganizationSettingsFormObject(settings: OrganizationSettings, controlOverrides: any = {}) {
+	getOrganizationSettingsFormObject(
+		settings: OrganizationSettings,
+		controlOverrides: any = {},
+	) {
 		return {
 			// Map settings here
 		};
@@ -143,12 +160,13 @@ export class GlobalService {
 	 */
 	getColorFromSettingsEntity(key: string, id: string) {
 		switch (key) {
-			default:
-				let entities = this.globalStore.getValue().settings[key];
+			default: {
+				const entities = this.globalStore.getValue().settings[key];
 				if (entities) {
-					return entities.find(entity => entity.id === id)?.color;
+					return entities.find((entity) => entity.id === id)?.color;
 				}
 				break;
+			}
 		}
 	}
 
@@ -156,7 +174,9 @@ export class GlobalService {
 	 * Set the Browser title bar message.
 	 */
 	setTitle(title: string) {
-		this.titleService.setTitle(title + ' | ' + this.globalStore.getValue()?.settings?.name);
+		this.titleService.setTitle(
+			title + ' | ' + this.globalStore.getValue()?.settings?.name,
+		);
 	}
 
 	/**
@@ -168,7 +188,7 @@ export class GlobalService {
 			severity: 'success',
 			summary: 'Success',
 			detail: message || 'Save Successful.',
-			life: 2000
+			life: 2000,
 		});
 	}
 
@@ -181,7 +201,7 @@ export class GlobalService {
 			severity: 'success',
 			summary: 'Success',
 			detail: message || 'Save Successful.',
-			life: 2000
+			life: 2000,
 		});
 	}
 
@@ -194,13 +214,20 @@ export class GlobalService {
 		this.messageService.add({
 			severity: 'error',
 			summary: 'Error',
-			detail: err?.error?.message || err?.message || message || 'There was an error completing this task.',
-			life: 4000
+			detail:
+				err?.error?.message ||
+				err?.message ||
+				message ||
+				'There was an error completing this task.',
+			life: 4000,
 		});
 	}
 
 	private userRolesArray(addAllOption?: boolean) {
-		const rolesArray = Object.values(UserRole).map(role => ({ id: role as string, name: role as string }));
+		const rolesArray = Object.values(UserRole).map((role) => ({
+			id: role as string,
+			name: role as string,
+		}));
 		if (addAllOption) {
 			rolesArray.unshift({ id: 'all', name: 'All' });
 		}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 // Configure Angular `environment.ts` file path
 const targetPath = './src/environments/environment.ts';
@@ -13,13 +14,21 @@ export const environment = {
 	${getAPISettingsVars()}
 };
 `;
-console.log(colors.magenta('The file `environment.ts` will be written with the following content: \n'));
+console.log(
+	colors.magenta(
+		'The file `environment.ts` will be written with the following content: \n',
+	),
+);
 console.log(colors.grey(envConfigFile));
 fs.writeFile(targetPath, envConfigFile, function (err) {
 	if (err) {
 		throw console.error(err);
 	} else {
-		console.log(colors.magenta(`Angular environment.ts file generated correctly at ${targetPath} \n`));
+		console.log(
+			colors.magenta(
+				`Angular environment.ts file generated correctly at ${targetPath} \n`,
+			),
+		);
 		process.exit();
 	}
 });
@@ -29,37 +38,43 @@ function getAPISettingsVars() {
 	let vars = '';
 
 	try {
-		let map = JSON.parse(process.env.API_SETTINGS);
+		const map = JSON.parse(process.env.API_SETTINGS);
 
-		if(map['localhost']) {
+		if (map['localhost']) {
 			vars += `exclusive: ${map['localhost'].length === 1 ? true : false},\n`;
 
-			let settings = JSON.stringify(map['localhost']) ? `JSON.parse('${JSON.stringify(map['localhost'])}')` : undefined;
+			const settings = JSON.stringify(map['localhost'])
+				? `JSON.parse('${JSON.stringify(map['localhost'])}')`
+				: undefined;
 			vars += `\tapiSettings: ${settings},\n`;
 
-			let host = map['localhost']?.[0].endpoint ? `'${map['localhost']?.[0].endpoint}'` : undefined;
+			const host = map['localhost']?.[0].endpoint
+				? `'${map['localhost']?.[0].endpoint}'`
+				: undefined;
 			vars += `\tapiUrl: ${host},\n`;
 
-			let org = map['localhost']?.[0].organizationId ? `'${map['localhost']?.[0].organizationId}'` : undefined;
+			const org = map['localhost']?.[0].organizationId
+				? `'${map['localhost']?.[0].organizationId}'`
+				: undefined;
 			vars += `\torganizationId: ${org},\n`;
 
-			let production = process.env.PRODUCTION || false;
+			const production = process.env.PRODUCTION || false;
 			vars += `\tproduction: ${production},\n`;
 
-			let locale = `'${map['localhost']?.[0].locale || 'en-US'}'`;
+			const locale = `'${map['localhost']?.[0].locale || 'en-US'}'`;
 			vars += `\tlocale: ${locale},`;
 
-			let wppOpenParentOrigin = `'${map['localhost']?.[0].wppOpenParentOrigin || ''}'`;
+			const wppOpenParentOrigin = `'${map['localhost']?.[0].wppOpenParentOrigin || ''}'`;
 			vars += `\twppOpenParentOrigin: ${wppOpenParentOrigin},\n`;
 
-			let wppOpenDebug = `'${map['localhost']?.[0].wppOpenDebug || ''}'`;
+			const wppOpenDebug = `'${map['localhost']?.[0].wppOpenDebug || ''}'`;
 			vars += `\twppOpenDebug: ${wppOpenDebug}\n`;
 
 			return vars;
 		} else {
 			throw new Error('Bad settings map.');
 		}
-	} catch(err) {
+	} catch (err) {
 		console.log(err);
 		return `
 			exclusive: window['exclusive'],

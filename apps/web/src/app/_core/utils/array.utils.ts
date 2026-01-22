@@ -35,7 +35,7 @@ export enum ReduceOperation {
 	COUNT = 'count',
 	SUM = 'sum',
 	AVERAGE = 'average',
-	FIRST = 'first'
+	FIRST = 'first',
 }
 
 export function pluckFromArray(
@@ -43,27 +43,36 @@ export function pluckFromArray(
 	property: string,
 	reduceOperation: string,
 	filterPath?: string,
-	filterValue?: string
+	filterValue?: string,
 ): unknown {
 	if (input?.length) {
 		let inputArray = input;
 
 		if (!!filterPath && !!filterValue) {
-			inputArray = input.filter(item => resolveDotNotationPath(filterPath, item) === filterValue);
+			inputArray = input.filter(
+				(item) =>
+					resolveDotNotationPath(filterPath, item) === filterValue,
+			);
 		}
 
 		switch (reduceOperation) {
 			case ReduceOperation.JOIN: {
-				return inputArray.map(d => d[property]).join(', ');
+				return inputArray.map((d) => d[property]).join(', ');
 			}
 			case ReduceOperation.COUNT: {
 				return inputArray?.length;
 			}
 			case ReduceOperation.SUM: {
-				return inputArray.reduce((sum, curr) => sum + +curr[property], 0);
+				return inputArray.reduce(
+					(sum, curr) => sum + +curr[property],
+					0,
+				);
 			}
 			case ReduceOperation.AVERAGE: {
-				const sum = inputArray.reduce((sum, curr) => sum + +curr[property], 0);
+				const sum = inputArray.reduce(
+					(sum, curr) => sum + +curr[property],
+					0,
+				);
 				return sum / inputArray?.length || 0;
 			}
 			case ReduceOperation.FIRST: {
@@ -83,14 +92,17 @@ export function pluckFromArray(
  * @param items
  * @param iterator
  */
-export function groupEntities(items: any, iterator: Function) {
-	const arr = [];
+export function groupEntities<T>(
+	items: T[],
+	iterator: (item: T) => string | number,
+) {
+	const arr: { name: string; items: T[] }[] = [];
 	const obj = groupBy(items, iterator);
 
-	Object.keys(obj).forEach(key => {
+	Object.keys(obj).forEach((key) => {
 		arr.push({
 			name: key,
-			items: obj[key]
+			items: obj[key],
 		});
 	});
 
@@ -102,16 +114,25 @@ export function groupEntities(items: any, iterator: Function) {
  * @param items
  * @param iterator
  */
-export function sortEntities(items: any, iterator: Function) {
+export function sortEntities<T>(
+	items: T[],
+	iterator: (item: T) => string | number | boolean,
+) {
 	return sortBy(items, iterator);
 }
 
 /**
  * Join nested array values together with a custom separator
  */
-export function joinWithProp(input: any[], path: string = 'name', seperator: string = ', '): string {
+export function joinWithProp(
+	input: any[],
+	path = 'name',
+	seperator = ', ',
+): string {
 	if (Array.isArray(input)) {
-		return input.map(d => resolveDotNotationPath(path, d)).join(seperator);
+		return input
+			.map((d) => resolveDotNotationPath(path, d))
+			.join(seperator);
 	} else {
 		return '';
 	}

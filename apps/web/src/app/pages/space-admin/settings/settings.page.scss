@@ -5,8 +5,8 @@
 
 .settings-content {
 	:host ::ng-deep .p-card {
-		background: var(--surface-card);
-		border: 1px solid var(--surface-border);
+		background: var(--p-surface-card);
+		border: 1px solid var(--p-surface-border);
 		box-shadow: var(--card-shadow);
 
 		.p-card-body {
@@ -28,17 +28,17 @@
 
 	label {
 		font-weight: 500;
-		color: var(--text-color);
+		color: var(--p-text-color);
 		font-size: 0.875rem;
 
 		&.required::after {
-			content: ' *';
-			color: var(--red-500);
+			content: " *";
+			color: var(--p-red-500);
 		}
 	}
 
 	.help-text {
-		color: var(--text-color-secondary);
+		color: var(--p-text-color-secondary);
 		font-size: 0.8125rem;
 		margin-top: 0.25rem;
 	}
@@ -60,13 +60,13 @@
 .form-actions {
 	margin-top: 2rem;
 	padding-top: 1.5rem;
-	border-top: 1px solid var(--surface-border);
+	border-top: 1px solid var(--p-surface-border);
 	display: flex;
 	gap: 1rem;
 	justify-content: flex-end;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
 	.settings-container {
 		max-width: 100%;
 	}

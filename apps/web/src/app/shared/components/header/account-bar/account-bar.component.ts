@@ -18,7 +18,7 @@ import { ThemeService } from '../../../services/theme.service';
     selector: 'app-account-bar',
     templateUrl: './account-bar.component.html',
     styleUrls: ['./account-bar.component.scss'],
-    standalone: false
+    
 })
 export class AccountBarComponent implements OnInit {
 	public settings$: Observable<GlobalSettings>;

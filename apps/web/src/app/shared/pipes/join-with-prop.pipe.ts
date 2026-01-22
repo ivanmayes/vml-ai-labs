@@ -7,7 +7,7 @@ import { joinWithProp } from '../../_core/utils/array.utils';
  */
 @Pipe({
     name: 'joinWithProp',
-    standalone: false
+    
 })
 export class JoinWithPropPipe implements PipeTransform {
 	public transform = joinWithProp;

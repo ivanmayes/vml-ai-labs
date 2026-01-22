@@ -7,11 +7,11 @@ import { MessageService } from 'primeng/api';
 @Component({
 	selector: 'app-space-form-dialog',
 	templateUrl: './space-form-dialog.component.html',
-	standalone: false
+	
 })
 export class SpaceFormDialogComponent implements OnInit {
 	form: FormGroup;
-	loading: boolean = false;
+	loading = false;
 	mode: 'create' | 'edit' = 'create';
 
 	constructor(

@@ -36,7 +36,7 @@ import { environment } from '../../../environments/environment';
     templateUrl: './login.page.html',
     styleUrls: ['./login.page.scss'],
     animations: [fade('fade', 400, '-50%')],
-    standalone: false
+    
 })
 export class LoginComponent implements OnInit, OnDestroy {
 	// Observables
@@ -54,10 +54,10 @@ export class LoginComponent implements OnInit, OnDestroy {
 
 	// Error handling
 	public emailError: any;
-	public otpError: boolean = false;
+	public otpError = false;
 	public settingsError: string;
-	public resendSuccess: boolean = false;
-	public isSubmitting: boolean = false;
+	public resendSuccess = false;
+	public isSubmitting = false;
 
 	// Configuration
 	public exclusiveServer = environment.exclusive;
@@ -119,7 +119,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 			}
 		);
 
-		let snapshot = this.activatedRoute.snapshot;
+		const snapshot = this.activatedRoute.snapshot;
 
 		// Look to see if we got here from an Okta call back.  If so
 		// complete the okta login flow.
@@ -129,8 +129,8 @@ export class LoginComponent implements OnInit, OnDestroy {
 				this.router.navigate(['/login']);
 			}
 		} else if (snapshot.data.samlCallback) {
-			let orgId = snapshot.params.orgId;
-			let authChallenge = decodeURIComponent(snapshot.params.authChallenge);
+			const orgId = snapshot.params.orgId;
+			const authChallenge = decodeURIComponent(snapshot.params.authChallenge);
 			this.sessionService.samlSignIn(orgId, authChallenge)
 				.subscribe(
 					response => {

@@ -14,16 +14,16 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 	selector: 'app-spaces',
 	templateUrl: './spaces.page.html',
 	styleUrls: ['./spaces.page.scss'],
-	standalone: false,
+	
 	providers: [ConfirmationService]
 })
 export class SpacesPage implements OnInit, OnDestroy {
 	spaces: Space[] = [];
-	loading: boolean = false;
+	loading = false;
 	organizationId: string;
-	currentSortField: string = 'created';
-	currentSortOrder: string = 'desc';
-	currentSearchQuery: string = '';
+	currentSortField = 'created';
+	currentSortOrder = 'desc';
+	currentSearchQuery = '';
 	private searchSubject = new Subject<string>();
 	Array = Array;
 

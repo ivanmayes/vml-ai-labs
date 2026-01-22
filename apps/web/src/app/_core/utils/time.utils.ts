@@ -10,7 +10,7 @@ export class TimeUtils {
 		}
 
 		const durationMultiplier = parseFloat(durationString);
-		const durationType = durationString.replace(/[0-9\.]/g, '');
+		const durationType = durationString.replace(/[0-9.]/g, '');
 
 		switch (durationType) {
 			case 'h':
@@ -52,27 +52,32 @@ export class TimeUtils {
 	 * @param date
 	 * @returns
 	 */
-	public static getTimeUntilDate(date: string): { days: number, hours: number, minutes: number, seconds: number } {
+	public static getTimeUntilDate(date: string): {
+		days: number;
+		hours: number;
+		minutes: number;
+		seconds: number;
+	} {
 		const now = new Date().getTime();
 		const then = new Date(date).getTime();
 
 		// get total seconds between the times
-		var delta = Math.abs(then - now) / 1000;
+		let delta = Math.abs(then - now) / 1000;
 
 		// calculate (and subtract) whole days
-		var days = Math.floor(delta / 86400);
+		const days = Math.floor(delta / 86400);
 		delta -= days * 86400;
 
 		// calculate (and subtract) whole hours
-		var hours = Math.floor(delta / 3600) % 24;
+		const hours = Math.floor(delta / 3600) % 24;
 		delta -= hours * 3600;
 
 		// calculate (and subtract) whole minutes
-		var minutes = Math.floor(delta / 60) % 60;
+		const minutes = Math.floor(delta / 60) % 60;
 		delta -= minutes * 60;
 
 		// what's left is seconds
-		var seconds = delta % 60;
+		const seconds = delta % 60;
 
 		return { days, hours, minutes, seconds };
 	}

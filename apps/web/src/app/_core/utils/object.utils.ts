@@ -66,6 +66,6 @@ export function objectIsEmpty(obj) {
  */
 
 export function getLastPropertyFromPath(path) {
-	let paths = path.split('.');
+	const paths = path.split('.');
 	return paths[paths.length - 1];
 }

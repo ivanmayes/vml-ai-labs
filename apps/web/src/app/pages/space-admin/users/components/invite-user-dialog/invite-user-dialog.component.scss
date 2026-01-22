@@ -13,18 +13,18 @@
 
 		label {
 			font-weight: 600;
-			color: var(--text-color);
+			color: var(--p-text-color);
 			font-size: 0.875rem;
 		}
 
 		.error-text {
-			color: var(--red-500);
+			color: var(--p-red-500);
 			font-size: 0.75rem;
 			margin-top: 0.25rem;
 		}
 
 		.help-text {
-			color: var(--text-color-secondary);
+			color: var(--p-text-color-secondary);
 			font-size: 0.75rem;
 			margin-top: 0.25rem;
 		}
@@ -37,12 +37,12 @@
 
 		.user-email {
 			font-weight: 500;
-			color: var(--text-color);
+			color: var(--p-text-color);
 		}
 
 		.user-name {
 			font-size: 0.875rem;
-			color: var(--text-color-secondary);
+			color: var(--p-text-color-secondary);
 		}
 	}
 
@@ -51,7 +51,7 @@
 		justify-content: flex-end;
 		gap: 0.75rem;
 		padding-top: 1rem;
-		border-top: 1px solid var(--surface-border);
+		border-top: 1px solid var(--p-surface-border);
 		margin-top: 1rem;
 	}
 }

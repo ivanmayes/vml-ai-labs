@@ -1,14 +1,13 @@
 .settings-page {
-
 	.settings-content {
 		max-width: 800px;
 
 		.setting-item {
 			padding: 1.5rem;
-			background: var(--surface-card);
+			background: var(--p-surface-card);
 			border-radius: 6px;
 			margin-bottom: 1rem;
-			border: 1px solid var(--surface-border);
+			border: 1px solid var(--p-surface-border);
 
 			.setting-header {
 				display: flex;
@@ -19,13 +18,13 @@
 				h3 {
 					font-size: 1.2rem;
 					font-weight: 500;
-					color: var(--text-color);
+					color: var(--p-text-color);
 					margin: 0;
 				}
 			}
 
 			.setting-description {
-				color: var(--text-color-secondary);
+				color: var(--p-text-color-secondary);
 				margin: 0;
 				line-height: 1.5;
 			}
@@ -41,7 +40,7 @@
 
 		p {
 			margin-top: 1rem;
-			color: var(--text-color-secondary);
+			color: var(--p-text-color-secondary);
 		}
 	}
 }

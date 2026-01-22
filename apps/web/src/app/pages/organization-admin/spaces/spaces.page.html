@@ -15,7 +15,13 @@
 			</p-iconfield>
 		</ng-template>
 		<ng-template pTemplate="end">
-			<button pButton label="Create Space" icon="pi pi-plus" (click)="openCreateDialog()"></button>
+			<button
+				pButton
+				label="Create Space"
+				icon="pi pi-plus"
+				(click)="openCreateDialog()"
+				aria-label="Create Space"
+			></button>
 		</ng-template>
 	</p-toolbar>
 
@@ -43,9 +49,13 @@
 		<ng-template pTemplate="body" let-space>
 			<tr *ngIf="!loading">
 				<td>
-					<a class="space-name-link" (click)="navigateToSpaceAdmin(space.id)">
+					<button
+						type="button"
+						class="space-name-link p-link"
+						(click)="navigateToSpaceAdmin(space.id)"
+					>
 						{{ space.name }}
-					</a>
+					</button>
 				</td>
 				<td>{{ formatDate(space.created) }}</td>
 				<td>
@@ -55,6 +65,7 @@
 							icon="pi pi-pencil"
 							class="p-button-rounded p-button-text p-button-sm"
 							pTooltip="Edit Space"
+							aria-label="Edit Space"
 							(click)="openEditDialog(space)"
 						></button>
 						<button
@@ -62,6 +73,7 @@
 							icon="pi pi-trash"
 							class="p-button-rounded p-button-text p-button-sm p-button-danger"
 							pTooltip="Delete Space"
+							aria-label="Delete Space"
 							(click)="deleteSpace(space)"
 						></button>
 					</div>
@@ -78,9 +90,21 @@
 			<tr>
 				<td colspan="3" class="text-center">
 					<div class="empty-state">
-						<i class="pi pi-inbox" style="font-size: 3rem; color: var(--text-color-secondary);"></i>
+						<i
+							class="pi pi-inbox"
+							style="
+								font-size: 3rem;
+								color: var(--text-color-secondary);
+							"
+						></i>
 						<p>No spaces found</p>
-						<button pButton label="Create a Space" icon="pi pi-plus" (click)="openCreateDialog()"></button>
+						<button
+							pButton
+							label="Create a Space"
+							icon="pi pi-plus"
+							(click)="openCreateDialog()"
+							aria-label="Create a Space"
+						></button>
 					</div>
 				</td>
 			</tr>

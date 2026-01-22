@@ -7,22 +7,22 @@
 		margin-bottom: 2rem;
 
 		h1 {
-			margin: 0 0 0.5rem 0;
+			margin: 0 0 0.5rem;
 			font-size: 2rem;
 			font-weight: 600;
-			color: var(--text-color);
+			color: var(--p-text-color);
 		}
 
 		.space-subtitle {
-			margin: 0 0 0.5rem 0;
+			margin: 0 0 0.5rem;
 			font-size: 0.875rem;
-			color: var(--text-color-secondary);
+			color: var(--p-text-color-secondary);
 		}
 
 		.space-visibility {
 			margin: 0;
 			font-size: 0.875rem;
-			color: var(--text-color-secondary);
+			color: var(--p-text-color-secondary);
 			display: flex;
 			align-items: center;
 			gap: 0.5rem;
@@ -42,14 +42,14 @@
 		gap: 1rem;
 
 		p {
-			color: var(--text-color-secondary);
+			color: var(--p-text-color-secondary);
 		}
 	}
 
 	.space-content {
 		padding: 2rem;
 		text-align: center;
-		color: var(--text-color-secondary);
+		color: var(--p-text-color-secondary);
 	}
 
 	.access-denied-container {
@@ -63,26 +63,26 @@
 
 			.access-denied-icon {
 				font-size: 4rem;
-				color: var(--red-500);
+				color: var(--p-red-500);
 				margin-bottom: 1rem;
 			}
 
 			h2 {
-				margin: 0 0 1rem 0;
+				margin: 0 0 1rem;
 				font-size: 1.5rem;
 				font-weight: 600;
-				color: var(--text-color);
+				color: var(--p-text-color);
 			}
 
 			p {
-				margin: 0 0 0.5rem 0;
-				color: var(--text-color-secondary);
+				margin: 0 0 0.5rem;
+				color: var(--p-text-color-secondary);
 				font-size: 1rem;
 			}
 
 			.access-denied-hint {
 				font-size: 0.875rem;
-				color: var(--text-color-secondary);
+				color: var(--p-text-color-secondary);
 				margin-top: 1rem;
 			}
 		}

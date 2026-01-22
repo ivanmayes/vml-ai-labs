@@ -10,17 +10,17 @@ import { environment } from '../../../../environments/environment';
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],
-	standalone: false,
+	
 	providers: [MessageService]
 })
 export class SettingsPage implements OnInit {
 	settingsForm: FormGroup;
 	spaceId: string;
 	organizationId: string = environment.organizationId;
-	loading: boolean = false;
-	saving: boolean = false;
+	loading = false;
+	saving = false;
 	tenantIds: string[] = [];
-	newTenantId: string = '';
+	newTenantId = '';
 
 	constructor(
 		private fb: FormBuilder,

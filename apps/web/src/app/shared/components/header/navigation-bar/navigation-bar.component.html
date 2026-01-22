@@ -1,9 +1,19 @@
 <div class="left">
-	<img src="assets/vmly-r-logo.svg" class="logo" [routerLink]="['/home']" />
+	<img
+		src="assets/vmly-r-logo.svg"
+		class="logo"
+		alt="VML Logo"
+		[routerLink]="['/home']"
+	/>
 </div>
 
 <div class="center"></div>
 
 <div class="right">
-	<a class="button" [routerLink]="['/home']" [class.active]="activeRouteState?.url.search('/home') > -1">Home</a>
+	<a
+		class="button"
+		[routerLink]="['/home']"
+		[class.active]="activeRouteState?.url.search('/home') > -1"
+		>Home</a
+	>
 </div>

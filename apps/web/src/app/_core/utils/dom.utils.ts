@@ -1,6 +1,6 @@
-export function scroll(position: number, speed: number = 30) {
-	let scrollToTop = window.setInterval(() => {
-		let state = window.pageYOffset;
+export function scroll(position: number, speed = 30) {
+	const scrollToTop = window.setInterval(() => {
+		const state = window.pageYOffset;
 		if (state > position) {
 			window.scrollTo(position, state - speed); // how far to scroll on each step
 		} else {

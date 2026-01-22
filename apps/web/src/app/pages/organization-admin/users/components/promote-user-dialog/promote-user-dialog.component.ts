@@ -7,11 +7,11 @@ import { MessageService } from 'primeng/api';
 @Component({
 	selector: 'app-promote-user-dialog',
 	templateUrl: './promote-user-dialog.component.html',
-	standalone: false
+	
 })
 export class PromoteUserDialogComponent implements OnInit {
 	form: FormGroup;
-	loading: boolean = false;
+	loading = false;
 	availableRoles: any[] = [];
 	user: any;
 

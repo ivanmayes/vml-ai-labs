@@ -1,4 +1,4 @@
-import { Component, HostListener, Inject, DOCUMENT } from '@angular/core';
+import { Component, HostListener, Inject, DOCUMENT, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Location } from '@angular/common';
@@ -26,9 +26,9 @@ import { Hierarchy } from '../../../api/src/_core/third-party/wpp-open/models';
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
     animations: [fade('fade', 500)],
-    standalone: false
+    
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
 	public loaded = false;
 	public headerSettings$: Observable<HeaderSettings>;
 	public isLoggedIn$: Observable<boolean>;
@@ -197,7 +197,7 @@ export class AppComponent {
 
 				if (savedOrg) {
 					try {
-						let orgData = JSON.parse(savedOrg);
+						const orgData = JSON.parse(savedOrg);
 						environment.apiUrl = orgData.endpoint;
 						environment.organizationId = orgData.organizationId;
 						environment.production = orgData.production || environment.production;

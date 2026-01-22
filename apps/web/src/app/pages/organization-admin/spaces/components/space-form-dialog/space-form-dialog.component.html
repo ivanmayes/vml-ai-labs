@@ -1,6 +1,10 @@
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
 	<span class="p-text-secondary block mb-8">
-		{{ mode === 'create' ? 'Create a new space for organizing users and content.' : 'Update the space name.' }}
+		{{
+			mode === "create"
+				? "Create a new space for organizing users and content."
+				: "Update the space name."
+		}}
 	</span>
 
 	<div class="flex items-center gap-4 mb-2">
@@ -12,16 +16,27 @@
 			placeholder="Enter space name"
 			class="flex-auto"
 			autocomplete="off"
-			autofocus
 		/>
 	</div>
 	<div class="flex items-center gap-4 mb-8">
 		<div class="w-24"></div>
 		<div class="flex-auto">
-			<small class="p-error block" *ngIf="form.get('name')?.hasError('required') && form.get('name')?.touched">
+			<small
+				class="p-error block"
+				*ngIf="
+					form.get('name')?.hasError('required') &&
+					form.get('name')?.touched
+				"
+			>
 				Space name is required
 			</small>
-			<small class="p-error block" *ngIf="form.get('name')?.hasError('minlength') && form.get('name')?.touched">
+			<small
+				class="p-error block"
+				*ngIf="
+					form.get('name')?.hasError('minlength') &&
+					form.get('name')?.touched
+				"
+			>
 				Space name must be at least 2 characters
 			</small>
 		</div>

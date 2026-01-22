@@ -9,12 +9,12 @@ import { environment } from '../../../../environments/environment';
     selector: 'app-auth-okta',
     templateUrl: './okta.component.html',
     styleUrls: ['./okta.component.scss'],
-    standalone: false
+    
 })
 export class OktaAuthComponent implements OnInit {
 	@Input() email: string;
 	@Input() authConfig: VerifyResponse;
-	@Output() loggedIn: EventEmitter<boolean> = new EventEmitter();
+	@Output() loggedIn = new EventEmitter<boolean>();
 
 	public widget;
 	public error: string;
@@ -22,7 +22,7 @@ export class OktaAuthComponent implements OnInit {
 	constructor(private readonly sessionService: SessionService) {}
 
 	ngOnInit(): void {
-		let orgId = environment.organizationId;
+		const orgId = environment.organizationId;
 
 		console.log('Setting up Okta login', this.authConfig, `${window.location.origin}/sso/okta/${orgId}/login`);
 

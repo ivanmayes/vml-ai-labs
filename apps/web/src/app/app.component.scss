@@ -22,8 +22,7 @@ app-sidebar {
 
 .main-content {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   height: 100vh;
   position: relative;
 
@@ -56,10 +55,7 @@ app-sidebar {
 
 .loading {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,7 +64,7 @@ app-sidebar {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .main-content {
     /* No left margin on mobile - sidebar is overlaid */
     margin-left: 0 !important;

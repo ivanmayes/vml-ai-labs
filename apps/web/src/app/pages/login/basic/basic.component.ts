@@ -1,5 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Observable } from 'rxjs';
 import { GlobalSettings } from '../../../state/global/global.model';
 import { GlobalQuery } from '../../../state/global/global.query';
@@ -15,16 +14,15 @@ import { fade } from '../../../_core/utils/animations.utils';
  * Ideally, only devs would use this and everyone else would be using SSO
  */
 @Component({
-    selector: 'app-auth-basic',
-    templateUrl: './basic.component.html',
-    styleUrls: ['./basic.component.scss'],
-    animations: [fade('fade', 400, '-50%')],
-    standalone: false
+	selector: 'app-auth-basic',
+	templateUrl: './basic.component.html',
+	styleUrls: ['./basic.component.scss'],
+	animations: [fade('fade', 400, '-50%')],
 })
-export class BasicAuthComponent implements OnInit {
+export class BasicAuthComponent {
 	@Input() email: string;
 	@Input() authConfig: VerifyResponse;
-	@Output() loggedIn: EventEmitter<boolean> = new EventEmitter();
+	@Output() loggedIn = new EventEmitter<boolean>();
 
 	public key: string;
 	public resendComplete = false;
@@ -35,24 +33,24 @@ export class BasicAuthComponent implements OnInit {
 	constructor(
 		private readonly globalQuery: GlobalQuery,
 		private readonly sessionService: SessionService,
-		private readonly sessionQuery: SessionQuery
+		private readonly sessionQuery: SessionQuery,
 	) {
 		this.siteSettings$ = this.globalQuery.select('settings');
 		this.loading$ = this.sessionQuery.selectLoading();
 	}
 
-	ngOnInit() {}
-
 	/**
 	 * Send the activation code to the API to see if its correct for the previously entered email.
 	 */
 	public activate() {
-		this.sessionService.activateEmail(this.email?.toLowerCase(), this.key).subscribe(
-			() => {
-				this.loggedIn.emit(true);
-			},
-			err => this.handleError(err?.error?.statusCode)
-		);
+		this.sessionService
+			.activateEmail(this.email?.toLowerCase(), this.key)
+			.subscribe(
+				() => {
+					this.loggedIn.emit(true);
+				},
+				(err) => this.handleError(err?.error?.statusCode),
+			);
 	}
 
 	/**
@@ -60,11 +58,13 @@ export class BasicAuthComponent implements OnInit {
 	 */
 	public resend() {
 		this.resendComplete = false;
-		this.sessionService.requestCode(this.email?.toLowerCase()).subscribe(() => {
-			this.error = undefined;
-			setTimeout(() => (this.resendComplete = true), 100);
-			setTimeout(() => (this.resendComplete = false), 3000);
-		});
+		this.sessionService
+			.requestCode(this.email?.toLowerCase())
+			.subscribe(() => {
+				this.error = undefined;
+				setTimeout(() => (this.resendComplete = true), 100);
+				setTimeout(() => (this.resendComplete = false), 3000);
+			});
 	}
 
 	/**

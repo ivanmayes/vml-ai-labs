@@ -13,17 +13,17 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
-	standalone: false,
+	
 	providers: [ConfirmationService]
 })
 export class UsersPage implements OnInit, OnDestroy {
 	users: any[] = [];
-	loading: boolean = false;
+	loading = false;
 	currentUser: any;
 	organizationId: string;
-	currentSortField: string = 'email';
-	currentSortOrder: string = 'asc';
-	currentSearchQuery: string = '';
+	currentSortField = 'email';
+	currentSortOrder = 'asc';
+	currentSearchQuery = '';
 	private searchSubject = new Subject<string>();
 	Array = Array;
 

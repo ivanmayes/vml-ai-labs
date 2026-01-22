@@ -15,7 +15,13 @@
 			</p-iconfield>
 		</ng-template>
 		<ng-template pTemplate="end">
-			<button pButton label="Invite User" icon="pi pi-user-plus" (click)="openInviteDialog()"></button>
+			<button
+				pButton
+				label="Invite User"
+				icon="pi pi-user-plus"
+				(click)="openInviteDialog()"
+				aria-label="Invite User"
+			></button>
 		</ng-template>
 	</p-toolbar>
 
@@ -53,7 +59,9 @@
 			<tr *ngIf="!loading">
 				<td>{{ user.user?.email || 'N/A' }}</td>
 				<td>
-					<span *ngIf="user.user?.firstName || user.user?.lastName; else noName">
+					<span
+						*ngIf="user.user?.firstName || user.user?.lastName; else noName"
+					>
 						{{ user.user.firstName }} {{ user.user.lastName }}
 					</span>
 					<ng-template #noName>—</ng-template>
@@ -72,6 +80,7 @@
 							icon="pi pi-user-edit"
 							class="p-button-rounded p-button-text p-button-sm"
 							pTooltip="Change Role"
+							aria-label="Change Role"
 							(click)="openChangeRoleDialog(user)"
 						></button>
 						<button
@@ -79,6 +88,7 @@
 							icon="pi pi-trash"
 							class="p-button-rounded p-button-text p-button-sm p-button-danger"
 							pTooltip="Remove User"
+							aria-label="Remove User"
 							(click)="onRemoveUser(user)"
 						></button>
 					</div>

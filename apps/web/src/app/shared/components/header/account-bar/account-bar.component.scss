@@ -1,17 +1,17 @@
 :host {
 	height: 32px;
-	background: var(--theme-primary);
+	background: var(--p-primary-color);
 	display: flex;
 	align-items: center;
-	color: var(--theme-on-primary);
-	font-size: var(--font-size-sm);
-	padding: 0 8px;
+	color: var(--p-primary-contrast-color);
+	font-size: 0.875rem;
+	padding: 0 0.5rem;
 
 	.right {
 		margin-left: auto;
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 0.5rem;
 	}
 }
 
@@ -22,14 +22,18 @@
 }
 
 .theme-toggle {
-	color: var(--theme-on-primary);
+	color: var(--p-primary-contrast-color);
 
 	&:hover {
-		background-color: rgba(255, 255, 255, 0.08);
+		background-color: color-mix(
+			in srgb,
+			var(--p-primary-contrast-color) 8%,
+			transparent
+		);
 	}
 }
 
 ::ng-deep .p-menu {
-	padding: 0 10px !important;
+	padding: 0 0.625rem !important;
 	min-width: 200px !important;
 }

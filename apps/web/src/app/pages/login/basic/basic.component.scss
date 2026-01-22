@@ -75,7 +75,7 @@
 			padding: 5px;
 			border-radius: 6px;
 			outline: none;
-			border: 1px solid rgba(0, 0, 0, 0.1);
+			border: 1px solid var(--p-surface-border);
 		}
 
 		.checkbox {
@@ -104,7 +104,7 @@
 		left: 50%;
 		transform: translate3d(-50%, 30px, 0);
 		font-size: 1.2rem;
-		color: var(--color-primary);
+		color: var(--p-primary-color);
 		opacity: 0;
 		transition: opacity 400ms;
 

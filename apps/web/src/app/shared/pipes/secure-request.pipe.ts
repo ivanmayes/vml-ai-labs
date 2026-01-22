@@ -13,12 +13,12 @@ import { SessionQuery } from '../../state/session/session.query';
  */
 @Pipe({
     name: 'secure',
-    standalone: false
+    
 })
 export class SecureRequestPipe implements PipeTransform {
 	constructor(private http: HttpClient, private sanitizer: DomSanitizer, private sessionQuery: SessionQuery) {}
 
-	transform(path: string, resource: boolean = false): Observable<SafeUrl> {
+	transform(path: string, resource = false): Observable<SafeUrl> {
 		return this.http
 			.get(`${environment.apiUrl}${path}`, {
 				responseType: 'blob',

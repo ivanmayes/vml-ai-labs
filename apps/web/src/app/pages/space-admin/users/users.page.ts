@@ -14,19 +14,19 @@ import { ChangeRoleDialogComponent } from './components/change-role-dialog/chang
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
-	standalone: false,
+	
 	providers: [ConfirmationService, MessageService]
 })
 export class UsersPage implements OnInit, OnDestroy {
 	users: SpaceUser[] = [];
-	loading: boolean = false;
+	loading = false;
 	spaceId: string;
-	currentSortField: string = 'createdAt';
-	currentSortOrder: string = 'desc';
-	currentSearchQuery: string = '';
-	totalRecords: number = 0;
-	currentPage: number = 1;
-	rowsPerPage: number = 10;
+	currentSortField = 'createdAt';
+	currentSortOrder = 'desc';
+	currentSearchQuery = '';
+	totalRecords = 0;
+	currentPage = 1;
+	rowsPerPage = 10;
 	private searchSubject = new Subject<string>();
 	Array = Array;
 

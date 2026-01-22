@@ -1,6 +1,9 @@
 <div class="left" *ngIf="settings$ | async as settings">
 	<p class="logo">
-		{{ settings.name }} <span *ngIf="!production" class="non-production text-danger"> - Non Production Environment!</span>
+		{{ settings.name }}
+		<span *ngIf="!production" class="non-production text-danger">
+			- Non Production Environment!</span
+		>
 	</p>
 </div>
 
@@ -14,13 +17,20 @@
 		class="theme-toggle"
 		(onClick)="toggleTheme()"
 		[pTooltip]="'Switch to ' + getThemeTooltip()"
-		[attr.aria-label]="'Switch to ' + getThemeTooltip()">
+		[ariaLabel]="'Switch to ' + getThemeTooltip()"
+	>
 	</p-button>
 
-	<div class="name-container" (click)="accountMenu.toggle($event)">
+	<button
+		type="button"
+		class="name-container p-link"
+		(click)="accountMenu.toggle($event)"
+		aria-label="Open account menu"
+		aria-haspopup="true"
+	>
 		<span class="name">{{ user.email }}</span>
 		<i class="pi pi-chevron-down"></i>
-	</div>
+	</button>
 
 	<p-menu #accountMenu [model]="accountMenuItems" [popup]="true"></p-menu>
 </div>

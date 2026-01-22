@@ -1,0 +1,19 @@
+{
+  "name": "eslint-plugin-primeng",
+  "version": "1.0.0",
+  "description": "ESLint plugin to enforce PrimeNG best practices in Angular applications",
+  "main": "index.js",
+  "keywords": [
+    "eslint",
+    "eslint-plugin",
+    "primeng",
+    "angular",
+    "best-practices"
+  ],
+  "peerDependencies": {
+    "eslint": ">=8.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
+  }
+}

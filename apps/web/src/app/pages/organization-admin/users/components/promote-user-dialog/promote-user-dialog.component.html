@@ -1,14 +1,20 @@
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
-	<span class="p-text-secondary block mb-8">Change the user's role in the organization.</span>
+	<span class="p-text-secondary block mb-8"
+		>Change the user's role in the organization.</span
+	>
 
 	<div class="flex items-center gap-4 mb-4">
-		<label class="font-semibold w-24">User</label>
+		<span class="font-semibold w-24">User</span>
 		<span class="flex-auto">{{ user?.email }}</span>
 	</div>
 
 	<div class="flex items-center gap-4 mb-4">
-		<label class="font-semibold w-24">Current</label>
-		<p-badge [value]="user?.role" [severity]="'info'" class="flex-auto"></p-badge>
+		<span class="font-semibold w-24">Current</span>
+		<p-badge
+			[value]="user?.role"
+			[severity]="'info'"
+			class="flex-auto"
+		></p-badge>
 	</div>
 
 	<div class="flex items-center gap-4 mb-8">

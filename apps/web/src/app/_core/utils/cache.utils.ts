@@ -4,13 +4,9 @@
  * or for whatever
  */
 export class DataCache {
-	public data: {
-		[key: string]: any;
-	} = {};
+	public data: Record<string, any> = {};
 
-	constructor() {}
-
-	get(key) {
+	get(key: string) {
 		if (key) {
 			return this.data[key];
 		}

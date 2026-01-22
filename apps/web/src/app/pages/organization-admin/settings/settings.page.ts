@@ -7,15 +7,15 @@ import { environment } from '../../../../environments/environment';
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],
-	standalone: false
+	
 })
 export class SettingsPage implements OnInit {
-	loading: boolean = false;
-	saving: boolean = false;
+	loading = false;
+	saving = false;
 	organizationId: string;
-	organizationName: string = '';
-	originalOrganizationName: string = '';
-	redirectToSpace: boolean = false;
+	organizationName = '';
+	originalOrganizationName = '';
+	redirectToSpace = false;
 
 	constructor(
 		private readonly organizationService: OrganizationAdminService,

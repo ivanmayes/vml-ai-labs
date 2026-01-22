@@ -4,7 +4,7 @@
 
 :root {
   // Typography overrides (using Roboto from Google Fonts)
-  --p-font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --p-font-family: 'Roboto', -apple-system, blinkmacsystemfont, 'Segoe UI', sans-serif;
   --p-font-size: 14px; // 14px base font size
 
   // Border radius adjustments for modern UI
@@ -26,7 +26,7 @@
 
   // Set the main primary color variable
   --p-primary-color: var(--p-primary-500);
-  --p-primary-contrast-color: #ffffff;
+  --p-primary-contrast-color: #fff;
 
   // Button primary colors
   --p-button-primary-background: var(--p-primary-500);
@@ -35,9 +35,9 @@
   --p-button-primary-border-color: var(--p-primary-500);
   --p-button-primary-hover-border-color: var(--p-primary-600);
   --p-button-primary-active-border-color: var(--p-primary-700);
-  --p-button-primary-color: #ffffff;
-  --p-button-primary-hover-color: #ffffff;
-  --p-button-primary-active-color: #ffffff;
+  --p-button-primary-color: #fff;
+  --p-button-primary-hover-color: #fff;
+  --p-button-primary-active-color: #fff;
 
   // Link colors
   --p-button-link-color: var(--p-primary-color);
@@ -79,14 +79,13 @@
   --p-surface-card: #27272a;
   --p-surface-overlay: #3f3f46;
   --p-surface-border: #52525b;
-
   --p-text-color: #fafafa;
   --p-text-secondary-color: #d4d4d8;
   --p-text-muted-color: #a1a1aa;
 
   // Use a brighter blue for dark mode visibility
   --p-primary-color: var(--p-primary-400);
-  --p-primary-contrast-color: #000000;
+  --p-primary-contrast-color: #000;
 
   // Button adjustments for dark mode
   --p-button-primary-background: var(--p-primary-500);
@@ -107,7 +106,7 @@
 .p-dropdown,
 .p-multiselect {
   &:enabled:focus {
-    box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.2);
+    box-shadow: 0 0 0 0.2rem rgb(33 150 243 / 20%);
   }
 }
 
@@ -118,7 +117,7 @@
   }
 
   .p-dialog-content {
-    padding: 0 1.5rem 1.5rem 1.5rem;
+    padding: 0 1.5rem 1.5rem;
   }
 
   .p-dialog-footer {
@@ -128,7 +127,7 @@
 
 .p-toast {
   .p-toast-message {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -1px rgb(0 0 0 / 6%);
   }
 }
 
@@ -152,7 +151,7 @@
 }
 
 .p-card {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px 0 rgb(0 0 0 / 6%);
 
   .p-card-title {
     font-size: 1.25rem;

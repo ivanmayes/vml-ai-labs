@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { fade } from '../../_core/utils/animations.utils';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -28,9 +28,8 @@ interface Feature {
 	templateUrl: './home.page.html',
 	styleUrls: ['./home.page.scss'],
 	animations: [fade('fade', 400, '-50%')],
-	standalone: false
 })
-export class HomeComponent implements OnInit, OnDestroy {
+export class HomeComponent {
 	@ViewChild('setupSection') setupSection: ElementRef;
 
 	/**
@@ -41,46 +40,42 @@ export class HomeComponent implements OnInit, OnDestroy {
 		{
 			icon: 'shield',
 			title: 'Authentication',
-			description: 'Built-in authentication system with JWT tokens and session management'
+			description:
+				'Built-in authentication system with JWT tokens and session management',
 		},
 		{
 			icon: 'database',
 			title: 'State Management',
-			description: 'Akita state management for predictable and scalable app state'
+			description:
+				'Akita state management for predictable and scalable app state',
 		},
 		{
 			icon: 'th-large',
 			title: 'PrimeNG Components',
-			description: 'Rich set of UI components from PrimeNG v20 library'
+			description: 'Rich set of UI components from PrimeNG v20 library',
 		},
 		{
 			icon: 'palette',
 			title: 'Design System',
-			description: 'Comprehensive design tokens and theming capabilities'
+			description: 'Comprehensive design tokens and theming capabilities',
 		},
 		{
 			icon: 'mobile',
 			title: 'Responsive Design',
-			description: 'Mobile-first responsive layout that works on all devices'
+			description:
+				'Mobile-first responsive layout that works on all devices',
 		},
 		{
 			icon: 'code',
 			title: 'TypeScript',
-			description: 'Fully typed codebase with Angular 20 and TypeScript'
-		}
+			description: 'Fully typed codebase with Angular 20 and TypeScript',
+		},
 	];
 
 	constructor(
 		private readonly http: HttpClient,
-		private readonly messageService: MessageService
+		private readonly messageService: MessageService,
 	) {}
-
-	async ngOnInit() {
-	}
-
-	ngOnDestroy() {
-		// Cleanup if needed
-	}
 
 	/**
 	 * Scroll to the setup section smoothly
@@ -89,7 +84,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 		if (this.setupSection?.nativeElement) {
 			this.setupSection.nativeElement.scrollIntoView({
 				behavior: 'smooth',
-				block: 'start'
+				block: 'start',
 			});
 		}
 	}
@@ -102,7 +97,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 			severity: 'info',
 			summary: 'Documentation',
 			detail: 'Documentation will be available soon. Check the README for setup instructions.',
-			life: 3000
+			life: 3000,
 		});
 	}
 
@@ -114,7 +109,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 			severity: 'info',
 			summary: 'API Configuration',
 			detail: 'Check the environment.ts files in the environments folder to configure your API.',
-			life: 3000
+			life: 3000,
 		});
 	}
 
@@ -126,7 +121,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 			severity: 'info',
 			summary: 'Theme Settings',
 			detail: 'Modify theme variables in the design-system.scss file to customize your theme.',
-			life: 3000
+			life: 3000,
 		});
 	}
 
@@ -138,7 +133,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 			severity: 'info',
 			summary: 'Page Templates',
 			detail: 'Use Angular CLI to generate new pages: ng generate component pages/your-page',
-			life: 3000
+			life: 3000,
 		});
 	}
 
@@ -150,7 +145,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 			severity: 'info',
 			summary: 'Deployment',
 			detail: 'Run "npm run build" to create a production build. Deploy the dist folder to your hosting provider.',
-			life: 3000
+			life: 3000,
 		});
 	}
 }

@@ -1,0 +1,19 @@
+{
+  "name": "stylelint-primeng",
+  "version": "1.0.0",
+  "description": "Stylelint plugin to enforce PrimeNG design token usage and best practices",
+  "main": "index.js",
+  "keywords": [
+    "stylelint",
+    "stylelint-plugin",
+    "primeng",
+    "design-tokens",
+    "css-variables"
+  ],
+  "peerDependencies": {
+    "stylelint": "^16.0.0"
+  },
+  "devDependencies": {
+    "stylelint": "^16.0.0"
+  }
+}

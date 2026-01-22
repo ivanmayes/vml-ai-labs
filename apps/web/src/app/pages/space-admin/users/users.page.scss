@@ -1,13 +1,13 @@
 .users-container {
 	padding: 2rem;
-	background-color: var(--surface-ground);
+	background-color: var(--p-surface-ground);
 	min-height: 100vh;
 
 	.users-header {
 		margin-bottom: 2rem;
 
 		h1 {
-			color: var(--text-color);
+			color: var(--p-text-color);
 			font-size: 2rem;
 			font-weight: 600;
 			margin: 0;
@@ -16,10 +16,10 @@
 
 	.users-content {
 		::ng-deep .p-card {
-			background: var(--surface-card);
-			border: 1px solid var(--surface-border);
+			background: var(--p-surface-card);
+			border: 1px solid var(--p-surface-border);
 			border-radius: 8px;
-			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
 
 			.p-card-body {
 				padding: 0;
@@ -36,7 +36,7 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 1.5rem;
-		border-bottom: 1px solid var(--surface-border);
+		border-bottom: 1px solid var(--p-surface-border);
 		gap: 1rem;
 		flex-wrap: wrap;
 
@@ -62,10 +62,10 @@
 		}
 
 		.p-datatable-thead > tr > th {
-			background-color: var(--surface-section);
-			color: var(--text-color);
+			background-color: var(--p-surface-section);
+			color: var(--p-text-color);
 			font-weight: 600;
-			border-bottom: 2px solid var(--surface-border);
+			border-bottom: 2px solid var(--p-surface-border);
 			padding: 1rem;
 			text-align: left;
 
@@ -77,20 +77,20 @@
 
 		.p-datatable-tbody > tr {
 			&:hover {
-				background-color: var(--surface-hover);
+				background-color: var(--p-surface-hover);
 			}
 
 			> td {
 				padding: 1rem;
-				border-bottom: 1px solid var(--surface-border);
-				color: var(--text-color);
+				border-bottom: 1px solid var(--p-surface-border);
+				color: var(--p-text-color);
 
 				&.actions-column {
 					text-align: center;
 				}
 
 				.text-muted {
-					color: var(--text-color-secondary);
+					color: var(--p-text-color-secondary);
 					font-style: italic;
 				}
 			}
@@ -105,7 +105,7 @@
 		.empty-state {
 			padding: 3rem 1rem !important;
 			text-align: center;
-			background-color: var(--surface-card);
+			background-color: var(--p-surface-card);
 			border: none !important;
 
 			.empty-state-content {
@@ -117,12 +117,12 @@
 				.empty-state-title {
 					font-size: 1.25rem;
 					font-weight: 600;
-					color: var(--text-color);
+					color: var(--p-text-color);
 					margin: 0;
 				}
 
 				.empty-state-message {
-					color: var(--text-color-secondary);
+					color: var(--p-text-color-secondary);
 					margin: 0;
 				}
 			}
@@ -130,19 +130,19 @@
 	}
 
 	::ng-deep .p-paginator {
-		background: var(--surface-card);
-		border-top: 1px solid var(--surface-border);
+		background: var(--p-surface-card);
+		border-top: 1px solid var(--p-surface-border);
 		padding: 1rem 1.5rem;
 		border-radius: 0 0 8px 8px;
 
 		.p-paginator-current {
-			color: var(--text-color-secondary);
+			color: var(--p-text-color-secondary);
 		}
 	}
 }
 
 // Responsive styles
-@media (max-width: 768px) {
+@media (width <= 768px) {
 	.users-container {
 		padding: 1rem;
 

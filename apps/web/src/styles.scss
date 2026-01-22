@@ -2,55 +2,58 @@
 @use "tailwindcss";
 
 // Import the design system using modern @use syntax (must be first)
-@use './theme/design-system/index';
-@use './theme/utils';
-@use './theme/variables';
-
+@use "./theme/design-system/index";
+@use "./theme/utils";
+@use "./theme/variables";
 @plugin "tailwindcss-primeui";
 
 // Google Fonts (Roboto used for typography)
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
-
+@import "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap";
 
 html {
 	font-size: 14px;
 }
 
 // Typography - Headers
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	margin: 0;
 	font-weight: 600;
 	line-height: 1.2;
-	color: var(--text-color);
+	color: var(--p-text-color);
 }
 
 h1 {
-	font-size: 2.5rem;     // 35px at 14px base
+	font-size: 2.5rem; // 35px at 14px base
 	margin-bottom: 1.5rem;
 }
 
 h2 {
-	font-size: 2rem;       // 28px at 14px base
+	font-size: 2rem; // 28px at 14px base
 	margin-bottom: 1.25rem;
 }
 
 h3 {
-	font-size: 1.75rem;    // 24.5px at 14px base
+	font-size: 1.75rem; // 24.5px at 14px base
 	margin-bottom: 1rem;
 }
 
 h4 {
-	font-size: 1.5rem;     // 21px at 14px base
+	font-size: 1.5rem; // 21px at 14px base
 	margin-bottom: 0.875rem;
 }
 
 h5 {
-	font-size: 1.25rem;    // 17.5px at 14px base
+	font-size: 1.25rem; // 17.5px at 14px base
 	margin-bottom: 0.75rem;
 }
 
 h6 {
-	font-size: 1rem;       // 14px at 14px base
+	font-size: 1rem; // 14px at 14px base
 	margin-bottom: 0.625rem;
 	font-weight: 500;
 }

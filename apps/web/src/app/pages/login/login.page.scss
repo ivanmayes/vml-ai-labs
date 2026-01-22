@@ -23,7 +23,7 @@
 .login-wrapper {
 	width: 100%;
 	max-width: 480px;
-	animation: fadeInUp 0.4s ease-out;
+	animation: fade-in-up 0.4s ease-out;
 }
 
 // Card component styling
@@ -34,7 +34,7 @@
 	::ng-deep .login-card-content {
 		padding: 2rem;
 
-		@media (min-width: 640px) {
+		@media (width >= 640px) {
 			padding: 3rem;
 		}
 	}
@@ -158,7 +158,7 @@
 				text-align: center;
 				font-weight: 600;
 
-				@media (min-width: 640px) {
+				@media (width >= 640px) {
 					font-size: 1.75rem;
 				}
 			}
@@ -245,11 +245,12 @@
 }
 
 // Animations
-@keyframes fadeInUp {
+@keyframes fade-in-up {
 	from {
 		opacity: 0;
 		transform: translateY(20px);
 	}
+
 	to {
 		opacity: 1;
 		transform: translateY(0);
@@ -257,7 +258,7 @@
 }
 
 // Responsive design
-@media (max-width: 640px) {
+@media (width <= 640px) {
 	:host {
 		align-items: flex-start;
 		padding-top: 2rem;

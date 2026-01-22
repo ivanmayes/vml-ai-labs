@@ -9,7 +9,7 @@
 			margin: 0;
 			font-size: 1.75rem;
 			font-weight: 600;
-			color: var(--text-color);
+			color: var(--p-text-color);
 		}
 	}
 
@@ -19,14 +19,14 @@
 	}
 
 	.space-name-link {
-		color: var(--primary-color);
+		color: var(--p-primary-color);
 		cursor: pointer;
 		text-decoration: none;
 		font-weight: 500;
 		transition: color 0.2s ease;
 
 		&:hover {
-			color: var(--primary-color-hover);
+			color: var(--p-primary-600);
 			text-decoration: underline;
 		}
 	}
@@ -41,7 +41,7 @@
 
 		p {
 			margin: 1rem 0;
-			color: var(--text-color-secondary);
+			color: var(--p-text-color-secondary);
 			font-size: 1.1rem;
 		}
 	}
@@ -50,14 +50,14 @@
 :host ::ng-deep {
 	.p-datatable {
 		.p-datatable-thead > tr > th {
-			background-color: var(--surface-section);
-			color: var(--text-color);
+			background-color: var(--p-surface-section);
+			color: var(--p-text-color);
 			font-weight: 600;
 		}
 
 		.p-datatable-tbody > tr {
 			&:hover {
-				background-color: var(--surface-hover);
+				background-color: var(--p-surface-hover);
 			}
 		}
 	}

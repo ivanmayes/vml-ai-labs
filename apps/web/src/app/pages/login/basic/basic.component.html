@@ -3,9 +3,14 @@
 	<p>
 		We've a one-time passcode to your email address.<br />
 		Check your email and enter the passcode below.<br />
-		<small>(Check your spam folder if you don't receive in a few minutes.)</small>
+		<small
+			>(Check your spam folder if you don't receive in a few
+			minutes.)</small
+		>
 	</p>
-	<div class="token" *ngIf="authConfig?.data?.token">{{ authConfig?.data?.token }}</div>
+	<div class="token" *ngIf="authConfig?.data?.token">
+		{{ authConfig?.data?.token }}
+	</div>
 
 	<form #form="ngForm" (submit)="activate()">
 		<div class="input-group">
@@ -33,7 +38,9 @@
 		></p-button>
 	</form>
 
-	<a class="resend" (click)="resend()">Resend Email</a>
+	<button type="button" class="resend p-link" (click)="resend()">
+		Resend Email
+	</button>
 	<p class="resent" [class.active]="resendComplete">Resent!</p>
 
 	<span @fade class="error" *ngIf="error">Invalid verification code.</span>

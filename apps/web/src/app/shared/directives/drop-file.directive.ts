@@ -6,7 +6,7 @@ import { Directive, Output, Input, EventEmitter, HostBinding, HostListener } fro
  */
 @Directive({
     selector: '[appDropFile]',
-    standalone: false
+    
 })
 export class DropFileDirective {
 	@Output() filesDropped = new EventEmitter<any>();

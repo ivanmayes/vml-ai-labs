@@ -1,40 +1,46 @@
-import { DefaultHierarchyLevelType, FramedAppParentMethods, OsContext } from '@wppopen/core';
-import { connectToParent, Methods } from 'penpal';
+import {
+	DefaultHierarchyLevelType,
+	FramedAppParentMethods,
+	OsContext,
+} from '@wppopen/core';
+import { connectToParent } from 'penpal';
 import { environment } from '../../../../environments/environment';
 import { Injectable } from '@angular/core';
 
 @Injectable({
-	providedIn: 'root'
+	providedIn: 'root',
 })
 export class WppOpenService {
-	private connection;
-	private connecting: boolean = false;
-	private connected: boolean = false;
+	private connection: Awaited<
+		ReturnType<typeof connectToParent<FramedAppParentMethods>>
+	> | null = null;
+	private connecting = false;
+	private connected = false;
 
 	private readonly config = {
-		parentOrigin: environment?.wppOpenParentOrigin?.length ? environment.wppOpenParentOrigin : '*',
-		debug: true
+		parentOrigin: environment?.wppOpenParentOrigin?.length
+			? environment.wppOpenParentOrigin
+			: '*',
+		debug: true,
 	};
 
-	private _context: OsContext
+	private _context: OsContext;
 	public get context(): OsContext {
 		return this._context;
 	}
 
-	constructor() {}
-
-
-	public async connect(): Promise<void> {
-		return new Promise(async (resolve, reject) => {
+	public connect(): Promise<void> {
+		return new Promise((resolve, reject) => {
 			console.log(this.config);
-			if(this.connected || this.connecting) {
+			if (this.connected || this.connecting) {
 				resolve();
 				return;
 			}
 			this.connection = null;
 			this.connected = false;
 			this.connecting = true;
-			this.connection = await connectToParent<FramedAppParentMethods>({
+
+			const connectionPromise = connectToParent<FramedAppParentMethods>({
 				parentOrigin: this.config.parentOrigin,
 				methods: {
 					receiveOsContext: (context: OsContext) => {
@@ -44,45 +50,43 @@ export class WppOpenService {
 						console.log(context);
 						this._context = context;
 						resolve();
-					}
+					},
 				},
-				debug: this.config.debug
-			})
-			.promise
-			.catch(err => {
-				console.error(err);
-				return null;
+				debug: this.config.debug,
 			});
 
-			if(!this.connection) {
-				this.connecting = false;
-				reject('Failed to connect to parent.');
-			}
+			connectionPromise.promise
+				.then((conn) => {
+					this.connection = conn;
+				})
+				.catch((err) => {
+					console.error(err);
+					this.connecting = false;
+					reject(new Error('Failed to connect to parent.'));
+				});
 		});
 	}
 
 	public async getAccessToken() {
-		if(!this.connection) {
-			await this.connect()
-				.catch(err => {
-					console.error(err);
-					return null;
-				});
+		if (!this.connection) {
+			await this.connect().catch((err) => {
+				console.error(err);
+				return null;
+			});
 		}
 
-		if(!this.connection) {
+		if (!this.connection) {
 			throw new Error('Connection not established.');
 		}
 
-		const accessToken = await this.connection
-			.osApi
+		const accessToken = await this.connection.osApi
 			.getAccessToken()
-			.catch(err => {
+			.catch((err) => {
 				console.error(err);
 				return null;
 			});
 
-		if(!accessToken) {
+		if (!accessToken) {
 			throw new Error('Failed to get access token.');
 		}
 
@@ -90,15 +94,14 @@ export class WppOpenService {
 	}
 
 	public async getOsContext() {
-		if(!this.connection) {
-			await this.connect()
-				.catch(err => {
-					console.error(err);
-					return null;
-				});
+		if (!this.connection) {
+			await this.connect().catch((err) => {
+				console.error(err);
+				return null;
+			});
 		}
 
-		if(!this.connection) {
+		if (!this.connection) {
 			throw new Error('Connection not established.');
 		}
 
@@ -106,49 +109,46 @@ export class WppOpenService {
 	}
 
 	public async getWorkspaceScope() {
-		if(!this.connection) {
-			await this.connect()
-				.catch(err => {
-					console.error(err);
-					return null;
-				});
+		if (!this.connection) {
+			await this.connect().catch((err) => {
+				console.error(err);
+				return null;
+			});
 		}
 
-		if(!this.connection) {
+		if (!this.connection) {
 			throw new Error('Connection not established.');
 		}
 
 		const workspaceId = this.context?.workspace?.azId;
-		if(!workspaceId) {
+		if (!workspaceId) {
 			throw new Error('Workspace ID not found.');
 		}
 
-		const scopeId = Object
-			.values(this.context?.workspace?.mapping)
-			.find(v => !v.parentAzId)
-			?.azId;
+		const scopeId = Object.values(this.context?.workspace?.mapping).find(
+			(v) => !v.parentAzId,
+		)?.azId;
 
 		return {
 			workspaceId,
-			scopeId
+			scopeId,
 		};
 	}
 
 	public async getClient() {
-		if(!this.connection) {
-			await this.connect()
-				.catch(err => {
-					console.error(err);
-					return null;
-				});
+		if (!this.connection) {
+			await this.connect().catch((err) => {
+				console.error(err);
+				return null;
+			});
 		}
 
-		if(!this.connection) {
+		if (!this.connection) {
 			throw new Error('Connection not established.');
 		}
 
-		for(const v of Object.values(this.context?.workspace?.mapping)) {
-			if(v.type === DefaultHierarchyLevelType.Client) {
+		for (const v of Object.values(this.context?.workspace?.mapping)) {
+			if (v.type === DefaultHierarchyLevelType.Client) {
 				return v;
 			}
 		}

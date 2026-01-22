@@ -7,11 +7,11 @@ import { MessageService } from 'primeng/api';
 @Component({
 	selector: 'app-invite-user-dialog',
 	templateUrl: './invite-user-dialog.component.html',
-	standalone: false
+	
 })
 export class InviteUserDialogComponent implements OnInit {
 	form: FormGroup;
-	loading: boolean = false;
+	loading = false;
 	availableRoles: any[] = [];
 
 	constructor(

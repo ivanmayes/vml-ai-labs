@@ -7,7 +7,6 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-
 	font-size: 0.9rem;
 	font-weight: 900;
 	text-transform: uppercase;
@@ -43,21 +42,20 @@
 	}
 
 	.button {
-		display: block;
-		margin: 0px 20px;
+		margin: 0 20px;
 		padding: 4px 0;
 		height: 100%;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		color: black;
+		color: var(--p-text-color);
 
 		&:hover {
 			color: var(--color-step-500);
 		}
 
 		&.active {
-			border-bottom: 2px solid black;
+			border-bottom: 2px solid var(--p-text-color);
 		}
 	}
 
@@ -91,13 +89,13 @@
 	}
 
 	&.invert {
-		color: white;
+		color: var(--p-surface-0);
 
 		.button {
-			color: white;
+			color: var(--p-surface-0);
 
 			&.active {
-				border-bottom: 2px solid white;
+				border-bottom: 2px solid var(--p-surface-0);
 			}
 		}
 	}

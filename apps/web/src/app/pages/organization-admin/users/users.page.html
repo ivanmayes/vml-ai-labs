@@ -15,7 +15,13 @@
 			</p-iconfield>
 		</ng-template>
 		<ng-template pTemplate="end">
-			<button pButton label="Invite User" icon="pi pi-user-plus" (click)="openInviteDialog()"></button>
+			<button
+				pButton
+				label="Invite User"
+				icon="pi pi-user-plus"
+				(click)="openInviteDialog()"
+				aria-label="Invite User"
+			></button>
 		</ng-template>
 	</p-toolbar>
 
@@ -29,7 +35,6 @@
 		styleClass="p-datatable-striped"
 		(onSort)="onSort($event)"
 	>
-
 		<ng-template pTemplate="header">
 			<tr>
 				<th [pSortableColumn]="'email'" class="cursor-pointer">
@@ -49,9 +54,14 @@
 		<ng-template pTemplate="body" let-user>
 			<tr *ngIf="!loading">
 				<td>{{ user.email }}</td>
-				<td>{{ user.profile?.nameFirst }} {{ user.profile?.nameLast }}</td>
 				<td>
-					<p-badge [value]="user.role" [severity]="getRoleBadgeSeverity(user.role)"></p-badge>
+					{{ user.profile?.nameFirst }} {{ user.profile?.nameLast }}
+				</td>
+				<td>
+					<p-badge
+						[value]="user.role"
+						[severity]="getRoleBadgeSeverity(user.role)"
+					></p-badge>
 				</td>
 				<td>
 					<p-badge
@@ -66,6 +76,7 @@
 							icon="pi pi-user-edit"
 							class="p-button-rounded p-button-text p-button-sm"
 							pTooltip="Change Role"
+							aria-label="Change Role"
 							[disabled]="!canManageUser(user)"
 							(click)="openPromoteDialog(user)"
 						></button>
@@ -74,6 +85,7 @@
 							[icon]="user.deactivated ? 'pi pi-check' : 'pi pi-ban'"
 							class="p-button-rounded p-button-text p-button-sm"
 							[pTooltip]="user.deactivated ? 'Unban User' : 'Ban User'"
+							[attr.aria-label]="user.deactivated ? 'Unban User' : 'Ban User'"
 							[disabled]="!canManageUser(user)"
 							(click)="banUser(user)"
 						></button>

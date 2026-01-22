@@ -8,12 +8,12 @@ import { environment } from '../../../environments/environment';
 	selector: 'app-space-admin',
 	templateUrl: './space-admin.page.html',
 	styleUrls: ['./space-admin.page.scss'],
-	standalone: false
+	
 })
 export class SpaceAdminPage implements OnInit {
-	sidebarVisible: boolean = true;
+	sidebarVisible = true;
 	spaceId: string;
-	spaceName: string = 'Space Admin';
+	spaceName = 'Space Admin';
 	organizationId: string = environment.organizationId;
 
 	menuItems = [

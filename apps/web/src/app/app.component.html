@@ -3,11 +3,17 @@
 <div class="app-container" *ngIf="loaded">
 	<app-sidebar *ngIf="isLoggedIn$ | async"></app-sidebar>
 
-	<main class="main-content" [class.full-width]="!(isLoggedIn$ | async)">
+	<main
+		class="main-content"
+		[class.full-width]="(isLoggedIn$ | async) === false"
+	>
 		<router-outlet></router-outlet>
 	</main>
 </div>
 
 <div class="loading" *ngIf="!loaded">
-	<p-progressSpinner styleClass="w-1rem h-1rem" strokeWidth="4"></p-progressSpinner>
+	<p-progressSpinner
+		styleClass="w-1rem h-1rem"
+		strokeWidth="4"
+	></p-progressSpinner>
 </div>

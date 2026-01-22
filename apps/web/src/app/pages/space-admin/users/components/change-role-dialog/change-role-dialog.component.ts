@@ -8,7 +8,7 @@ import { SpaceUser } from '../../../../../shared/models/space-user.model';
 	selector: 'app-change-role-dialog',
 	templateUrl: './change-role-dialog.component.html',
 	styleUrls: ['./change-role-dialog.component.scss'],
-	standalone: false
+	
 })
 export class ChangeRoleDialogComponent implements OnInit {
 	roleForm: FormGroup;

@@ -9,15 +9,15 @@ import { environment } from '../../../environments/environment';
 	selector: 'app-space',
 	templateUrl: './space.page.html',
 	styleUrls: ['./space.page.scss'],
-	standalone: false,
+	
 	providers: [MessageService]
 })
 export class SpacePage implements OnInit {
 	spaceId: string;
 	space: Space | null = null;
-	loading: boolean = true;
+	loading = true;
 	organizationId: string = environment.organizationId;
-	accessDenied: boolean = false;
+	accessDenied = false;
 
 	constructor(
 		private route: ActivatedRoute,

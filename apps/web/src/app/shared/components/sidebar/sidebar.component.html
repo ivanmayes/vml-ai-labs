@@ -26,13 +26,19 @@
 			<p-button
 				[icon]="'pi pi-' + item.icon"
 				[text]="!(item.route && isActiveRoute(item.route))"
-				[severity]="(item.route && isActiveRoute(item.route)) ? 'primary' : undefined"
+				[severity]="
+					item.route && isActiveRoute(item.route)
+						? 'primary'
+						: undefined
+				"
 				class="nav-item"
 				(onClick)="handleItemClick(item)"
 				[pTooltip]="item.label"
 				tooltipPosition="right"
 				[attr.aria-label]="'Navigate to ' + item.label"
-				[attr.aria-current]="item.route && isActiveRoute(item.route) ? 'page' : null"
+				[attr.aria-current]="
+					item.route && isActiveRoute(item.route) ? 'page' : null
+				"
 			>
 				<!-- Badge for notifications/counts -->
 				<span
@@ -46,10 +52,7 @@
 			</p-button>
 
 			<!-- Optional divider between sections -->
-			<p-divider
-				*ngIf="item.dividerAfter"
-				class="nav-divider"
-			/>
+			<p-divider *ngIf="item.dividerAfter" class="nav-divider" />
 		</ng-container>
 	</div>
 
@@ -57,12 +60,24 @@
 	<div class="sidebar-footer">
 		<!-- User Menu with Enhanced OverlayPanel -->
 		<div class="user-section" *ngIf="user$ | async as user">
-			<div class="user-avatar" (click)="userOverlay.toggle($event)" [pTooltip]="user.email" tooltipPosition="right">
+			<button
+				type="button"
+				class="user-avatar"
+				(click)="userOverlay.toggle($event)"
+				[pTooltip]="user.email"
+				tooltipPosition="right"
+				aria-label="Open user menu"
+				aria-haspopup="true"
+			>
 				{{ getUserInitial(user) }}
-			</div>
+			</button>
 
 			<!-- Enhanced user popover with better styling -->
-			<p-popover #userOverlay [dismissable]="true" styleClass="user-overlay-panel">
+			<p-popover
+				#userOverlay
+				[dismissable]="true"
+				styleClass="user-overlay-panel"
+			>
 				<div class="user-menu-content">
 					<!-- User Info Section -->
 					<div class="user-info-section">
@@ -71,7 +86,10 @@
 						</div>
 						<div class="user-details">
 							<div class="user-email">{{ user.email }}</div>
-							<div class="app-name" *ngIf="settings$ | async as settings">
+							<div
+								class="app-name"
+								*ngIf="settings$ | async as settings"
+							>
 								{{ settings.name }}
 							</div>
 						</div>
