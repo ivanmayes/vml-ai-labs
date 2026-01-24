@@ -4,7 +4,8 @@ import {
 	Repository,
 	FindOneOptions,
 	FindManyOptions,
-	DataSource
+	DataSource,
+	In,
 } from 'typeorm';
 
 import { UsersFilterDto } from './dtos/user-filter.dto';
@@ -38,7 +39,7 @@ export class UserService {
 	constructor(
 		@InjectRepository(User)
 		private readonly userRepository: Repository<User>,
-		private readonly dataSource: DataSource
+		private readonly dataSource: DataSource,
 	) {}
 
 	public async find(options: FindManyOptions<User>) {
@@ -50,10 +51,11 @@ export class UserService {
 	}
 
 	public async addOne(user: Partial<User>) {
-		if(!user.email) {
+		if (!user.email) {
 			throw 'Invalid user. Missing email.';
 		}
-		user.emailNormalized = FraudPrevention.Forms.Normalization.normalizeEmail(user.email);
+		user.emailNormalized =
+			FraudPrevention.Forms.Normalization.normalizeEmail(user.email);
 		return this.userRepository.save(user);
 	}
 
@@ -66,8 +68,19 @@ export class UserService {
 		return this.userRepository.save(user);
 	}
 
+	public async findByEmails(emails: string[]): Promise<User[]> {
+		if (!emails.length) return [];
+		return this.userRepository.find({
+			where: { emailNormalized: In(emails) },
+		});
+	}
+
+	public async saveMany(users: User[]): Promise<User[]> {
+		return this.userRepository.save(users);
+	}
+
 	public async canAccess(user: User, accessList: AccessList) {
-		if(user.organizationId !== accessList.organizationId) {
+		if (user.organizationId !== accessList.organizationId) {
 			return false;
 		}
 
@@ -113,20 +126,20 @@ export class UserService {
 				${queryAlias}.id
 		`;
 		const params = {
-			id
+			id,
 		};
 
 		let error;
 		const result = await conn
 			.query(...conn.driver.escapeQueryWithParameters(query, params, {}))
-			.catch(err => {
+			.catch((err) => {
 				console.log(err);
 				error = err;
 				return null;
 			});
 
-		if(!result?.length) {
-			if(error) {
+		if (!result?.length) {
+			if (error) {
 				throw new Error('An error occurred during the user query.');
 			}
 			throw new Error('User not found.');
@@ -134,11 +147,13 @@ export class UserService {
 
 		const user = new User(result[0], result[0].privateProfile);
 
-		return user.clean()
-			.stripNulls();
+		return user.clean().stripNulls();
 	}
 
-	public async getUsersPaginated(options: GetUserOptions, filter: UsersFilterDto) {
+	public async getUsersPaginated(
+		options: GetUserOptions,
+		filter: UsersFilterDto,
+	) {
 		const conn = this.dataSource;
 		const { perPage, page, orgId, sortBy, sortOrder } = options;
 		const take = perPage || 5;
@@ -148,11 +163,11 @@ export class UserService {
 		const params: any = {
 			orgId,
 			take,
-			skip
+			skip,
 		};
 
 		let userQuery = '';
-		if(query) {
+		if (query) {
 			params.query = `%${query}%`;
 			userQuery = `
 				AND (
@@ -163,7 +178,7 @@ export class UserService {
 		}
 
 		let roleQuery = '';
-		if(role) {
+		if (role) {
 			params.role = role;
 			roleQuery = `
 				AND u.role = :role
@@ -172,7 +187,7 @@ export class UserService {
 
 		// TODO: Make sure the sortBy and sortOrder are parameterized.
 		let order = ` ORDER BY u."profile" -> 'nameFirst' ${sortOrder ?? 'ASC'}`;
-		if(sortBy && sortBy !== 'name') {
+		if (sortBy && sortBy !== 'name') {
 			order = ` ORDER BY u."${sortBy}" ${sortOrder ?? 'ASC'}`;
 		}
 
@@ -200,53 +215,64 @@ export class UserService {
 			OFFSET :skip
 		`;
 
-		return conn.query(...conn.driver.escapeQueryWithParameters(q, params, {}));
+		return conn.query(
+			...conn.driver.escapeQueryWithParameters(q, params, {}),
+		);
 	}
 
 	public async getAllUsers(options: GetAllUserOptions) {
 		const { sortBy, sortOrder, query } = options;
 		const qb = this.userRepository
 			.createQueryBuilder('user')
-			.leftJoinAndSelect('user.authenticationStrategy', 'authenticationStrategy');
+			.leftJoinAndSelect(
+				'user.authenticationStrategy',
+				'authenticationStrategy',
+			);
 
 		// Add search filter if query is provided
-		if(query && query.trim()) {
+		if (query && query.trim()) {
 			qb.where(
 				`(LOWER(user.email) LIKE LOWER(:query) OR
 				 LOWER(user.profile ->> 'nameFirst') LIKE LOWER(:query) OR
 				 LOWER(user.profile ->> 'nameLast') LIKE LOWER(:query))`,
-				{ query: `%${query}%` }
+				{ query: `%${query}%` },
 			);
 		}
 
-		if(sortBy && sortBy != 'name') {
+		if (sortBy && sortBy != 'name') {
 			qb.orderBy(`user.${sortBy}`, sortOrder ?? 'ASC');
 		}
 
-		if(sortBy && sortBy === 'name') {
+		if (sortBy && sortBy === 'name') {
 			qb.orderBy(`user.profile ->> 'nameFirst'`, sortOrder ?? 'ASC');
 		}
 
 		return qb.getMany();
 	}
 
-	public async promoteUser(userId: string, targetRole: UserRole, requestingUser: User) {
+	public async promoteUser(
+		userId: string,
+		targetRole: UserRole,
+		requestingUser: User,
+	) {
 		// Validate the requesting user can promote to the target role
-		if(!Utils.canUserAddRole(requestingUser.role, targetRole)) {
-			throw new Error(`You don't have permission to promote users to role: ${targetRole}`);
+		if (!Utils.canUserAddRole(requestingUser.role, targetRole)) {
+			throw new Error(
+				`You don't have permission to promote users to role: ${targetRole}`,
+			);
 		}
 
 		const user = await this.findOne({
-			where: { id: userId }
+			where: { id: userId },
 		});
 
-		if(!user) {
+		if (!user) {
 			throw new Error('User not found.');
 		}
 
 		// Ensure organization isolation
-		if(user.organizationId !== requestingUser.organizationId) {
-			throw new Error('You don\'t have access to this user.');
+		if (user.organizationId !== requestingUser.organizationId) {
+			throw new Error("You don't have access to this user.");
 		}
 
 		// Update the user's role
@@ -256,10 +282,10 @@ export class UserService {
 
 	public async banUser(userId: string, banned: boolean) {
 		const user = await this.findOne({
-			where: { id: userId }
+			where: { id: userId },
 		});
 
-		if(!user) {
+		if (!user) {
 			throw new Error('User not found.');
 		}
 
