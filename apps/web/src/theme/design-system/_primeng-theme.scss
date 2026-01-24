@@ -1,166 +1,210 @@
-// PrimeNG Theme Customizations
+// PrimeNG Theme Customizations - WPP Open Design System
 // PrimeNG v20 uses programmatic theming via providePrimeNG() in app.module.ts
 // This file contains CSS variable overrides and component-specific customizations
 
 :root {
-  // Typography overrides (using Roboto from Google Fonts)
-  --p-font-family: 'Roboto', -apple-system, blinkmacsystemfont, 'Segoe UI', sans-serif;
-  --p-font-size: 14px; // 14px base font size
+	// WPP Typography
+	--p-font-family:
+		"Inter", "Roboto", -apple-system, blinkmacsystemfont, "Segoe UI",
+		sans-serif;
+	--p-font-size: 14px;
 
-  // Border radius adjustments for modern UI
-  --p-border-radius: 6px;
-  --p-rounded-border-radius: 2rem;
+	// WPP Border Radius
+	--p-border-radius-xs: 4px;
+	--p-border-radius-sm: 6px;
+	--p-border-radius: 8px;
+	--p-border-radius-lg: 12px;
+	--p-border-radius-xl: 20px;
+	--p-rounded-border-radius: 64px;
 
-  // Primary Color - Blue Palette (Material Blue)
-  --p-primary-50: #e3f2fd;
-  --p-primary-100: #bbdefb;
-  --p-primary-200: #90caf9;
-  --p-primary-300: #64b5f6;
-  --p-primary-400: #42a5f5;
-  --p-primary-500: #2196f3;
-  --p-primary-600: #1e88e5;
-  --p-primary-700: #1976d2;
-  --p-primary-800: #1565c0;
-  --p-primary-900: #0d47a1;
-  --p-primary-950: #0a3d91;
+	// WPP Primary Purple
+	--p-primary-50: #eee8ff;
+	--p-primary-100: #dbd2fa;
+	--p-primary-200: #cab8ff;
+	--p-primary-300: #bc71fb;
+	--p-primary-400: #8508e8;
+	--p-primary-500: #5e00b5;
+	--p-primary-600: #47039b;
+	--p-primary-700: #2f0069;
+	--p-primary-800: #19022c;
+	--p-primary-900: #0b001c;
+	--p-primary-950: #050010;
+	--p-primary-color: var(--p-primary-500);
+	--p-primary-contrast-color: #fff;
 
-  // Set the main primary color variable
-  --p-primary-color: var(--p-primary-500);
-  --p-primary-contrast-color: #fff;
+	// WPP Surface (Grey) - Light Mode
+	--p-surface-0: #ffffff;
+	--p-surface-50: #f8f9fb;
+	--p-surface-100: #f4f5f7;
+	--p-surface-200: #e7eaee;
+	--p-surface-300: #c1c7cd;
+	--p-surface-400: #a2a9b0;
+	--p-surface-500: #8b919a;
+	--p-surface-600: #697077;
+	--p-surface-700: #4d5358;
+	--p-surface-800: #343a3f;
+	--p-surface-900: #121619;
+	--p-surface-950: #0a0c0e;
 
-  // Button primary colors
-  --p-button-primary-background: var(--p-primary-500);
-  --p-button-primary-hover-background: var(--p-primary-600);
-  --p-button-primary-active-background: var(--p-primary-700);
-  --p-button-primary-border-color: var(--p-primary-500);
-  --p-button-primary-hover-border-color: var(--p-primary-600);
-  --p-button-primary-active-border-color: var(--p-primary-700);
-  --p-button-primary-color: #fff;
-  --p-button-primary-hover-color: #fff;
-  --p-button-primary-active-color: #fff;
+	// Semantic surface tokens
+	--p-surface-ground: var(--p-surface-50);
+	--p-surface-section: var(--p-surface-0);
+	--p-surface-card: var(--p-surface-0);
+	--p-surface-overlay: var(--p-surface-0);
+	--p-surface-border: var(--p-surface-200);
 
-  // Link colors
-  --p-button-link-color: var(--p-primary-color);
-  --p-button-link-hover-color: var(--p-primary-600);
-  --p-button-link-active-color: var(--p-primary-700);
+	// Text colors
+	--p-text-color: var(--p-surface-900);
+	--p-text-secondary-color: var(--p-surface-700);
+	--p-text-muted-color: var(--p-surface-500);
 
-  // Text button primary colors
-  --p-button-text-primary-hover-background: var(--p-primary-50);
-  --p-button-text-primary-active-background: var(--p-primary-100);
-  --p-button-text-primary-color: var(--p-primary-color);
+	// System colors (WPP)
+	--p-red-500: #b91c1c;
+	--p-orange-500: #c2410c;
+	--p-green-500: #11652f;
+	--p-yellow-400: #f5db58;
 
-  // Outlined button primary colors
-  --p-button-outlined-primary-hover-background: var(--p-primary-50);
-  --p-button-outlined-primary-active-background: var(--p-primary-100);
-  --p-button-outlined-primary-border-color: var(--p-primary-500);
-  --p-button-outlined-primary-color: var(--p-primary-color);
+	// WPP Shadows
+	--p-overlay-shadow:
+		0px 0px 1px rgb(52 58 63 / 10%), 0px 1px 5px rgb(52 58 63 / 10%);
+	--p-card-shadow:
+		0px 1px 4px rgb(52 58 63 / 5%), 0px 4px 12px rgb(52 58 63 / 12%);
 
-  // Focus ring
-  --p-button-primary-focus-ring-color: var(--p-primary-500);
-  --p-focus-ring-color: var(--p-primary-500);
+	// Button primary colors
+	--p-button-primary-background: var(--p-primary-500);
+	--p-button-primary-hover-background: var(--p-primary-400);
+	--p-button-primary-active-background: var(--p-primary-600);
+	--p-button-primary-border-color: var(--p-primary-500);
+	--p-button-primary-hover-border-color: var(--p-primary-400);
+	--p-button-primary-active-border-color: var(--p-primary-600);
+	--p-button-primary-color: #fff;
+	--p-button-primary-hover-color: #fff;
+	--p-button-primary-active-color: #fff;
 
-  // Compact sizing for buttons and inputs
-  --p-button-padding-y: 0.375rem;
-  --p-button-padding-x: 0.75rem;
-  --p-button-font-size: 0.875rem;
+	// Link colors
+	--p-button-link-color: var(--p-primary-color);
+	--p-button-link-hover-color: var(--p-primary-400);
+	--p-button-link-active-color: var(--p-primary-600);
 
-  // Form input sizing
-  --p-inputtext-padding-y: 0.375rem;
-  --p-inputtext-padding-x: 0.75rem;
-  --p-form-field-padding-y: 0.375rem;
-  --p-form-field-padding-x: 0.75rem;
+	// Text button primary colors
+	--p-button-text-primary-hover-background: var(--p-primary-50);
+	--p-button-text-primary-active-background: var(--p-primary-100);
+	--p-button-text-primary-color: var(--p-primary-color);
+
+	// Outlined button primary colors
+	--p-button-outlined-primary-hover-background: var(--p-primary-50);
+	--p-button-outlined-primary-active-background: var(--p-primary-100);
+	--p-button-outlined-primary-border-color: var(--p-primary-500);
+	--p-button-outlined-primary-color: var(--p-primary-color);
+
+	// Focus ring
+	--p-button-primary-focus-ring-color: var(--p-primary-500);
+	--p-focus-ring-color: var(--p-primary-500);
+
+	// Compact sizing for buttons and inputs
+	--p-button-padding-y: 0.375rem;
+	--p-button-padding-x: 0.75rem;
+	--p-button-font-size: 0.875rem;
+
+	// Form input sizing
+	--p-inputtext-padding-y: 0.375rem;
+	--p-inputtext-padding-x: 0.75rem;
+	--p-form-field-padding-y: 0.375rem;
+	--p-form-field-padding-x: 0.75rem;
 }
 
-// Dark theme overrides
+// WPP Dark Mode
 .p-dark {
-  // Ensure good contrast in dark mode
-  --p-surface-ground: #18181b;
-  --p-surface-section: #27272a;
-  --p-surface-card: #27272a;
-  --p-surface-overlay: #3f3f46;
-  --p-surface-border: #52525b;
-  --p-text-color: #fafafa;
-  --p-text-secondary-color: #d4d4d8;
-  --p-text-muted-color: #a1a1aa;
+	--p-surface-ground: #121619;
+	--p-surface-section: #1a1d20;
+	--p-surface-card: #1a1d20;
+	--p-surface-overlay: #343a3f;
+	--p-surface-border: #4d5358;
 
-  // Use a brighter blue for dark mode visibility
-  --p-primary-color: var(--p-primary-400);
-  --p-primary-contrast-color: #000;
+	--p-text-color: #f8f9fb;
+	--p-text-secondary-color: #c1c7cd;
+	--p-text-muted-color: #8b919a;
 
-  // Button adjustments for dark mode
-  --p-button-primary-background: var(--p-primary-500);
-  --p-button-primary-hover-background: var(--p-primary-400);
-  --p-button-primary-active-background: var(--p-primary-300);
+	// Brighter purple for dark mode
+	--p-primary-color: var(--p-primary-400);
+	--p-primary-contrast-color: #121619;
+
+	--p-button-primary-background: var(--p-primary-400);
+	--p-button-primary-hover-background: var(--p-primary-300);
+	--p-button-primary-active-background: var(--p-primary-500);
 }
 
 // Component-specific customizations
 .p-button {
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: 0.02857em;
-  transition: all 0.2s ease-in-out;
+	font-weight: 500;
+	text-transform: none;
+	letter-spacing: 0.02857em;
+	transition: all 0.2s ease-in-out;
 }
 
 .p-inputtext,
 .p-textarea,
 .p-dropdown,
 .p-multiselect {
-  &:enabled:focus {
-    box-shadow: 0 0 0 0.2rem rgb(33 150 243 / 20%);
-  }
+	&:enabled:focus {
+		box-shadow: 0 0 0 0.2rem rgb(94 0 181 / 20%);
+	}
 }
 
 .p-dialog {
-  .p-dialog-header {
-    padding: 1.25rem 1.5rem;
-    font-weight: 500;
-  }
+	.p-dialog-header {
+		padding: 1.25rem 1.5rem;
+		font-weight: 500;
+	}
 
-  .p-dialog-content {
-    padding: 0 1.5rem 1.5rem;
-  }
+	.p-dialog-content {
+		padding: 0 1.5rem 1.5rem;
+	}
 
-  .p-dialog-footer {
-    padding: 1rem 1.5rem;
-  }
+	.p-dialog-footer {
+		padding: 1rem 1.5rem;
+	}
 }
 
 .p-toast {
-  .p-toast-message {
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -1px rgb(0 0 0 / 6%);
-  }
+	.p-toast-message {
+		box-shadow:
+			0 4px 6px -1px rgb(0 0 0 / 10%),
+			0 2px 4px -1px rgb(0 0 0 / 6%);
+	}
 }
 
 .p-menu {
-  .p-menuitem-link {
-    transition: background-color 0.2s, color 0.2s;
+	.p-menuitem-link {
+		transition:
+			background-color 0.2s,
+			color 0.2s;
 
-    &:hover {
-      background-color: var(--p-surface-100);
-    }
-  }
+		&:hover {
+			background-color: var(--p-surface-100);
+		}
+	}
 }
 
 .p-datatable {
-  .p-datatable-thead > tr > th {
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-  }
+	.p-datatable-thead > tr > th {
+		font-weight: 600;
+		text-transform: uppercase;
+		font-size: 0.75rem;
+		letter-spacing: 0.05em;
+	}
 }
 
 .p-card {
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px 0 rgb(0 0 0 / 6%);
+	box-shadow: var(--p-card-shadow);
 
-  .p-card-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-  }
+	.p-card-title {
+		font-size: 1.25rem;
+		font-weight: 600;
+	}
 
-  .p-card-subtitle {
-    color: var(--p-text-secondary-color);
-    font-size: 0.875rem;
-  }
+	.p-card-subtitle {
+		color: var(--p-text-secondary-color);
+		font-size: 0.875rem;
+	}
 }
-
