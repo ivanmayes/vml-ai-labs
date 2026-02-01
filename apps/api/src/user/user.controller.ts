@@ -39,7 +39,6 @@ import { UserPromoteDto } from './dtos/user-promote.dto';
 import { UserBanDto } from './dtos/user-ban.dto';
 import { UsersFilterDto } from './dtos/user-filter.dto';
 
-
 const basePath = 'admin/organization/:orgId/user';
 @Controller(basePath)
 export class UserController {
@@ -82,7 +81,7 @@ export class UserController {
 
 		const options: GetAllUserOptions = {
 			sortOrder:
-				sortOrder == 'asc' ? SortStrategy.ASC : SortStrategy.DESC,
+				sortOrder === 'asc' ? SortStrategy.ASC : SortStrategy.DESC,
 			sortBy: sortBy || '',
 			query: query || '',
 		};
@@ -395,11 +394,11 @@ export class UserController {
 		@Query('sortBy') sortBy: string,
 		@Query('order', new DefaultValuePipe('ASC')) sortOrder: SortStrategy,
 	) {
-		perPage = perPage > 50 ? 50 : perPage;
+		const limitedPerPage = perPage > 50 ? 50 : perPage;
 		const options: GetUserOptions = {
 			orgId,
 			page,
-			perPage,
+			perPage: limitedPerPage,
 		};
 
 		if (sortBy) {

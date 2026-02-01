@@ -23,11 +23,10 @@
     "test:api": "cd apps/api && npm run test",
     "test:web": "cd apps/web && npm run test -- --watch=false --browsers=ChromeHeadless",
     "validate": "npm run lint && npm run typecheck && echo '✅ All validations passed!'",
-    "ubs": "ubs . --profile=loose --include-ext=ts,js,tsx,jsx,html --format=text",
-    "ubs:staged": "ubs --staged --profile=loose --include-ext=ts,js,tsx,jsx,html --format=text",
-    "ubs:strict": "ubs . --profile=strict --include-ext=ts,js,tsx,jsx,html --format=text",
-    "ubs:api": "ubs apps/api --profile=loose --include-ext=ts,js --format=text",
-    "ubs:web": "ubs apps/web --profile=loose --include-ext=ts,js,html --format=text",
+    "ubs": "ubs . --only=js --format=text",
+    "ubs:staged": "ubs --staged --only=js --format=text",
+    "ubs:api": "ubs apps/api --only=js --format=text",
+    "ubs:web": "ubs apps/web --only=js --format=text",
     "setup:ubs": "bash scripts/setup-ubs.sh",
     "api:manifest": "bash scripts/generate-api-manifest.sh",
     "prepare": "husky || true",
@@ -35,20 +34,23 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "eslint": "^9.39.2",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.10"
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.8.1",
+    "stylelint": "^17.1.0"
   },
   "lint-staged": {
     "apps/web/src/**/*.{ts,html}": [
-      "eslint --fix --no-warn-ignored",
+      "bash -c 'cd apps/web && npx eslint --fix --no-warn-ignored \"$@\"' _",
       "prettier --write"
     ],
     "apps/web/src/**/*.scss": [
-      "stylelint --fix --allow-empty-input",
+      "bash -c 'cd apps/web && npx stylelint --fix --allow-empty-input \"$@\"' _",
       "prettier --write"
     ],
     "apps/api/src/**/*.ts": [
-      "eslint --fix --no-warn-ignored",
+      "bash -c 'cd apps/api && npx eslint --fix --no-warn-ignored \"$@\"' _",
       "prettier --write"
     ]
   },

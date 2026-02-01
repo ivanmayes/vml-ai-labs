@@ -85,6 +85,7 @@ expect.extend({
 });
 
 declare global {
+	// eslint-disable-next-line @typescript-eslint/no-namespace -- Jest type augmentation requires namespace
 	namespace jest {
 		interface Matchers<R> {
 			toBeWithinRange(a: number, b: number): R;

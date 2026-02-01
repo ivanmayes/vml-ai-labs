@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Store, StoreConfig } from '@datorama/akita';
+
 import type { PublicUser } from '../../../../../api/src/user/user.entity';
-import { SessionState } from './session.model';
 import { environment } from '../../../environments/environment';
+
+import { SessionState } from './session.model';
 
 export const SESSION_KEY = `${environment.organizationId}-Session`;
 export const ORG_SETTINGS = `${environment.organizationId}-Settings`;

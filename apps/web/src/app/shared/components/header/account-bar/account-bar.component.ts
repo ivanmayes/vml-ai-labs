@@ -1,26 +1,29 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MenuItem } from 'primeng/api';
-import { GlobalSettings } from '../../../../state/global/global.model';
-import { GlobalQuery } from '../../../../state/global/global.query';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { Router, RouterModule } from '@angular/router';
+
+import { GlobalSettings } from '../../../../state/global/global.model';
+import { GlobalQuery } from '../../../../state/global/global.query';
 import { SessionQuery } from '../../../../state/session/session.query';
 import { SessionService } from '../../../../state/session/session.service';
-import { Router } from '@angular/router';
 import { environment } from '../../../../../environments/environment';
 import type { PublicUser } from '../../../../../../../api/src/user/user.entity';
 import { UserRole } from '../../../../../../../api/src/user/user-role.enum';
 import { ThemeService } from '../../../services/theme.service';
+import { PrimeNgModule } from '../../../primeng.module';
 
 /**
  * Account Bar Component
  * This component handles the user profile / account button on the header bar.
  */
 @Component({
-	standalone: false,
 	selector: 'app-account-bar',
 	templateUrl: './account-bar.component.html',
 	styleUrls: ['./account-bar.component.scss'],
+	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class AccountBarComponent implements OnInit {
 	public settings$: Observable<GlobalSettings | undefined>;

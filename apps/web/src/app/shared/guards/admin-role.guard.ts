@@ -5,6 +5,7 @@ import {
 	ActivatedRouteSnapshot,
 	RouterStateSnapshot,
 } from '@angular/router';
+
 import { SessionQuery } from '../../state/session/session.query';
 import { UserRole } from '../../../../../api/src/user/user-role.enum';
 

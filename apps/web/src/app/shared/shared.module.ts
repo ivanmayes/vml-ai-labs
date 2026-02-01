@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+
 import { PrimeNgModule } from './primeng.module';
 
 // Components
@@ -41,14 +42,14 @@ import { ShortNumberPipe } from './pipes/short-number.pipe';
 		EntityFieldMaskPipe,
 		PluckFromArrayPipe,
 		SelectDialogComponent,
-		ShortNumberPipe
+		ShortNumberPipe,
 	],
 	imports: [
 		PrimeNgModule,
 		CommonModule,
 		RouterModule,
 		FormsModule,
-		ReactiveFormsModule
+		ReactiveFormsModule,
 	],
 	exports: [
 		CommonModule,
@@ -69,7 +70,7 @@ import { ShortNumberPipe } from './pipes/short-number.pipe';
 		EntityFieldMaskPipe,
 		PluckFromArrayPipe,
 		SelectDialogComponent,
-		ShortNumberPipe
-	]
+		ShortNumberPipe,
+	],
 })
 export class SharedModule {}

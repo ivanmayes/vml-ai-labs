@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Router } from '@angular/router';
+
 import { SessionQuery } from '../../../state/session/session.query';
 import { SessionService } from '../../../state/session/session.service';
 import { GlobalQuery } from '../../../state/global/global.query';
@@ -23,7 +24,6 @@ import { UserRole } from '../../../../../../api/src/user/user-role.enum';
  * - Active route highlighting provides clear navigation feedback
  */
 @Component({
-	standalone: false,
 	selector: 'app-sidebar',
 	templateUrl: './sidebar.component.html',
 	styleUrls: ['./sidebar.component.scss'],

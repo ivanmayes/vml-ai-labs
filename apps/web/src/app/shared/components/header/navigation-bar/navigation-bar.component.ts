@@ -1,24 +1,27 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ActiveRouteState } from '@datorama/akita-ng-router-store';
+import { Observable } from 'rxjs';
+import { Router, RouterModule } from '@angular/router';
+
 import { GlobalSettings } from '../../../../state/global/global.model';
 import { GlobalQuery } from '../../../../state/global/global.query';
 import { environment } from '../../../../../environments/environment';
-import { Observable } from 'rxjs';
 import { SessionQuery } from '../../../../state/session/session.query';
 import { SessionService } from '../../../../state/session/session.service';
-import { Router } from '@angular/router';
 import type { PublicUser } from '../../../../../../../api/src/user/user.entity';
+import { PrimeNgModule } from '../../../primeng.module';
 
 /**
  * Navigation Bar Component
  * This component handles the navigation of the header.
  */
 @Component({
-	standalone: false,
 	selector: 'app-navigation-bar',
 	templateUrl: './navigation-bar.component.html',
 	styleUrls: ['./navigation-bar.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class NavigationBarComponent {
 	@Input() activeRouteState: ActiveRouteState | null = null;

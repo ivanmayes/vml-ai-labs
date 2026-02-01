@@ -2,15 +2,16 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
-import { SpaceService } from '../../../shared/services/space.service';
-import { Space } from '../../../shared/models/space.model';
-import { SpaceFormDialogComponent } from './components/space-form-dialog/space-form-dialog.component';
-import { environment } from '../../../../environments/environment';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
+import { SpaceService } from '../../../shared/services/space.service';
+import { Space } from '../../../shared/models/space.model';
+import { environment } from '../../../../environments/environment';
+
+import { SpaceFormDialogComponent } from './components/space-form-dialog/space-form-dialog.component';
+
 @Component({
-	standalone: false,
 	selector: 'app-spaces',
 	templateUrl: './spaces.page.html',
 	styleUrls: ['./spaces.page.scss'],

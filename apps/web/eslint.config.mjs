@@ -125,6 +125,7 @@ export default tseslint.config(
     rules: {
       // Relax rules for test files
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-empty-function": "off",
       "sonarjs/no-duplicate-string": "off",
       "sonarjs/cognitive-complexity": "off",
     },

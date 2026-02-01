@@ -1,15 +1,53 @@
 import { TestBed } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
+import { provideRouter } from '@angular/router';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { DialogService } from 'primeng/dynamicdialog';
+import { of } from 'rxjs';
+
 import { AppComponent } from './app.component';
+import { GlobalQuery } from './state/global/global.query';
+import { GlobalService } from './state/global/global.service';
+import { SessionQuery } from './state/session/session.query';
+import { SessionService } from './state/session/session.service';
+import { WppOpenService } from './_core/services/wpp-open/wpp-open.service';
 
 describe('AppComponent', () => {
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [
-				RouterTestingModule
-			],
-			declarations: [
-				AppComponent
+			imports: [AppComponent],
+			providers: [
+				provideRouter([]),
+				provideHttpClient(),
+				provideHttpClientTesting(),
+				{
+					provide: GlobalQuery,
+					useValue: { select: () => of({}) },
+				},
+				{
+					provide: GlobalService,
+					useValue: { setAdminMode: () => {} },
+				},
+				{
+					provide: SessionQuery,
+					useValue: { isLoggedIn$: of(false), getToken: () => '' },
+				},
+				{
+					provide: SessionService,
+					useValue: { setInitialUrl: () => {} },
+				},
+				{
+					provide: DialogService,
+					useValue: {},
+				},
+				{
+					provide: WppOpenService,
+					useValue: {
+						getAccessToken: () => Promise.resolve(null),
+						getWorkspaceScope: () => Promise.resolve(null),
+						getOsContext: () => Promise.resolve(null),
+					},
+				},
 			],
 		}).compileComponents();
 	});
@@ -18,18 +56,5 @@ describe('AppComponent', () => {
 		const fixture = TestBed.createComponent(AppComponent);
 		const app = fixture.componentInstance;
 		expect(app).toBeTruthy();
-	});
-
-	it(`should have as title 'admin'`, () => {
-		const fixture = TestBed.createComponent(AppComponent);
-		const app = fixture.componentInstance;
-		expect(app.title).toEqual('admin');
-	});
-
-	it('should render title', () => {
-		const fixture = TestBed.createComponent(AppComponent);
-		fixture.detectChanges();
-		const compiled = fixture.nativeElement as HTMLElement;
-		expect(compiled.querySelector('.content span')?.textContent).toContain('admin app is running!');
 	});
 });

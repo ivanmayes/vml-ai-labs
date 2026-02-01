@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { OrganizationAdminService } from '../../../../../shared/services/organization-admin.service';
 import { MessageService } from 'primeng/api';
 
+import { OrganizationAdminService } from '../../../../../shared/services/organization-admin.service';
+
 @Component({
-	standalone: false,
 	selector: 'app-invite-user-dialog',
 	templateUrl: './invite-user-dialog.component.html',
 })

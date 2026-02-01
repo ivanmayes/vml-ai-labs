@@ -31,13 +31,10 @@ export class Validate {
 		}
 
 		const emailNormalized = Normalization.normalizeEmail(email);
-
-		if (!restrictions) {
-			restrictions = [];
-		}
+		const restrictionList = restrictions || [];
 
 		// Step two, iterate rule restrictions
-		restrictions.forEach((r) => {
+		restrictionList.forEach((r) => {
 			const pattern: RegExp = r instanceof RegExp ? r : new RegExp(r);
 			if (emailNormalized?.match(pattern)) {
 				badEmail = true;
@@ -61,16 +58,14 @@ export class Validate {
 		}
 
 		// Remove non-numbers
-		phone = phone.replace(/[^0-9]+/g, '');
+		const cleanedPhone = phone.replace(/[^0-9]+/g, '');
 
 		// If no validators are passed,
 		// default to checking US phone numbers
-		if (!countries?.length || !Array.isArray(countries)) {
-			countries = ['US'];
-		}
+		const countryList =
+			countries?.length && Array.isArray(countries) ? countries : ['US'];
 
-		for (let i = 0; i < countries.length; i++) {
-			const country = countries[i];
+		for (const country of countryList) {
 			switch (country) {
 				case 'US':
 				default:
@@ -78,9 +73,9 @@ export class Validate {
 					// At some point we probably want to validate area codes
 					// and prefixes. Right now we just test to see if it's
 					// US (+1) and 10 digits.
-					if (!phone.match(/(^1[0-9]{10}$)|(^[0-9]{10}$)/)) {
+					if (!cleanedPhone.match(/(^1[0-9]{10}$)|(^[0-9]{10}$)/)) {
 						errors.push(
-							`Input "${phone}" does not appear to be a valid phone number.`,
+							`Input "${cleanedPhone}" does not appear to be a valid phone number.`,
 						);
 					}
 					break;
@@ -167,7 +162,7 @@ export class Validate {
 		// Strict on true, lenient on false (allows for optional booleans to be validated).
 		const valid =
 			input === true ||
-			input == false ||
+			input === false ||
 			typeof input === 'undefined' ||
 			input === null;
 		if (!valid) {
@@ -182,10 +177,8 @@ export class Validate {
 	): string[] {
 		const errors: string[] = [];
 		// Note: isNaN alone tries to coerce to a number first.
-		if (input?.toString) {
-			input = input.toString();
-		}
-		const valid = !isNaN(input);
+		const inputStr = input?.toString ? input.toString() : input;
+		const valid = !isNaN(inputStr);
 		if (!valid) {
 			errors.push(`Input "${input}" is not a valid number.`);
 		} else {

@@ -46,9 +46,7 @@ declare module 'express' {
 		status(code: number): Response;
 	}
 
-	export interface NextFunction {
-		(err?: any): void;
-	}
+	export type NextFunction = (err?: any) => void;
 
 	export interface Application {
 		use(...handlers: any[]): Application;

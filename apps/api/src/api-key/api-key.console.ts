@@ -22,12 +22,10 @@ export class ApiKeyConsole {
 		description: 'Installs a new API Key.',
 	})
 	public async installAPIKey(name: string, expires?: string) {
-		let organizationId: string;
 		let organization: Organization | null = null;
 		const orgs: Organization[] | null = await this.organizationService
 			.find()
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 
@@ -52,13 +50,13 @@ export class ApiKeyConsole {
 		const orgResponse = await Utils.getUserResponse(
 			'\tOrganization Number: ',
 		);
-		const idx = parseInt(orgResponse);
+		const idx = parseInt(orgResponse, 10);
 		if (isNaN(idx) || idx < 0 || idx > orgs.length - 1) {
 			organization = orgs[0];
 		} else {
 			organization = orgs[idx];
 		}
-		organizationId = organization.id;
+		const organizationId = organization.id;
 
 		let expireDate;
 		if (new Date(expires ?? '').getTime()) {
@@ -80,12 +78,9 @@ export class ApiKeyConsole {
 				expires: expireDate,
 				organizationId: organizationId,
 			})
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
-
-		console.log(apiKey);
 
 		return true;
 	}
@@ -102,8 +97,7 @@ export class ApiKeyConsole {
 					id,
 				},
 			})
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 
@@ -118,14 +112,9 @@ export class ApiKeyConsole {
 			process.env.PII_SIGNING_OFFSET ?? '',
 		);
 
-		console.log(
-			`
-			Decrypted Key for id "${id}":
-			${decrypted}
-			
-			
-		`.replace(/\t/g, ''),
-		);
+		// Output decrypted key to stdout for CLI usage (intentional for dev tooling)
+		process.stdout.write(`Decrypted Key for id "${id}":\n`);
+		process.stdout.write(decrypted + '\n');
 
 		return true;
 	}

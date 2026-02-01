@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { MessageService } from 'primeng/api';
+
 import { SpaceService } from '../../shared/services/space.service';
 import { Space } from '../../shared/models/space.model';
-import { MessageService } from 'primeng/api';
 import { environment } from '../../../environments/environment';
 
 @Component({
-	standalone: false,
 	selector: 'app-space',
 	templateUrl: './space.page.html',
 	styleUrls: ['./space.page.scss'],

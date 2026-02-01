@@ -1,16 +1,18 @@
 import { Injectable } from '@angular/core';
-import { SessionStore } from './session.store';
 import { catchError, map, tap } from 'rxjs/operators';
+import { HttpHeaders, HttpClient } from '@angular/common/http';
+import { throwError } from 'rxjs';
+import { AccessToken, IDToken } from '@okta/okta-auth-js';
+
+import { environment } from '../../../environments/environment';
+import { Hierarchy } from '../../../../../api/src/_core/third-party/wpp-open/models';
+
 import {
 	LoginResponse,
 	VerifyResponse,
 	WppOpenLoginResponse,
 } from './session.model';
-import { environment } from '../../../environments/environment';
-import { HttpHeaders, HttpClient } from '@angular/common/http';
-import { throwError } from 'rxjs';
-import { AccessToken, IDToken } from '@okta/okta-auth-js';
-import { Hierarchy } from '../../../../../api/src/_core/third-party/wpp-open/models';
+import { SessionStore } from './session.store';
 
 /**
  * Session Service
@@ -105,7 +107,6 @@ export class SessionService {
 					});
 				}),
 				catchError((err) => {
-					console.log('Login Error', err);
 					this.sessionStore.setLoading(false);
 					this.sessionStore.setError(err);
 					return throwError(err);
@@ -211,7 +212,6 @@ export class SessionService {
 	 * Check a user's token for validity, return user profile.
 	 */
 	public getUserStatus(_token: string) {
-		console.log('Getting User Status');
 		return this.httpClient
 			.get<LoginResponse>(`${environment.apiUrl}/user/refresh`)
 			.pipe(

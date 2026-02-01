@@ -74,8 +74,7 @@ export class FraudPreventionCrypto {
 					string,
 					unknown
 				>;
-			} catch (err) {
-				console.log(err);
+			} catch (_err) {
 				return new Error(`Couldn't parse decrypted object.`);
 			}
 

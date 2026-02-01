@@ -5,7 +5,7 @@ export class Time {
 		}
 
 		const durationMultiplier = parseFloat(durationString);
-		const durationType = durationString.replace(/[0-9\.]/g, '');
+		const durationType = durationString.replace(/[0-9.]/g, '');
 
 		switch (durationType) {
 			case 'h':

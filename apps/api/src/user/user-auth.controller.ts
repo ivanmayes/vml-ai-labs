@@ -15,21 +15,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ArrayContains, MoreThan, Raw } from 'typeorm';
 import axios from 'axios';
 
-import { Roles } from './auth/roles.decorator';
-import { RolesGuard } from './auth/roles.guard';
 import { HasOrganizationAccessGuard } from '../organization/guards/has-organization-access.guard';
-
-import { UserService } from './user.service';
-import { User, ActivationStatus } from './user.entity';
-import { UserRole } from './user-role.enum';
-import { Utils } from './user.utils';
-
-import {
-	CodeRequestDto,
-	CodeLoginRequestDto,
-	OktaLoginRequestDto,
-} from './dtos';
-import { AuthService } from './auth/auth.service';
 import { NotificationService } from '../notification/notification.service';
 import { OrganizationService } from '../organization/organization.service';
 import { Organization } from '../organization/organization.entity';
@@ -37,7 +23,6 @@ import {
 	AuthenticationStrategyType,
 	OktaConfig,
 } from '../authentication-strategy/authentication-strategy.entity';
-import { PermissionsGuard } from './permission/permission.guard';
 import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
 import { ResponseEnvelope, ResponseStatus } from '../_core/models';
 import { WPPOpen } from '../_core/third-party/wpp-open';
@@ -45,11 +30,25 @@ import {
 	WorkspaceHierarchy,
 	WPPOpenTokenResponse,
 } from '../_core/third-party/wpp-open/models';
-import { WPPOpenLoginRequestDto } from './dtos/wpp-open-login-request.dto';
 import { SpaceService } from '../space/space.service';
 import { Space } from '../space/space.entity';
 import { SpaceRole } from '../space-user/space-role.enum';
 import { SpaceUser } from '../space-user/space-user.entity';
+
+import { WPPOpenLoginRequestDto } from './dtos/wpp-open-login-request.dto';
+import { PermissionsGuard } from './permission/permission.guard';
+import { AuthService } from './auth/auth.service';
+import {
+	CodeRequestDto,
+	CodeLoginRequestDto,
+	OktaLoginRequestDto,
+} from './dtos';
+import { Utils } from './user.utils';
+import { UserRole } from './user-role.enum';
+import { User, ActivationStatus } from './user.entity';
+import { UserService } from './user.service';
+import { RolesGuard } from './auth/roles.guard';
+import { Roles } from './auth/roles.decorator';
 
 export const basePath = 'user';
 export const SAMLLoginPath = 'auth/saml/:orgSlug/login';
@@ -474,18 +473,9 @@ export class UserAuthController {
 			throw new HttpException('Invalid scopeId.', HttpStatus.BAD_REQUEST);
 		}
 
-		// Log tenant ID for debugging
-		const tenantIdToMatch = loginReq.tenantId;
-		console.log('[WPP Open] Tenant ID from login:', tenantIdToMatch);
-		console.log('[WPP Open] Workspace ID from login:', scope.workspace.id);
-		console.log(
-			'[WPP Open] Organization redirectToSpace:',
-			organization.redirectToSpace,
-		);
-
 		// Use tenant ID if provided, otherwise fall back to workspace ID
+		const tenantIdToMatch = loginReq.tenantId;
 		const idToMatch = tenantIdToMatch || scope.workspace.id;
-		console.log('[WPP Open] Using ID for matching:', idToMatch);
 
 		const spaces: Space[] = await this.spaceService
 			.find({
@@ -506,18 +496,6 @@ export class UserAuthController {
 			);
 		}
 
-		console.log('[WPP Open] Found spaces matching ID:', spaces.length);
-		if (spaces.length > 0) {
-			console.log(
-				'[WPP Open] Matching spaces:',
-				spaces.map((s) => ({
-					id: s.id,
-					name: s.name,
-					approvedWPPOpenTenantIds: s.approvedWPPOpenTenantIds,
-				})),
-			);
-		}
-
 		// Check if we should redirect to a space
 		let redirectSpaceId: string | null = null;
 		if (organization.redirectToSpace && spaces.length > 0) {
@@ -527,22 +505,7 @@ export class UserAuthController {
 			);
 			if (matchingSpace) {
 				redirectSpaceId = matchingSpace.id ?? null;
-				console.log(
-					'[WPP Open] Redirect space ID set to:',
-					redirectSpaceId,
-				);
-			} else {
-				console.log(
-					'[WPP Open] No matching space found despite query results',
-				);
 			}
-		} else {
-			console.log(
-				'[WPP Open] Not redirecting - redirectToSpace:',
-				organization.redirectToSpace,
-				'spaces found:',
-				spaces.length,
-			);
 		}
 
 		const email = FraudPrevention.Forms.Normalization.normalizeEmail(
@@ -616,14 +579,14 @@ export class UserAuthController {
 			}
 		}
 
-		let responseData: {
+		const responseData: {
 			token?: string;
 			redirect?: string;
 			spaceId?: string;
 		} = {};
 
 		// Create a JWT
-		let token = this.jwtService.sign({
+		const token = this.jwtService.sign({
 			id: user.id,
 			email: user.email,
 			emailNormalized: user.emailNormalized,

@@ -95,5 +95,12 @@ export default tseslint.config(
 			'sonarjs/cognitive-complexity': 'off',
 			'security/detect-object-injection': 'off',
 		},
+	},
+	{
+		// Workaround for @darraghor/nestjs-typed plugin crash on array controller paths
+		files: ['**/user-auth.controller.ts'],
+		rules: {
+			'@darraghor/nestjs-typed/param-decorator-name-matches-route-param': 'off',
+		},
 	}
 );

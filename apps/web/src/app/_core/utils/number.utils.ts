@@ -37,8 +37,7 @@ export function getShortNumber(input: any, decimals?: any) {
 		!isNumeric(input) ||
 		(input < 0 && input > -1000)
 	) {
-		if (!!decimals && isNumeric(input) && !(input < 0) && input != 0) {
-			console.log(input);
+		if (!!decimals && isNumeric(input) && !(input < 0) && input !== 0) {
 			return input.toFixed(decimals);
 		} else {
 			return input;

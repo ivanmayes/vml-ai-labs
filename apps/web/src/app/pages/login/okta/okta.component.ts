@@ -1,14 +1,16 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import OktaSignIn from '@okta/okta-signin-widget';
+
 import { VerifyResponse } from '../../../state/session/session.model';
 import { SessionService } from '../../../state/session/session.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
-	standalone: false,
 	selector: 'app-auth-okta',
 	templateUrl: './okta.component.html',
 	styleUrls: ['./okta.component.scss'],
+	imports: [CommonModule],
 })
 export class OktaAuthComponent implements OnInit {
 	@Input() email!: string;
@@ -22,12 +24,6 @@ export class OktaAuthComponent implements OnInit {
 
 	ngOnInit(): void {
 		const orgId = environment.organizationId;
-
-		console.log(
-			'Setting up Okta login',
-			this.authConfig,
-			`${window.location.origin}/sso/okta/${orgId}/login`,
-		);
 
 		this.widget = new OktaSignIn({
 			el: '#okta-signin-container',
@@ -43,7 +39,6 @@ export class OktaAuthComponent implements OnInit {
 		this.widget
 			.showSignInToGetTokens()
 			.then((tokens: unknown) => {
-				console.log('TOKENS!', tokens);
 				const typedTokens = tokens as {
 					accessToken: string;
 					idToken: string;

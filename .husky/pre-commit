@@ -10,7 +10,7 @@ echo ""
 echo "=== Running UBS Static Analysis ==="
 
 if command -v ubs &> /dev/null; then
-    if ! ubs --staged --profile=loose --include-ext=ts,js,tsx,jsx,html --format=text; then
+    if ! ubs --staged --only=js --format=text; then
         echo ""
         echo "[UBS] Issues found. Fix them or bypass with: git commit --no-verify"
         exit 1

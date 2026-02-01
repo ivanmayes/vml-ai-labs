@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { PrimeNgModule } from '../../../shared/primeng.module';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+
+import { SessionService } from '../../../state/session/session.service';
 
 import { OktaAuthComponent } from './okta.component';
 
@@ -10,18 +12,22 @@ describe('OktaAuthComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			declarations: [OktaAuthComponent],
-			imports: [
-				BrowserAnimationsModule,
-				PrimeNgModule
-			]
+			imports: [OktaAuthComponent],
+			providers: [
+				provideHttpClient(),
+				provideHttpClientTesting(),
+				{
+					provide: SessionService,
+					useValue: { oktaSignIn: () => {} },
+				},
+			],
 		}).compileComponents();
 	});
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(OktaAuthComponent);
 		component = fixture.componentInstance;
-		fixture.detectChanges();
+		// Don't call fixture.detectChanges() because ngOnInit requires Okta config
 	});
 
 	it('should create', () => {

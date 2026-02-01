@@ -24,8 +24,7 @@ export class AuthenticationStrategyConsole {
 		description: 'Installs a new Authentication Strategy.',
 	})
 	public async installAuthStrategyCmd() {
-		await this.installAuthStrategy().catch((err) => {
-			console.log(err);
+		await this.installAuthStrategy().catch(() => {
 			return null;
 		});
 	}
@@ -35,11 +34,14 @@ export class AuthenticationStrategyConsole {
 			`::Creating new Authentication Strategy::`.bgYellow.black.bold,
 		);
 
-		if (!organization) {
+		let selectedOrg: Organization;
+
+		if (organization) {
+			selectedOrg = organization;
+		} else {
 			const orgs: Organization[] | null = await this.organizationService
 				.find()
-				.catch((err) => {
-					console.log(err);
+				.catch(() => {
 					return null;
 				});
 
@@ -67,11 +69,11 @@ export class AuthenticationStrategyConsole {
 			const orgResponse = await Utils.getUserResponse(
 				'\tOrganization Number: ',
 			);
-			const idx = parseInt(orgResponse);
+			const idx = parseInt(orgResponse, 10);
 			if (isNaN(idx) || idx < 0 || idx > orgs.length - 1) {
-				organization = orgs[0];
+				selectedOrg = orgs[0];
 			} else {
-				organization = orgs[idx];
+				selectedOrg = orgs[idx];
 			}
 		}
 
@@ -85,7 +87,7 @@ export class AuthenticationStrategyConsole {
 
 		const strategy: Partial<AuthenticationStrategy> = {
 			name,
-			organizationId: organization.id,
+			organizationId: selectedOrg.id,
 		};
 
 		console.log(`Which type of strategy would you like to create?`.bold);
@@ -103,7 +105,7 @@ export class AuthenticationStrategyConsole {
 		const strategyResponse = await Utils.getUserResponse(
 			'\tAuthentication Strategy Type: ',
 		);
-		const idx = parseInt(strategyResponse);
+		const idx = parseInt(strategyResponse, 10);
 		let strategyType: AuthenticationStrategyType;
 		if (isNaN(idx) || idx < 0 || idx > strategyTypeOptions.length - 1) {
 			strategyType = strategyTypeOptions[0]?.[1];
@@ -118,7 +120,7 @@ export class AuthenticationStrategyConsole {
 			const codeLengthResponse = await Utils.getUserResponse(
 				`\tLength [${' 6 '.bgWhite.black.bold}] (Min 3, Max 16): `,
 			);
-			let codeLength = parseInt(codeLengthResponse);
+			let codeLength = parseInt(codeLengthResponse, 10);
 			if (!codeLength || codeLength > 16) {
 				codeLength = 6;
 			}
@@ -127,7 +129,7 @@ export class AuthenticationStrategyConsole {
 			const codeLifetimeResponse = await Utils.getUserResponse(
 				`\tLifetime [${' 5 '.bgWhite.black.bold}] (Minutes): `,
 			);
-			const codeLifetimeParsed = parseInt(codeLifetimeResponse);
+			const codeLifetimeParsed = parseInt(codeLifetimeResponse, 10);
 			let codeLifetime = '5m';
 			if (codeLifetimeParsed) {
 				codeLifetime = `${codeLifetimeParsed}m`;
@@ -152,8 +154,7 @@ export class AuthenticationStrategyConsole {
 
 		const authenticationStrategy = await this.authenticationStrategyService
 			.save(strategy)
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 
@@ -165,11 +166,10 @@ export class AuthenticationStrategyConsole {
 		}
 
 		// Set as default if one isn't set.
-		if (!organization.defaultAuthenticationStrategyId) {
-			organization.defaultAuthenticationStrategyId =
+		if (!selectedOrg.defaultAuthenticationStrategyId) {
+			selectedOrg.defaultAuthenticationStrategyId =
 				authenticationStrategy.id;
-			await this.organizationService.save(organization).catch((err) => {
-				console.log(err);
+			await this.organizationService.save(selectedOrg).catch(() => {
 				return null;
 			});
 		}

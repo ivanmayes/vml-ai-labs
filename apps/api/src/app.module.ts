@@ -63,6 +63,7 @@ Global();
 export class AppModule implements NestModule {
 	// @ts-expect-error DataSource injected for TypeORM but not directly used
 	constructor(private readonly _dataSource: DataSource) {}
-	 
+
+	// eslint-disable-next-line @typescript-eslint/no-empty-function -- Required by NestModule interface
 	configure(_consumer: MiddlewareConsumer) {}
 }

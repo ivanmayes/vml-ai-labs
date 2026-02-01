@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Query, toBoolean } from '@datorama/akita';
+
 import { SessionStore, getSession } from './session.store';
 import { SessionState } from './session.model';
 

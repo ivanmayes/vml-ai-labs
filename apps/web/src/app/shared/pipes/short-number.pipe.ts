@@ -1,7 +1,6 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
-	standalone: false,
 	name: 'shortNumber',
 })
 export class ShortNumberPipe implements PipeTransform {
@@ -18,8 +17,12 @@ export class ShortNumberPipe implements PipeTransform {
 			!this.isNumeric(input) ||
 			(input < 0 && input > -1000)
 		) {
-			if (!!args && this.isNumeric(input) && !(input < 0) && input != 0) {
-				console.log(input);
+			if (
+				!!args &&
+				this.isNumeric(input) &&
+				!(input < 0) &&
+				input !== 0
+			) {
 				return input.toFixed(args);
 			} else {
 				return input;

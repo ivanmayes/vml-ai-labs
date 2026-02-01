@@ -2,12 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
+
 import { SpaceService } from '../../../shared/services/space.service';
 import { Space } from '../../../shared/models/space.model';
 import { environment } from '../../../../environments/environment';
 
 @Component({
-	standalone: false,
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],
@@ -82,12 +82,9 @@ export class SettingsPage implements OnInit {
 		// In production, you might want a dedicated getSpace(id) endpoint
 		this.spaceService.getSpaces(this.organizationId).subscribe({
 			next: (response) => {
-				console.log('Spaces response:', response);
-				console.log('Looking for spaceId:', this.spaceId);
 				const space = response.data?.find(
 					(s: Space) => s.id === this.spaceId,
 				);
-				console.log('Found space:', space);
 				if (space) {
 					this.settingsForm.patchValue({
 						name: space.name,

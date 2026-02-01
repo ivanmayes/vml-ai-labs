@@ -372,21 +372,23 @@ export class Validation {
 							),
 						);
 					}
-					const opts = v as FileValidationOptions;
-					if (
-						(typeof opts?.maxBytes === 'undefined' ||
-							(typeof opts?.maxBytes !== 'undefined' &&
-								!Validate.number(opts.maxBytes))) &&
-						(typeof opts?.mimeTypes === 'undefined' ||
-							(typeof opts?.mimeTypes !== 'undefined' &&
-								!Array.isArray(opts.mimeTypes)))
-					) {
-						errors.push(
-							new ValidationError(
-								k,
-								`Invalid validator "${k}" provided. A valid value for "maxBytes" and/or "mimeTypes" is required.`,
-							),
-						);
+					{
+						const opts = v as FileValidationOptions;
+						if (
+							(typeof opts?.maxBytes === 'undefined' ||
+								(typeof opts?.maxBytes !== 'undefined' &&
+									!Validate.number(opts.maxBytes))) &&
+							(typeof opts?.mimeTypes === 'undefined' ||
+								(typeof opts?.mimeTypes !== 'undefined' &&
+									!Array.isArray(opts.mimeTypes)))
+						) {
+							errors.push(
+								new ValidationError(
+									k,
+									`Invalid validator "${k}" provided. A valid value for "maxBytes" and/or "mimeTypes" is required.`,
+								),
+							);
+						}
 					}
 					break;
 				case 'reCaptcha':
@@ -400,22 +402,24 @@ export class Validation {
 							),
 						);
 					}
-					const ropts = v as ReCaptchaValidationOptions;
-					if (!ropts.siteKey?.length) {
-						errors.push(
-							new ValidationError(
-								k,
-								`Invalid validator "${k}" provided. A valid value for "siteKey" is required.`,
-							),
-						);
-					}
-					if (!ropts.secret?.length) {
-						errors.push(
-							new ValidationError(
-								k,
-								`Invalid validator "${k}" provided. A valid value for "secret" is required.`,
-							),
-						);
+					{
+						const ropts = v as ReCaptchaValidationOptions;
+						if (!ropts.siteKey?.length) {
+							errors.push(
+								new ValidationError(
+									k,
+									`Invalid validator "${k}" provided. A valid value for "siteKey" is required.`,
+								),
+							);
+						}
+						if (!ropts.secret?.length) {
+							errors.push(
+								new ValidationError(
+									k,
+									`Invalid validator "${k}" provided. A valid value for "secret" is required.`,
+								),
+							);
+						}
 					}
 					break;
 				default:
@@ -442,14 +446,17 @@ export class Validation {
 
 	public static async validateForm(
 		input: FieldResult[],
-		fields: (Field | FieldGroup | FieldSelect | FieldReCaptcha | FieldFile)[],
+		fields: (
+			| Field
+			| FieldGroup
+			| FieldSelect
+			| FieldReCaptcha
+			| FieldFile
+		)[],
 		files?: Express.Multer.File[],
 	): Promise<ValidationResult> {
 		const validationErrors: ValidationError[] = [];
-
-		if (!input?.length) {
-			input = [];
-		}
+		const inputToValidate = input?.length ? input : [];
 
 		if (!fields?.length) {
 			validationErrors.push(
@@ -475,9 +482,9 @@ export class Validation {
 			} as FieldResult;
 		});
 
-		// console.log(input, fields, files);
+		// console.log(inputToValidate, fields, files);
 		const inputSlugs = [
-			...Utils.extractSlugs(input, true),
+			...Utils.extractSlugs(inputToValidate, true),
 			...(filesTransformed?.map((f) => f.slug) ?? []),
 		];
 		const targetSlugs = Utils.extractSlugs(fields, true);
@@ -496,7 +503,7 @@ export class Validation {
 		for (const f of fields) {
 			const inputField =
 				f.type !== FieldType.File
-					? input.find((i) => i.slug === f.slug)
+					? inputToValidate.find((i) => i.slug === f.slug)
 					: filesTransformed?.find((fi) => fi.slug === f.slug);
 			const validators = f.validators ?? {};
 			if (f.type === FieldType.Select) {
@@ -534,8 +541,7 @@ export class Validation {
 					inputField?.value as FieldResult[],
 					f.fields,
 					files?.filter((f) => groupSlugs?.includes(f.fieldname)),
-				).catch((err) => {
-					console.log(err);
+				).catch(() => {
 					return {
 						valid: false,
 						errors: [
@@ -565,8 +571,7 @@ export class Validation {
 				inputField?.value,
 				f.slug,
 				validators,
-			).catch((err: Error) => {
-				console.log(err);
+			).catch(() => {
 				return {
 					valid: false,
 					errors: [

@@ -2,6 +2,7 @@ export enum OrganizationSelect {
 	AuthenticationStrategies = 'authenticationStrategies',
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type -- Placeholder for future query options
 export interface QueryOptions {
 	//includeHiddenFundingSources?: boolean;
 }

@@ -28,11 +28,7 @@ export class Crypt {
 	 *
 	 * @param bytes (optional) Number of bytes of randomness to generate
 	 */
-	public static random(bytes?: number): number {
-		if (!bytes) {
-			bytes = 32;
-		}
-
+	public static random(bytes = 32): number {
 		// Get bytes, convert to 32-bit int, divide by 32-bit max for 0-1 decimal.
 		return crypto.randomBytes(bytes).readUInt32LE(0) / 0xffffffff;
 	}
@@ -42,10 +38,7 @@ export class Crypt {
 	 *
 	 * @param bytes (optional) Number of bytes of randomness to generate.
 	 */
-	public static randomHex(bytes?: number): string {
-		if (!bytes) {
-			bytes = 32;
-		}
+	public static randomHex(bytes = 32): string {
 		const buf = crypto.randomBytes(bytes);
 		// Convert buffer to hex.
 		return buf.toString('hex');
@@ -56,10 +49,7 @@ export class Crypt {
 	 *
 	 * @param bytes (optional) Number of bytes of randomness to generate.
 	 */
-	public static randomBase64(bytes?: number): string {
-		if (!bytes) {
-			bytes = 32;
-		}
+	public static randomBase64(bytes = 32): string {
 		const buf = crypto.randomBytes(bytes);
 		// Convert buffer to base64.
 		return buf.toString('base64');

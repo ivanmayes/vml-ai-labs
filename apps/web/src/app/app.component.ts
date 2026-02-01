@@ -1,10 +1,14 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { CommonModule, Location } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { DialogService } from 'primeng/dynamicdialog';
-import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { take } from 'rxjs/operators';
+import { OsContext } from '@wppopen/core';
+
+import { environment } from '../environments/environment';
+import { Hierarchy } from '../../../api/src/_core/third-party/wpp-open/models';
 
 import { HeaderSettings } from './state/global/global.model';
 import { GlobalService } from './state/global/global.service';
@@ -12,14 +16,11 @@ import { SessionQuery } from './state/session/session.query';
 import { SessionService } from './state/session/session.service';
 import { GlobalQuery } from './state/global/global.query';
 import { fade } from './_core/utils/animations.utils';
-
-import { environment } from '../environments/environment';
-
 import { SelectDialogComponent } from './shared/components/select-dialog/select-dialog.component';
 import { ORG_SETTINGS } from './state/session/session.store';
 import { WppOpenService } from './_core/services/wpp-open/wpp-open.service';
-import { OsContext } from '@wppopen/core';
-import { Hierarchy } from '../../../api/src/_core/third-party/wpp-open/models';
+import { HeaderComponent } from './shared/components/header/header.component';
+import { PrimeNgModule } from './shared/primeng.module';
 
 interface ApiSetting {
 	name: string;
@@ -35,11 +36,11 @@ interface WppOpenLoginResponse {
 }
 
 @Component({
-	standalone: false,
 	selector: 'app-root',
 	templateUrl: './app.component.html',
 	styleUrls: ['./app.component.scss'],
 	animations: [fade('fade', 500)],
+	imports: [CommonModule, RouterModule, HeaderComponent, PrimeNgModule],
 })
 export class AppComponent implements OnInit {
 	public loaded = false;
@@ -76,8 +77,7 @@ export class AppComponent implements OnInit {
 		if (window.self !== window.top) {
 			const token = await this.wppOpenService
 				.getAccessToken()
-				.catch((err) => {
-					console.error('Penpal child context error:', err);
+				.catch(() => {
 					return null;
 				});
 
@@ -88,26 +88,17 @@ export class AppComponent implements OnInit {
 
 			const workspaceScope = await this.wppOpenService
 				.getWorkspaceScope()
-				.catch((err) => {
-					console.error('Penpal child workspace scope error:', err);
+				.catch(() => {
 					return null;
 				});
 
 			const context = (await this.wppOpenService
 				.getOsContext()
-				.catch((err) => {
-					console.error('Penpal child context error:', err);
+				.catch(() => {
 					return null;
 				})) as (OsContext & { hierarchy?: Hierarchy }) | null;
 
-			// Log tenant ID for easy configuration
 			const tenantId = context?.tenant?.id;
-			if (tenantId) {
-				console.log('🔑 WPP Open Tenant ID:', tenantId);
-				console.log(
-					'💡 Add this ID to Space Settings → WPP Open Tenant IDs to enable access',
-				);
-			}
 
 			this.sessionService
 				.wppOpenLogin(
@@ -127,22 +118,16 @@ export class AppComponent implements OnInit {
 							replaceUrl: true,
 						});
 					} else {
-						console.log('Open Response', resp);
-						this.initializeApp(resp.spaceId).catch((err) => {
-							console.log(err);
-						});
+						this.initializeApp(resp.spaceId).catch(() => undefined);
 					}
 				});
 		} else {
-			this.initializeApp().catch((err) => {
-				console.log(err);
-			});
+			this.initializeApp().catch(() => undefined);
 		}
 	}
 
 	private async initializeApp(spaceId?: string) {
-		const settings = await this.loadOrgSettings().catch((err) => {
-			console.log(err);
+		const settings = await this.loadOrgSettings().catch(() => {
 			localStorage.removeItem(ORG_SETTINGS);
 			return null;
 		});
@@ -166,12 +151,6 @@ export class AppComponent implements OnInit {
 						await this.loadGlobalSettings();
 
 						// Only redirect if on root URL (empty or just '/')
-						console.log(
-							'Current Path:',
-							currentPath,
-							'WPP Open Space ID:',
-							wppOpenSpaceId,
-						);
 						if (
 							wppOpenSpaceId &&
 							(!currentPath ||
@@ -179,10 +158,6 @@ export class AppComponent implements OnInit {
 								currentPath === '/home' ||
 								currentPath === '')
 						) {
-							console.log(
-								'Redirecting to WPP Open Space ID:',
-								wppOpenSpaceId,
-							);
 							await this.router.navigate(
 								['/space', wppOpenSpaceId],
 								{
@@ -214,13 +189,10 @@ export class AppComponent implements OnInit {
 	}
 
 	async loadGlobalSettings() {
-		return await this.globalService.get().subscribe(
-			(settings) => {
-				console.log('Loaded Global Settings', settings);
-			},
-			(err: HttpErrorResponse) =>
+		return await this.globalService.get().subscribe({
+			error: (err: HttpErrorResponse) =>
 				this.globalService.triggerErrorMessage(err),
-		);
+		});
 	}
 
 	private async loadOrgSettings() {

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
+
 // Configure Angular `environment.ts` file path
 const targetPath = './src/environments/environment.ts';
 // Load node modules
@@ -25,7 +26,7 @@ fs.writeFile(
 	envConfigFile,
 	function (err: NodeJS.ErrnoException | null) {
 		if (err) {
-			throw console.error(err);
+			throw new Error('Failed to write environment file');
 		} else {
 			console.log(
 				colors.magenta(
@@ -78,8 +79,7 @@ function getAPISettingsVars() {
 		} else {
 			throw new Error('Bad settings map.');
 		}
-	} catch (err) {
-		console.log(err);
+	} catch {
 		return `
 			exclusive: window['exclusive'],
 			apiSettings: window['organizations'],

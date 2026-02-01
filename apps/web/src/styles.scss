@@ -8,7 +8,7 @@
 @plugin "tailwindcss-primeui";
 
 // Google Fonts (Inter for WPP Open, Roboto as fallback)
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap");
+@import "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap";
 
 html {
 	font-size: 14px;

@@ -15,7 +15,7 @@ export class DataCache {
 			return this.data['@@'];
 		}
 
-		console.warn('Couldnt get data for empty key', key);
+		// Empty key - nothing to retrieve
 	}
 
 	set(key: string, data: unknown): unknown {
@@ -27,7 +27,7 @@ export class DataCache {
 			return (this.data['@@'] = data);
 		}
 
-		console.warn('Couldnt set data for empty key', key, data);
+		// Empty key - cannot store data
 		return undefined;
 	}
 }

@@ -33,7 +33,7 @@
 	--p-primary-contrast-color: #fff;
 
 	// WPP Surface (Grey) - Light Mode
-	--p-surface-0: #ffffff;
+	--p-surface-0: #fff;
 	--p-surface-50: #f8f9fb;
 	--p-surface-100: #f4f5f7;
 	--p-surface-200: #e7eaee;
@@ -120,7 +120,6 @@
 	--p-surface-card: #1a1d20;
 	--p-surface-overlay: #343a3f;
 	--p-surface-border: #4d5358;
-
 	--p-text-color: #f8f9fb;
 	--p-text-secondary-color: #c1c7cd;
 	--p-text-muted-color: #8b919a;
@@ -128,7 +127,6 @@
 	// Brighter purple for dark mode
 	--p-primary-color: var(--p-primary-400);
 	--p-primary-contrast-color: #121619;
-
 	--p-button-primary-background: var(--p-primary-400);
 	--p-button-primary-hover-background: var(--p-primary-300);
 	--p-button-primary-active-background: var(--p-primary-500);

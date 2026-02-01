@@ -29,20 +29,23 @@ export class S3 {
 
 		const s3 = new AWSS3();
 
+		let folder: string;
 		if (!folderName) {
-			folderName = 'uploads/';
+			folder = 'uploads/';
 		} else if (!folderName.match(/\/$/)) {
-			folderName = `${folderName}/`;
+			folder = `${folderName}/`;
+		} else {
+			folder = folderName;
 		}
 
-		if (generateNewName) {
-			fileName = this.generateFileName(fileName);
-		}
+		const name = generateNewName
+			? this.generateFileName(fileName)
+			: fileName;
 
 		const file: AWS.S3.PutObjectRequest = {
 			ACL: acl,
 			Bucket: this.s3Config.bucketName,
-			Key: folderName + fileName,
+			Key: folder + name,
 			Body: fileBuffer,
 			ContentType: fileMime,
 		};
@@ -50,10 +53,7 @@ export class S3 {
 		const response = await s3
 			.putObject(file)
 			.promise()
-			.catch((err: AWS.AWSError) => {
-				if (this._isDebug) {
-					console.log(err);
-				}
+			.catch(() => {
 				return false;
 			});
 
@@ -68,8 +68,8 @@ export class S3 {
 					'https://' +
 					this.s3Config.bucketName +
 					'.s3.amazonaws.com/' +
-					folderName +
-					fileName,
+					folder +
+					name,
 			};
 		} else {
 			throw "Couldn't write file to s3...";
@@ -94,10 +94,7 @@ export class S3 {
 		const response = await s3
 			.deleteObjects(params)
 			.promise()
-			.catch((err: AWS.AWSError) => {
-				if (this._isDebug) {
-					console.log(err);
-				}
+			.catch(() => {
 				return false;
 			});
 
@@ -154,13 +151,11 @@ export class S3 {
 			secretAccessKey: this.s3Config.secretAccessKey,
 		});
 
-		if (!folderName) {
-			folderName = 'uploads/';
-		}
+		const prefix = folderName || 'uploads/';
 
 		const params: AWS.S3.ListObjectsV2Request = {
 			Bucket: this.s3Config.bucketName,
-			Prefix: folderName,
+			Prefix: prefix,
 			ContinuationToken: continuationToken,
 		};
 
@@ -169,10 +164,7 @@ export class S3 {
 		const response = await s3
 			.listObjectsV2(params)
 			.promise()
-			.catch((err: AWS.AWSError) => {
-				if (this._isDebug) {
-					console.log(err);
-				}
+			.catch(() => {
 				return false;
 			});
 

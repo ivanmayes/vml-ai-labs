@@ -18,8 +18,6 @@ import { RequestMeta } from '../../_core/models';
  */
 @Injectable()
 export class ApiKeyLogInterceptor implements NestInterceptor {
-	private readonly logHeader = ':: API Key Log Interceptor ::';
-
 	constructor(private readonly apiKeyService: ApiKeyService) {}
 
 	public async intercept(context: ExecutionContext, next: CallHandler) {
@@ -34,7 +32,6 @@ export class ApiKeyLogInterceptor implements NestInterceptor {
 		);
 
 		if (!encrypted) {
-			console.log(this.logHeader, 'No encrypted token.');
 			return next.handle();
 		}
 
@@ -44,13 +41,11 @@ export class ApiKeyLogInterceptor implements NestInterceptor {
 					key: encrypted,
 				},
 			})
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 
 		if (!key) {
-			console.log(this.logHeader, 'No key found.');
 			return next.handle();
 		}
 
@@ -59,9 +54,8 @@ export class ApiKeyLogInterceptor implements NestInterceptor {
 		});
 		await this.apiKeyService
 			.addLog(key.id, path ?? '', meta)
-			.catch((err) => {
-				console.log(this.logHeader, err);
-			});
+			// Silently ignore logging errors - non-critical
+			.catch(() => undefined);
 
 		return next.handle();
 	}

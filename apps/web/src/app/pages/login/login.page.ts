@@ -1,9 +1,16 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import {
+	FormBuilder,
+	FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { OktaAuth } from '@okta/okta-auth-js';
 import { Observable } from 'rxjs';
 import { take } from 'rxjs/operators';
+
 import { GlobalSettings } from '../../state/global/global.model';
 import { GlobalQuery } from '../../state/global/global.query';
 import { GlobalService } from '../../state/global/global.service';
@@ -12,6 +19,10 @@ import { SessionQuery } from '../../state/session/session.query';
 import { SessionService } from '../../state/session/session.service';
 import { fade } from '../../_core/utils/animations.utils';
 import { environment } from '../../../environments/environment';
+import { PrimeNgModule } from '../../shared/primeng.module';
+
+import { BasicAuthComponent } from './basic/basic.component';
+import { OktaAuthComponent } from './okta/okta.component';
 
 /**
  * Login Page
@@ -32,11 +43,18 @@ import { environment } from '../../../environments/environment';
  * - ARIA accessibility labels
  */
 @Component({
-	standalone: false,
 	selector: 'app-login',
 	templateUrl: './login.page.html',
 	styleUrls: ['./login.page.scss'],
 	animations: [fade('fade', 400, '-50%')],
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		RouterModule,
+		BasicAuthComponent,
+		OktaAuthComponent,
+		PrimeNgModule,
+	],
 })
 export class LoginComponent implements OnInit, OnDestroy {
 	// Observables
@@ -102,27 +120,17 @@ export class LoginComponent implements OnInit, OnDestroy {
 	}
 
 	async ngOnInit() {
-		// console.log('params', this.activatedRoute.snapshot.queryParams.code);
-		// if (this.activatedRoute.snapshot.queryParams.code) {
-		// 	console.log('Got dat code', this.activatedRoute.snapshot.queryParams.code);
-		// 	console.log('Okta code?', this.oktaAuthService.getAccessToken());
-		// }
-
-		// setInterval(() => console.log('Okta code?', this.oktaAuthService.getAccessToken()), 1000 );
-
 		// Hide our main header
 		// Hack: This weird timeout is to avoid expression changed error
 		setTimeout(() => this.globalService.hideHeader(), 10);
 
 		// Get our org settings
 		this.globalService.getPublic().subscribe(
-			(settings) => {
-				console.log('Loaded Global Public Settings', settings);
+			() => {
 				this.globalService.setTitle('Login');
 			},
 			(err) => {
 				this.settingsError = err.message;
-				console.log('Settings Error', err);
 			},
 		);
 
@@ -141,8 +149,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 				snapshot.params.authChallenge,
 			);
 			this.sessionService.samlSignIn(orgId, authChallenge).subscribe(
-				(response) => {
-					console.log(response);
+				() => {
 					this.router.navigate([
 						this.sessionQuery.getValue().initialUrl || 'home',
 					]);
@@ -273,7 +280,6 @@ export class LoginComponent implements OnInit, OnDestroy {
 	 * TODO: Redirect to the previous path that the user was trying to visit
 	 */
 	loggedIn() {
-		console.log('Logged in, go get real settings');
 		this.globalService
 			.get()
 			.pipe(take(1))
@@ -339,7 +345,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 			}
 
 			return tokenContainer.tokens;
-		} catch (e) {
+		} catch (_e) {
 			// Look for an error description in the query params
 			const errorMessage =
 				this.activatedRoute.snapshot.queryParams?.error_description ||

@@ -2,16 +2,17 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+
 import { SpaceUserService } from '../../../shared/services/space-user.service';
 import { SpaceUser } from '../../../shared/models/space-user.model';
 import { SpaceRole } from '../../../shared/models/space-role.enum';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+
 import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
 import { ChangeRoleDialogComponent } from './components/change-role-dialog/change-role-dialog.component';
 
 @Component({
-	standalone: false,
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],

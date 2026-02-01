@@ -1,13 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+
 import { environment } from '../../../environments/environment';
 
+// TODO: Move these DTOs to @api/* and import from there
+// eslint-disable-next-line no-restricted-syntax -- DTOs to be moved to API package
 export interface PromoteUserDto {
 	userId: string;
 	targetRole: string;
 }
 
+// eslint-disable-next-line no-restricted-syntax -- DTOs to be moved to API package
 export interface BanUserDto {
 	userId: string;
 	banned: boolean;

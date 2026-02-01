@@ -1,8 +1,8 @@
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { PrimeNgModule } from '../../shared/primeng.module';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { MessageService } from 'primeng/api';
 
 import { HomeComponent } from './home.page';
 
@@ -10,19 +10,17 @@ describe('HomeComponent', () => {
 	let component: HomeComponent;
 	let fixture: ComponentFixture<HomeComponent>;
 
-	beforeEach(
-		waitForAsync(() => {
-			TestBed.configureTestingModule({
-				declarations: [HomeComponent],
-				imports: [
-					HttpClientTestingModule,
-					BrowserAnimationsModule,
-					PrimeNgModule
-				],
-				schemas: [CUSTOM_ELEMENTS_SCHEMA]
-			}).compileComponents();
-		})
-	);
+	beforeEach(waitForAsync(() => {
+		TestBed.configureTestingModule({
+			imports: [HomeComponent],
+			providers: [
+				provideHttpClient(),
+				provideHttpClientTesting(),
+				provideAnimations(),
+				MessageService,
+			],
+		}).compileComponents();
+	}));
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(HomeComponent);

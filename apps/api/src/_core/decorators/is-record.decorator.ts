@@ -17,6 +17,7 @@ import {
 
 // taken from - import { applyDecorators } from '@nestjs/common';
 function applyDecorators(...decorators: PropertyDecorator[]) {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- Matches @nestjs/common signature
 	return <TFunction extends Function>(
 		target: TFunction | object,
 		propertyKey?: string | symbol,

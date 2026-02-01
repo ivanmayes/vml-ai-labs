@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { SpaceService } from '../../../../../shared/services/space.service';
 import { MessageService } from 'primeng/api';
 
+import { SpaceService } from '../../../../../shared/services/space.service';
+
 @Component({
-	standalone: false,
 	selector: 'app-space-form-dialog',
 	templateUrl: './space-form-dialog.component.html',
 })

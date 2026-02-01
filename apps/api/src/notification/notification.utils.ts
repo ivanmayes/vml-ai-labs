@@ -5,11 +5,12 @@ export class Utils {
 		input: string,
 		mergeTags: Record<string, string>,
 	) {
+		let result = input;
 		for (const tag in mergeTags) {
 			const pattern = new RegExp(tag, 'g');
-			input = input.replace(pattern, mergeTags[tag]);
+			result = result.replace(pattern, mergeTags[tag]);
 		}
-		return input;
+		return result;
 	}
 
 	public static recipientToStringArray(recipients: Recipients): {

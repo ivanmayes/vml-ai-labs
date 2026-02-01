@@ -82,7 +82,6 @@ export class Utils {
 				});
 
 				if (!groupValid) {
-					console.log('Not valid:', field.name);
 					errors.push(
 						`Field Group "${field.name}" has missing or invalid values.`,
 					);
@@ -99,7 +98,6 @@ export class Utils {
 				).catch((_err) => false);
 
 				if (!isValid) {
-					console.log('Not valid:', field.name);
 					errors.push(`Field "${field.name}" is missing or invalid.`);
 				}
 			}
@@ -123,26 +121,25 @@ export class Utils {
 		) {
 			return undefined;
 		}
+		let stringified: string;
 		try {
-			value = JSON.stringify(value);
-		} catch (err: unknown) {
-			console.log(err);
+			stringified = JSON.stringify(value);
+		} catch (_err: unknown) {
 			return undefined;
 		}
 		try {
-			value = Crypt.encrypt(
-				value,
+			const encrypted = Crypt.encrypt(
+				stringified,
 				Crypt.createSHA256Hash(
 					process.env.PII_SIGNING_KEY,
 					userId ?? '',
 				),
 				process.env.PII_SIGNING_OFFSET,
 			);
-		} catch (err: unknown) {
-			console.log(err);
+			return encrypted;
+		} catch (_err: unknown) {
 			return undefined;
 		}
-		return value;
 	}
 
 	public static decryptProfile(
@@ -157,20 +154,17 @@ export class Utils {
 			return undefined;
 		}
 		try {
-			value = JSON.parse(
+			const decrypted = JSON.parse(
 				Crypt.decrypt(
 					value,
 					Crypt.createSHA256Hash(process.env.PII_SIGNING_KEY, userId),
 					process.env.PII_SIGNING_OFFSET,
 				),
 			);
-		} catch (err: unknown) {
-			if (process.env.DEBUG) {
-				console.log(err);
-			}
+			return decrypted;
+		} catch (_err: unknown) {
 			return undefined;
 		}
-		return value;
 	}
 
 	public static getUserSearchScore(query: string, user: User): number {

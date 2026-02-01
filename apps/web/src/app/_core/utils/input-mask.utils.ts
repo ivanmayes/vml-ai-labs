@@ -4,11 +4,9 @@
  */
 
 // Type declaration for IMask when the module is not installed
-declare namespace IMask {
-	interface MaskedDynamic {
-		value: string;
-		compiledMasks: unknown[];
-	}
+interface IMaskMaskedDynamic {
+	value: string;
+	compiledMasks: unknown[];
 }
 
 export const percentMask = {
@@ -117,8 +115,8 @@ export const currencyMaskWithDecimalWithNegatives = {
 	],
 	dispatch: (
 		appended: string,
-		dynamicMasked: IMask.MaskedDynamic,
-		flags: any,
+		dynamicMasked: IMaskMaskedDynamic,
+		flags: unknown,
 	) => {
 		let index = /[-]/i.test(dynamicMasked.value) ? 2 : 1;
 

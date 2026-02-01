@@ -1,6 +1,14 @@
 import { Component } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import {
+	FormControl,
+	FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from '@angular/forms';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
+
+import { PrimeNgModule } from '../../primeng.module';
 
 export interface SelectDialogData {
 	title: string;
@@ -14,10 +22,10 @@ export interface SelectDialogData {
  * Give the user some options, get result.
  */
 @Component({
-	standalone: false,
 	selector: 'app-select-dialog',
 	templateUrl: './select-dialog.component.html',
 	styleUrls: ['./select-dialog.component.scss'],
+	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class SelectDialogComponent {
 	public selection = new FormGroup({

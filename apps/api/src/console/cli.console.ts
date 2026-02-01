@@ -10,6 +10,7 @@ import { ErrorLevel, Utils } from '../_core/utils/utils.console';
 
 @Console()
 export class CLIConsole {
+	// eslint-disable-next-line @typescript-eslint/no-empty-function -- Required for NestJS console
 	constructor() {}
 
 	// npm run console:dev AddEntity EntityName
@@ -17,8 +18,8 @@ export class CLIConsole {
 		command: 'AddEntity <EntityName>',
 		description: 'Scaffolds a new entity with controller and service.',
 	})
-	public async AddEntity(name: string) {
-		if (!name) {
+	public async AddEntity(entityName: string) {
+		if (!entityName) {
 			console.log(
 				Utils.formatMessage(
 					`EntityName is required.`,
@@ -28,7 +29,7 @@ export class CLIConsole {
 			return;
 		}
 
-		name = name.trim().replace(/\s/g, '');
+		const name = entityName.trim().replace(/\s/g, '');
 		const matches = name.match(/[A-Z]/g);
 		const slug =
 			matches && matches.length > 1
@@ -109,7 +110,9 @@ export class CLIConsole {
 			);
 		fs.writeFileSync(appModulePath, appModule, 'utf8');
 
-		const commonModulePath = path.resolve(__dirname + '/../common.module.ts');
+		const commonModulePath = path.resolve(
+			__dirname + '/../common.module.ts',
+		);
 		let commonModule = fs.readFileSync(commonModulePath, 'utf8');
 		commonModule = commonModule
 			.replace(

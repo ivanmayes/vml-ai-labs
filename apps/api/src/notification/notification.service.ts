@@ -187,6 +187,7 @@ export class NotificationService {
 		}
 
 		// Override standard merge tag definitions.
+		let tagsToUse = mergeTags;
 		if (template.mergeTagMap) {
 			const newTags: Record<string, string> = {};
 			const tagMap = template.mergeTagMap as unknown as Record<
@@ -198,20 +199,20 @@ export class NotificationService {
 					newTags[tagMap[key]] = mergeTags[key];
 				}
 			}
-			mergeTags = newTags;
+			tagsToUse = newTags;
 		}
 
 		if (template.subject) {
-			template.subject = Handlebars.compile(template.subject)(mergeTags);
+			template.subject = Handlebars.compile(template.subject)(tagsToUse);
 		}
 		if (template.templateHtml) {
 			template.templateHtml = Handlebars.compile(template.templateHtml)(
-				mergeTags,
+				tagsToUse,
 			);
 		}
 		if (template.templateText) {
 			template.templateText = Handlebars.compile(template.templateText)(
-				mergeTags,
+				tagsToUse,
 			);
 		}
 		// Insert any global BCC addresses.

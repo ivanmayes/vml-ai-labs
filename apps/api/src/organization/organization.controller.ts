@@ -22,14 +22,12 @@ import { Organization } from './organization.entity';
 import { UpdateOrgSettingsDto } from './dtos/update-org-settings.dto';
 import { HasOrganizationAccessGuard } from './guards/has-organization-access.guard';
 
-
 @Controller('organization')
 export class OrganizationController {
 	constructor(private readonly organizationService: OrganizationService) {}
 
 	@Get(':orgId/public')
 	public async getOrganizationPublic(@Param('orgId') id: string) {
-		console.log(id);
 		const organization: Organization | null = await this.organizationService
 			.getOrganizationRaw(id)
 			.catch((err) => {
@@ -92,12 +90,11 @@ export class OrganizationController {
 	public async updateOrganizationSettings(
 		@Param('orgId') id: string,
 		@Req() req: Request,
-		@Body() updateReq: UpdateOrgSettingsDto,
+		@Body() _updateReq: UpdateOrgSettingsDto,
 	) {
 		const organization: Organization | null = await this.organizationService
 			.getOrganizationRaw(id)
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 
@@ -125,19 +122,18 @@ export class OrganizationController {
 		// the default values carry over into the original updateReq.
 		// It has already been validated by the middleware, so we can just pluck
 		// the raw values from the request body.
-		updateReq = req.body as UpdateOrgSettingsDto;
+		const rawSettings = req.body as UpdateOrgSettingsDto;
 
-		if (updateReq) {
+		if (rawSettings) {
 			toUpdate.settings = ObjectUtils.mergeDeep(
 				(toUpdate.settings || {}) as Record<string, unknown>,
-				updateReq as Record<string, unknown>,
+				rawSettings as Record<string, unknown>,
 			) as UpdateOrgSettingsDto;
 		}
 
 		const result = await this.organizationService
 			.updateOne(toUpdate)
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 

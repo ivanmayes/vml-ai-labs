@@ -1,16 +1,17 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
-import { SessionQuery } from '../../../state/session/session.query';
-import { OrganizationAdminService } from '../../../shared/services/organization-admin.service';
-import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
-import { PromoteUserDialogComponent } from './components/promote-user-dialog/promote-user-dialog.component';
-import { environment } from '../../../../environments/environment';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
+import { SessionQuery } from '../../../state/session/session.query';
+import { OrganizationAdminService } from '../../../shared/services/organization-admin.service';
+import { environment } from '../../../../environments/environment';
+
+import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
+import { PromoteUserDialogComponent } from './components/promote-user-dialog/promote-user-dialog.component';
+
 @Component({
-	standalone: false,
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],

@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
+
 import { SpaceRole } from '../../../../../shared/models/space-role.enum';
 import { SpaceUser } from '../../../../../shared/models/space-user.model';
 
 @Component({
-	standalone: false,
 	selector: 'app-change-role-dialog',
 	templateUrl: './change-role-dialog.component.html',
 	styleUrls: ['./change-role-dialog.component.scss'],

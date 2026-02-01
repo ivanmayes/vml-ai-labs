@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Query } from '@datorama/akita';
 import { filter } from 'rxjs/operators';
+
 import type { OrganizationSettings } from '../../../../../api/src/organization/organization.settings';
+
 import { GlobalSettings, GlobalState } from './global.model';
 import { GlobalStore } from './global.store';
 

@@ -5,12 +5,14 @@ import {
 } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { GlobalStore } from './global.store';
-import { GlobalSettings, HeaderSettings } from './global.model';
-import { environment } from '../../../environments/environment';
 import { tap } from 'rxjs/operators';
 import { Title } from '@angular/platform-browser';
+
+import { environment } from '../../../environments/environment';
 import type { OrganizationSettings } from '../../../../../api/src/organization/organization.settings';
+
+import { GlobalSettings, HeaderSettings } from './global.model';
+import { GlobalStore } from './global.store';
 
 /**
  * Global Service
@@ -106,7 +108,6 @@ export class GlobalService {
 	 * Search adminMode to find all of the places this applies.
 	 */
 	setAdminMode(state?: boolean) {
-		console.log('Setting Admin mode', state);
 		this.globalStore.update({
 			adminMode: state || !this.globalStore.getValue().adminMode,
 		});
@@ -165,7 +166,7 @@ export class GlobalService {
 				const entities = (
 					settings as unknown as Record<
 						string,
-						Array<{ id: string; color?: string }>
+						{ id: string; color?: string }[]
 					>
 				)[key];
 				if (entities) {

@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
+
 import { SpaceRole } from '../../../../../shared/models/space-role.enum';
 
 @Component({
-	standalone: false,
 	selector: 'app-invite-user-dialog',
 	templateUrl: './invite-user-dialog.component.html',
 	styleUrls: ['./invite-user-dialog.component.scss'],

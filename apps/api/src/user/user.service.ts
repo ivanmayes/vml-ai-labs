@@ -225,7 +225,7 @@ export class UserService {
 			);
 		}
 
-		if (sortBy && sortBy != 'name') {
+		if (sortBy && sortBy !== 'name') {
 			qb.orderBy(`user.${sortBy}`, sortOrder ?? 'ASC');
 		}
 

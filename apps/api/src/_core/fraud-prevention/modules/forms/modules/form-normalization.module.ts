@@ -35,7 +35,7 @@ export class Normalization {
 		if (!phone) {
 			return undefined;
 		}
-		return phone.toString().replace(/[\.\+\-\s]/g, '');
+		return phone.toString().replace(/[.+\-\s]/g, '');
 	}
 
 	public static fieldResultsToObject(
@@ -92,9 +92,9 @@ export class Normalization {
 			return fields;
 		}
 
-		fields = structuredClone(fields);
+		const clonedFields = structuredClone(fields);
 
-		for (const f of fields) {
+		for (const f of clonedFields) {
 			if (Utils.isFieldGroup(f)) {
 				f.fields = this.preProcessFieldOptions(f.fields);
 			}
@@ -125,15 +125,14 @@ export class Normalization {
 			}
 		}
 
-		return fields;
+		return clonedFields;
 	}
 
 	public static async uploadFiles(
 		files: Express.Multer.File[],
 		uploadFolder: string,
 	): Promise<(Express.Multer.File & { s3Path: string })[]> {
-		const uploadedFiles: (Express.Multer.File & { s3Path: string })[] =
-			[];
+		const uploadedFiles: (Express.Multer.File & { s3Path: string })[] = [];
 		for (const f of files) {
 			const result = await S3.upload(
 				f.buffer,
@@ -142,8 +141,7 @@ export class Normalization {
 				uploadFolder,
 				true,
 				undefined,
-			).catch((err: unknown) => {
-				console.log(err);
+			).catch(() => {
 				return null;
 			});
 
@@ -183,7 +181,7 @@ export class Normalization {
 		fields: Field[],
 		uploadedFiles: (Express.Multer.File & { s3Path: string })[] = [],
 	): FieldResult[] {
-		input = structuredClone(input);
+		const clonedInput = structuredClone(input);
 
 		const result = this.extractFilePaths(fields);
 		for (const filePath of result) {
@@ -194,7 +192,7 @@ export class Normalization {
 					(uf) => uf.fieldname === segments[0],
 				);
 				if (file) {
-					input.push({
+					clonedInput.push({
 						slug: file.fieldname,
 						value: file.s3Path,
 					});
@@ -211,7 +209,7 @@ export class Normalization {
 					continue;
 				}
 				if (!currentTarget) {
-					currentTarget = input.find((item) => item.slug === s);
+					currentTarget = clonedInput.find((item) => item.slug === s);
 				} else if (s === '[]') {
 					// This will create the value for a group automatically.
 					// This is a shortcut for handling files that are defined in groups with no other fields.
@@ -245,7 +243,7 @@ export class Normalization {
 			}
 		}
 
-		return input;
+		return clonedInput;
 	}
 
 	public static extractSlugs(

@@ -30,16 +30,13 @@ export class UserConsole {
 		description: 'Generates and returns an auth token for a given user id.',
 	})
 	public async getUserToken(id: string) {
-		console.log(id);
-
 		const user: User | null = await this.userService
 			.findOne({
 				where: {
 					id,
 				},
 			})
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 
@@ -65,8 +62,7 @@ export class UserConsole {
 
 		const userUpdateRequest = await this.userService
 			.updateOne(user)
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return false;
 			});
 
@@ -74,8 +70,9 @@ export class UserConsole {
 			throw new Error(`User could not be updated.`);
 		}
 
-		console.log(Utils.formatMessage(`Token generated:`));
-		console.log(Utils.formatMessage(token));
+		// Output token to stdout for CLI usage (intentional for dev tooling)
+		process.stdout.write(Utils.formatMessage(`Token generated:\n`));
+		process.stdout.write(Utils.formatMessage(token) + '\n');
 	}
 
 	// npm run console:dev InstallUser
@@ -84,19 +81,20 @@ export class UserConsole {
 		description: 'Installs a user for a given organization.',
 	})
 	public async installUserCmd() {
-		await this.installUser().catch((err) => {
-			console.log(err);
-		});
+		await this.installUser().catch(() => undefined);
 	}
 
 	public async installUser(organization?: Organization) {
 		console.log(`::Creating new User::`.bgYellow.black.bold);
 
-		if (!organization) {
+		let selectedOrg: Organization;
+
+		if (organization) {
+			selectedOrg = organization;
+		} else {
 			const orgs: Organization[] | null = await this.organizationService
 				.find()
-				.catch((err) => {
-					console.log(err);
+				.catch(() => {
 					return null;
 				});
 
@@ -121,22 +119,22 @@ export class UserConsole {
 			const orgResponse = await Utils.getUserResponse(
 				'\tOrganization Number: ',
 			);
-			const idx = parseInt(orgResponse);
+			const idx = parseInt(orgResponse, 10);
 			if (isNaN(idx) || idx < 0 || idx > orgs.length - 1) {
-				organization = orgs[0];
+				selectedOrg = orgs[0];
 			} else {
-				organization = orgs[idx];
+				selectedOrg = orgs[idx];
 			}
 		}
 
 		const user: User = new User({
-			organizationId: organization.id,
+			organizationId: selectedOrg.id,
 			activationStatus: ActivationStatus.Pending,
 		});
 
 		console.log(
 			Utils.formatMessage(
-				`Installing user to ${organization.id}`,
+				`Installing user to ${selectedOrg.id}`,
 				ErrorLevel.Info,
 			),
 		);
@@ -150,11 +148,10 @@ export class UserConsole {
 			await this.authenticationStrategyService
 				.find({
 					where: {
-						organizationId: organization.id,
+						organizationId: selectedOrg.id,
 					},
 				})
-				.catch((err) => {
-					console.log(err);
+				.catch(() => {
 					return null;
 				});
 
@@ -177,7 +174,7 @@ export class UserConsole {
 			const orgResponse = await Utils.getUserResponse(
 				'\tAuthentication Strategy Number: ',
 			);
-			const idx = parseInt(orgResponse);
+			const idx = parseInt(orgResponse, 10);
 			if (isNaN(idx) || idx < 0 || idx > authStrategies.length - 1) {
 				authStrategy = authStrategies[0];
 			} else {
@@ -199,9 +196,8 @@ export class UserConsole {
 			}
 
 			authStrategy = await this.authenticationStrategyConsole
-				.installAuthStrategy(organization)
-				.catch((err) => {
-					console.log(err);
+				.installAuthStrategy(selectedOrg)
+				.catch(() => {
 					return null;
 				});
 
@@ -250,7 +246,7 @@ export class UserConsole {
 		}
 
 		const strategyResponse = await Utils.getUserResponse('\tUser Role: ');
-		const idx = parseInt(strategyResponse);
+		const idx = parseInt(strategyResponse, 10);
 		let userRole: UserRole;
 		if (isNaN(idx) || idx < 0 || idx > roleOptions.length - 1) {
 			userRole = roleOptions[0]?.[1];
@@ -260,8 +256,7 @@ export class UserConsole {
 
 		user.role = userRole;
 
-		const savedUser = await this.userService.save(user).catch((err) => {
-			console.log(err);
+		const savedUser = await this.userService.save(user).catch(() => {
 			return null;
 		});
 

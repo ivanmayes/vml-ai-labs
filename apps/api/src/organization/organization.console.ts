@@ -20,8 +20,7 @@ export class OrganizationConsole {
 		description: 'Installs a new Organization.',
 	})
 	public async installOrganizationCmd() {
-		await this.installOrganization().catch((err) => {
-			console.log(err);
+		await this.installOrganization().catch(() => {
 			return null;
 		});
 	}
@@ -53,8 +52,7 @@ export class OrganizationConsole {
 					slug,
 				},
 			})
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 
@@ -71,8 +69,7 @@ export class OrganizationConsole {
 				slug,
 				enabled: true,
 			})
-			.catch((err) => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 
@@ -92,8 +89,7 @@ export class OrganizationConsole {
 			`Would you like to install a User?\n\t[ y /${' N '.bgWhite.black.bold}]: `,
 		);
 		if (createUser?.toLowerCase() === 'y') {
-			await this.userConsole.installUser(org).catch((err) => {
-				console.log(err);
+			await this.userConsole.installUser(org).catch(() => {
 				return null;
 			});
 		}

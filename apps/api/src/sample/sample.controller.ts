@@ -26,6 +26,7 @@ import { ApiKeyOnlyReq } from './dtos/api-key-only-req.dto';
 
 @Controller('sample')
 export class SampleController {
+	// eslint-disable-next-line @typescript-eslint/no-empty-function -- Required for NestJS controller
 	constructor() {}
 
 	// An example endpoint that requires an API key

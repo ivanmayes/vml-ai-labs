@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
+
 import { OrganizationAdminService } from '../../../shared/services/organization-admin.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
-	standalone: false,
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],

@@ -11,7 +11,6 @@ import {
  * A directive to enable the user to drag and drop a file onto an area in order to upload the file.
  */
 @Directive({
-	standalone: false,
 	selector: '[appDropFile]',
 })
 export class DropFileDirective {
@@ -40,7 +39,6 @@ export class DropFileDirective {
 		this.dragOver = false;
 
 		const files = ev.dataTransfer?.files;
-		console.log('Dropped Files', files);
 		if (files && files.length > 0) {
 			this.filesDropped.emit(files);
 		}

@@ -9,7 +9,8 @@ export const isDate = (d: unknown): d is Date =>
 
 export const isError = (err: unknown): err is Error => err instanceof Error;
 
-export const isNil = (val: unknown): val is null | undefined => val == null;
+export const isNil = (val: unknown): val is null | undefined =>
+	val === null || val === undefined;
 
 export const isNull = (val: unknown): val is null => val === null;
 

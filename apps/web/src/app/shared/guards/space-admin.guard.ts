@@ -6,6 +6,7 @@ import {
 	Router,
 } from '@angular/router';
 import { Observable } from 'rxjs';
+
 import { SessionQuery } from '../../state/session/session.query';
 
 @Injectable({
