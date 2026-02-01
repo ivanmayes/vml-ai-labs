@@ -1,4 +1,5 @@
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+
 import { UserRole } from '../user-role.enum';
 
 export class UsersFilterDto {

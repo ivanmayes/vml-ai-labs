@@ -13,7 +13,7 @@
 	<a
 		class="button"
 		[routerLink]="['/home']"
-		[class.active]="activeRouteState?.url.search('/home') > -1"
+		[class.active]="(activeRouteState?.url?.search('/home') ?? -1) > -1"
 		>Home</a
 	>
 </div>

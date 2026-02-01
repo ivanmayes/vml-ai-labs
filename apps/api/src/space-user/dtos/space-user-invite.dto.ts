@@ -1,12 +1,13 @@
-import { IsNotEmpty, IsString, IsEnum, IsEmail } from 'class-validator';
+import { IsNotEmpty, IsEnum, IsEmail } from 'class-validator';
+
 import { SpaceRole } from '../space-role.enum';
 
 export class SpaceUserInviteDto {
 	@IsNotEmpty()
 	@IsEmail()
-	email: string;
+	email!: string;
 
 	@IsNotEmpty()
 	@IsEnum(SpaceRole)
-	role: SpaceRole;
+	role!: SpaceRole;
 }

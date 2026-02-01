@@ -18,7 +18,7 @@ export class DataCache {
 		console.warn('Couldnt get data for empty key', key);
 	}
 
-	set(key, data) {
+	set(key: string, data: unknown): unknown {
 		if (key) {
 			return (this.data[key] = data);
 		}
@@ -28,5 +28,6 @@ export class DataCache {
 		}
 
 		console.warn('Couldnt set data for empty key', key, data);
+		return undefined;
 	}
 }

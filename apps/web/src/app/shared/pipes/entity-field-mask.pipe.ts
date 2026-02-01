@@ -4,13 +4,21 @@ import { resolveDotNotationPath } from '../../_core/utils/object.utils';
 
 @Pipe({
 	standalone: false,
-    name: 'entityFieldMask',
-    
+	name: 'entityFieldMask',
 })
 export class EntityFieldMaskPipe implements PipeTransform {
 	constructor(private readonly globalQuery: GlobalQuery) {}
 
 	transform(value: string, maskPath: string): string {
-		return resolveDotNotationPath(maskPath, this.globalQuery.getValue().settings.settings.entities) || value;
+		const entities =
+			this.globalQuery.getValue().settings?.settings?.entities;
+		if (!entities) {
+			return value;
+		}
+		const result = resolveDotNotationPath(
+			maskPath,
+			entities as Record<string, unknown>,
+		);
+		return (result as string) ?? value;
 	}
 }

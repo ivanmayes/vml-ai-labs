@@ -20,25 +20,29 @@ console.log(
 	),
 );
 console.log(colors.grey(envConfigFile));
-fs.writeFile(targetPath, envConfigFile, function (err) {
-	if (err) {
-		throw console.error(err);
-	} else {
-		console.log(
-			colors.magenta(
-				`Angular environment.ts file generated correctly at ${targetPath} \n`,
-			),
-		);
-		process.exit();
-	}
-});
+fs.writeFile(
+	targetPath,
+	envConfigFile,
+	function (err: NodeJS.ErrnoException | null) {
+		if (err) {
+			throw console.error(err);
+		} else {
+			console.log(
+				colors.magenta(
+					`Angular environment.ts file generated correctly at ${targetPath} \n`,
+				),
+			);
+			process.exit();
+		}
+	},
+);
 
 // Unwraps and installs API_SETTINGS.
 function getAPISettingsVars() {
 	let vars = '';
 
 	try {
-		const map = JSON.parse(process.env.API_SETTINGS);
+		const map = JSON.parse(process.env.API_SETTINGS || '{}');
 
 		if (map['localhost']) {
 			vars += `exclusive: ${map['localhost'].length === 1 ? true : false},\n`;

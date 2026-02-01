@@ -1,5 +1,5 @@
 export enum OrganizationSelect {
-	AuthenticationStrategies = 'authenticationStrategies'
+	AuthenticationStrategies = 'authenticationStrategies',
 }
 
 export interface QueryOptions {
@@ -11,7 +11,7 @@ export class Query {
 
 	public static getSelects(
 		alias: string = this.ORGANIZATION_QUERY_ALIAS,
-		targets: OrganizationSelect[] = Object.values(OrganizationSelect)
+		targets: OrganizationSelect[] = Object.values(OrganizationSelect),
 	) {
 		const selects: string[] = [];
 
@@ -24,7 +24,7 @@ export class Query {
 
 		if (targets.includes(OrganizationSelect.AuthenticationStrategies)) {
 			selects.push(
-				`${alias}_authenticationstrategies."authenticationStrategyArr" AS "authenticationStrategies"`
+				`${alias}_authenticationstrategies."authenticationStrategyArr" AS "authenticationStrategies"`,
 			);
 		}
 
@@ -34,7 +34,7 @@ export class Query {
 	public static getSubqueries(
 		alias: string = this.ORGANIZATION_QUERY_ALIAS,
 		targets: OrganizationSelect[] = Object.values(OrganizationSelect),
-		options?: QueryOptions
+		_options?: QueryOptions,
 	) {
 		const subQueries: string[] = [];
 

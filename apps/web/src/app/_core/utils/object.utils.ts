@@ -3,7 +3,10 @@
  * @param o1
  * @param o2
  */
-export function diffObjects(o1: object, o2: object) {
+export function diffObjects(
+	o1: Record<string, unknown>,
+	o2: Record<string, unknown>,
+): Record<string, unknown> {
 	return Object.keys(o2).reduce((diff, key) => {
 		if (o1[key] === o2[key]) {
 			return diff;
@@ -11,7 +14,7 @@ export function diffObjects(o1: object, o2: object) {
 
 		return {
 			...diff,
-			[key]: o2[key]
+			[key]: o2[key],
 		};
 	}, {});
 }
@@ -21,8 +24,17 @@ export function diffObjects(o1: object, o2: object) {
  * @param path
  * @param obj
  */
-export function resolveDotNotationPath(path, obj) {
-	return path?.split('.').reduce((prev, curr) => (prev ? prev[curr] : undefined), obj || self);
+export function resolveDotNotationPath(
+	path: string,
+	obj: Record<string, unknown>,
+): unknown {
+	return path
+		?.split('.')
+		.reduce(
+			(prev: unknown, curr: string) =>
+				prev ? (prev as Record<string, unknown>)[curr] : undefined,
+			obj || self,
+		);
 }
 
 /**
@@ -32,14 +44,20 @@ export function resolveDotNotationPath(path, obj) {
  * @param value
  * @returns
  */
-export function setObjectValueAtPath(obj: any, path: string | string[], value: any) {
+export function setObjectValueAtPath(
+	obj: Record<string, unknown>,
+	path: string | string[],
+	value: unknown,
+): Record<string, unknown> {
 	// Regex explained: https://regexr.com/58j0k
-	const pathArray = Array.isArray(path) ? path : path.match(/([^[.\]])+/g);
+	const pathArray = Array.isArray(path)
+		? path
+		: (path.match(/([^[.\]])+/g) ?? []);
 
-	pathArray.reduce((acc, key, i) => {
+	pathArray.reduce((acc: Record<string, unknown>, key: string, i: number) => {
 		if (acc[key] === undefined) acc[key] = {};
 		if (i === pathArray.length - 1) acc[key] = value;
-		return acc[key];
+		return acc[key] as Record<string, unknown>;
 	}, obj);
 
 	return obj;
@@ -49,10 +67,10 @@ export function setObjectValueAtPath(obj: any, path: string | string[], value: a
  * Detect if an object is truly empty
  * @param obj
  */
-export function objectIsEmpty(obj) {
+export function objectIsEmpty(obj: Record<string, unknown>): boolean {
 	let empty = true;
 
-	Object.entries(obj).forEach(([key, value]) => {
+	Object.entries(obj).forEach(([_key, value]) => {
 		if (value) {
 			empty = false;
 		}
@@ -65,7 +83,7 @@ export function objectIsEmpty(obj) {
  * @param path
  */
 
-export function getLastPropertyFromPath(path) {
+export function getLastPropertyFromPath(path: string): string {
 	const paths = path.split('.');
 	return paths[paths.length - 1];
 }

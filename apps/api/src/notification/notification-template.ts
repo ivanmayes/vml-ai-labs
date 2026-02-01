@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import Handlebars from 'handlebars';
+
 import { Locale } from '../_core/models/locale';
 
 export class NotificationTemplate {

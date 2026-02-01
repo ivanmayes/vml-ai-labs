@@ -6,60 +6,66 @@ import {
 	JoinColumn,
 	Index,
 	CreateDateColumn,
-	UpdateDateColumn
+	UpdateDateColumn,
 } from 'typeorm';
 
 import { Space } from '../space/space.entity';
 import { User } from '../user/user.entity';
+
 import { SpaceRole } from './space-role.enum';
 
-export type PublicSpaceUser = Pick<SpaceUser, 'id' | 'spaceId' | 'userId' | 'role' | 'createdAt' | 'updatedAt'>;
+export type PublicSpaceUser = Pick<
+	SpaceUser,
+	'id' | 'spaceId' | 'userId' | 'role' | 'createdAt' | 'updatedAt'
+>;
 
 @Entity('space_users')
 @Index(['spaceId'])
 @Index(['userId'])
 @Index(['spaceId', 'userId'], { unique: true })
 export class SpaceUser {
+	[key: string]: unknown;
+
 	constructor(value?: Partial<SpaceUser>) {
-		if(value) {
+		if (value) {
 			value = structuredClone(value);
 		}
-		for(const k in value) {
+		for (const k in value) {
 			this[k] = value[k];
 		}
 	}
 
 	@PrimaryGeneratedColumn('uuid')
-	id: string;
+	id!: string;
 
 	@Column('text')
-	spaceId: string;
+	spaceId!: string;
 	@ManyToOne(() => Space, {
-		onDelete: 'CASCADE'
+		onDelete: 'CASCADE',
 	})
 	@JoinColumn({ name: 'spaceId' })
-	space: Space | Partial<Space>;
+	space!: Space | Partial<Space>;
 
 	@Column('text')
-	userId: string;
+	userId!: string;
 	@ManyToOne(() => User, {
-		onDelete: 'CASCADE'
+		onDelete: 'CASCADE',
 	})
 	@JoinColumn({ name: 'userId' })
-	user: User | Partial<User>;
+	user!: User | Partial<User>;
 
 	@Column({
 		type: 'enum',
 		enum: SpaceRole,
-		default: SpaceRole.SpaceUser
+		default: SpaceRole.SpaceUser,
 	})
-	role: SpaceRole;
+	role!: SpaceRole;
 
 	@CreateDateColumn({ type: 'timestamptz' })
-	createdAt: string;
+	createdAt!: string;
 
 	@UpdateDateColumn({ type: 'timestamptz' })
-	updatedAt: string;
+	updatedAt!: string;
 
 	public toPublic(): PublicSpaceUser {
 		return {
@@ -68,7 +74,7 @@ export class SpaceUser {
 			userId: this.userId,
 			role: this.role,
 			createdAt: this.createdAt,
-			updatedAt: this.updatedAt
+			updatedAt: this.updatedAt,
 		};
 	}
 }

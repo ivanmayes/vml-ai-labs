@@ -8,6 +8,20 @@
 </div>
 
 <div class="right" *ngIf="user$ | async as user">
+	<!-- Admin Button (shown only for admins) -->
+	<p-button
+		*ngIf="isAdmin$ | async"
+		icon="pi pi-cog"
+		[rounded]="true"
+		[text]="true"
+		severity="secondary"
+		class="admin-toggle"
+		(onClick)="navigateToAdmin()"
+		pTooltip="Organization Admin"
+		ariaLabel="Go to Organization Admin"
+	>
+	</p-button>
+
 	<!-- Theme Toggle Button -->
 	<p-button
 		icon="{{ getThemeIcon() }}"

@@ -8,8 +8,10 @@ import {
 	IsUUID,
 	ValidateNested
 } from 'class-validator';
+
 import { PublicProfile } from '../../user/user.entity';
 import { UserRole } from '../user-role.enum';
+
 import { PermissionDto } from '.';
 
 export class UserAddDto {

@@ -1,18 +1,15 @@
 import { Type } from 'class-transformer';
 import {
 	IsBoolean,
-	IsEmail,
 	IsEnum,
-	IsNotEmpty,
-	IsNotEmptyObject,
-	IsObject,
 	IsOptional,
-	IsString,
 	IsUUID,
-	ValidateNested
+	ValidateNested,
 } from 'class-validator';
+
 import { PublicProfile } from '../../user/user.entity';
 import { UserRole } from '../user-role.enum';
+
 import { PermissionDto } from '.';
 
 export class UserUpdateDto {

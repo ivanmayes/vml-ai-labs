@@ -5,10 +5,8 @@ import { HttpModule } from '@nestjs/axios';
 
 import { DatabaseModule } from './database.module';
 import { CLIConsole } from './console/cli.console';
-
 import { JwtStrategy } from './user/auth/jwt.strategy';
 import { BearerStrategy } from './api-key/auth/bearer.strategy';
-
 import { AppService } from './app.service';
 import { NotificationService } from './notification/notification.service';
 import { ApiKeyService } from './api-key/api-key.service';

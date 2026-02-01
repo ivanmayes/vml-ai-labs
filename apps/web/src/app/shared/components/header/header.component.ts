@@ -20,7 +20,7 @@ import { GlobalQuery } from '../../../state/global/global.query';
 	styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent {
-	public routerActiveState$: Observable<ActiveRouteState>;
+	public routerActiveState$: Observable<ActiveRouteState | null>;
 
 	public headerSettings$: Observable<HeaderSettings>;
 

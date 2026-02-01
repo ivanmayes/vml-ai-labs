@@ -7,63 +7,69 @@ import {
 	HttpException,
 	HttpStatus,
 	UseGuards,
-	Put
+	Put,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
 import { RolesGuard } from '../user/auth/roles.guard';
 import { Roles } from '../user/auth/roles.decorator';
 import { ObjectUtils } from '../_core/utils';
+import { UserRole } from '../user/user-role.enum';
 
 import { OrganizationService } from './organization.service';
 import { Organization } from './organization.entity';
-
 import { UpdateOrgSettingsDto } from './dtos/update-org-settings.dto';
 import { HasOrganizationAccessGuard } from './guards/has-organization-access.guard';
-import { Utils } from './organization.utils';
 
-//import { Campaign } from '../campaign/campaign.entity';
-import { UserRoleMap } from '../user/user.entity';
-import { UserRole } from '../user/user-role.enum';
 
 @Controller('organization')
 export class OrganizationController {
-	constructor(
-		private readonly organizationService: OrganizationService
-	) {}
+	constructor(private readonly organizationService: OrganizationService) {}
 
 	@Get(':orgId/public')
 	public async getOrganizationPublic(@Param('orgId') id: string) {
 		console.log(id);
-		const organization: Organization = await this.organizationService
+		const organization: Organization | null = await this.organizationService
 			.getOrganizationRaw(id)
-			.catch(err => {
+			.catch((err) => {
 				console.log(err);
 				return null;
 			});
 
-		if(!organization) {
-			throw new HttpException(`Organization not found.`, HttpStatus.NOT_FOUND);
+		if (!organization) {
+			throw new HttpException(
+				`Organization not found.`,
+				HttpStatus.NOT_FOUND,
+			);
 		}
 
-		delete organization.created;
-		delete organization.enabled;
+		// Remove sensitive fields before returning
+		const orgCopy = { ...organization } as Partial<Organization>;
+		delete orgCopy.created;
+		delete orgCopy.enabled;
 
-		return organization.toPublic(null, ['created']);
+		return organization.toPublic([], ['created']);
 	}
 
 	@Get(':orgId')
 	@UseGuards(AuthGuard(), HasOrganizationAccessGuard)
-	public async getOrganization(@Param('orgId') id: string, @Req() req) {
-		const organization: Organization = await this.organizationService
+	public async getOrganization(
+		@Param('orgId') id: string,
+		@Req() _req: Request,
+	) {
+		const organization: Organization | null = await this.organizationService
 			.getOrganizationRaw(id)
-			.catch(err => {
+			.catch((err) => {
 				console.log(err);
 				return null;
 			});
 
-		if(!organization) {
-			throw new HttpException(`Organization not found.`, HttpStatus.NOT_FOUND);
+		if (!organization) {
+			throw new HttpException(
+				`Organization not found.`,
+				HttpStatus.NOT_FOUND,
+			);
 		}
 
 		// filter on valid retailers based on retailerPermissions
@@ -85,24 +91,34 @@ export class OrganizationController {
 	@UseGuards(AuthGuard(), RolesGuard, HasOrganizationAccessGuard)
 	public async updateOrganizationSettings(
 		@Param('orgId') id: string,
-		@Req() req,
-		@Body() updateReq: UpdateOrgSettingsDto
+		@Req() req: Request,
+		@Body() updateReq: UpdateOrgSettingsDto,
 	) {
-		const organization: Organization = await this.organizationService
+		const organization: Organization | null = await this.organizationService
 			.getOrganizationRaw(id)
-			.catch(err => {
+			.catch((err) => {
 				console.log(err);
 				return null;
 			});
+
+		if (!organization) {
+			throw new HttpException(
+				`Organization not found.`,
+				HttpStatus.NOT_FOUND,
+			);
+		}
 
 		const toUpdate = new Organization({
 			id: organization.id,
 			// Always copy in the current OrgSettings.
 			// This is a cheap way to migrate settings to an extended schema.
 			settings: ObjectUtils.mergeDeep(
-				new UpdateOrgSettingsDto(),
-				organization.settings || new UpdateOrgSettingsDto()
-			)
+				new UpdateOrgSettingsDto() as Record<string, unknown>,
+				(organization.settings || new UpdateOrgSettingsDto()) as Record<
+					string,
+					unknown
+				>,
+			) as UpdateOrgSettingsDto,
 		});
 
 		// Since we have initializers on our class properties,
@@ -112,47 +128,61 @@ export class OrganizationController {
 		updateReq = req.body as UpdateOrgSettingsDto;
 
 		if (updateReq) {
-			toUpdate.settings = ObjectUtils.mergeDeep(toUpdate.settings, updateReq);
+			toUpdate.settings = ObjectUtils.mergeDeep(
+				(toUpdate.settings || {}) as Record<string, unknown>,
+				updateReq as Record<string, unknown>,
+			) as UpdateOrgSettingsDto;
 		}
 
-		const result = await this.organizationService.updateOne(toUpdate).catch(err => {
-			console.log(err);
-			return null;
-		});
+		const result = await this.organizationService
+			.updateOne(toUpdate)
+			.catch((err) => {
+				console.log(err);
+				return null;
+			});
 
 		if (!result) {
-			throw new HttpException('Error saving settings.', HttpStatus.INTERNAL_SERVER_ERROR);
+			throw new HttpException(
+				'Error saving settings.',
+				HttpStatus.INTERNAL_SERVER_ERROR,
+			);
 		}
 
 		return {
-			settings: result.settings
+			settings: result.settings,
 		};
 	}
 
 	@Get(':orgId/settings')
 	@UseGuards(AuthGuard(), HasOrganizationAccessGuard)
-	public async getOrganizationSettings(@Param('orgId') id: string, @Req() req) {
-		const { campaigns, tactics, campaignPackages, ...organization } =
-			await this.organizationService.getOrganizationRaw(id).catch(err => {
+	public async getOrganizationSettings(
+		@Param('orgId') id: string,
+		@Req() _req: Request,
+	) {
+		const organizationRaw = await this.organizationService
+			.getOrganizationRaw(id)
+			.catch((err) => {
 				console.log(err);
 				return null;
 			});
 
-		if(!organization) {
-			throw new HttpException(`Organization not found.`, HttpStatus.NOT_FOUND);
+		if (!organizationRaw) {
+			throw new HttpException(
+				`Organization not found.`,
+				HttpStatus.NOT_FOUND,
+			);
 		}
 
-		const publicOrg = new Organization(organization).toPublic([
-			'authenticationStrategies'
+		const publicOrg = new Organization(organizationRaw).toPublic([
+			'authenticationStrategies',
 		]);
 
-		console.log(organization);
+		console.log(organizationRaw);
 
 		return {
 			data: {
 				...publicOrg,
-				//campaigns: campaigns?.map(c => new Campaign(c).toPublic()),
-			}
+			},
 		};
 	}
 
@@ -161,43 +191,51 @@ export class OrganizationController {
 	@UseGuards(AuthGuard(), RolesGuard, HasOrganizationAccessGuard)
 	public async updateOrganization(
 		@Param('orgId') id: string,
-		@Body() updateData: Partial<Organization>
+		@Body() updateData: Partial<Organization>,
 	) {
-		const organization: Organization = await this.organizationService
+		const organization: Organization | null = await this.organizationService
 			.getOrganizationRaw(id)
-			.catch(err => {
+			.catch((err) => {
 				console.log(err);
 				return null;
 			});
 
-		if(!organization) {
-			throw new HttpException(`Organization not found.`, HttpStatus.NOT_FOUND);
+		if (!organization) {
+			throw new HttpException(
+				`Organization not found.`,
+				HttpStatus.NOT_FOUND,
+			);
 		}
 
 		// Only allow updating specific fields
 		const toUpdate = new Organization({
-			id: organization.id
+			id: organization.id,
 		});
 
-		if(updateData.name !== undefined) {
+		if (updateData.name !== undefined) {
 			toUpdate.name = updateData.name;
 		}
 
-		if(updateData.redirectToSpace !== undefined) {
+		if (updateData.redirectToSpace !== undefined) {
 			toUpdate.redirectToSpace = updateData.redirectToSpace;
 		}
 
-		const result = await this.organizationService.updateOne(toUpdate).catch(err => {
-			console.log(err);
-			return null;
-		});
+		const result = await this.organizationService
+			.updateOne(toUpdate)
+			.catch((err) => {
+				console.log(err);
+				return null;
+			});
 
-		if(!result) {
-			throw new HttpException('Error updating organization.', HttpStatus.INTERNAL_SERVER_ERROR);
+		if (!result) {
+			throw new HttpException(
+				'Error updating organization.',
+				HttpStatus.INTERNAL_SERVER_ERROR,
+			);
 		}
 
 		return {
-			data: result.toPublic()
+			data: result.toPublic(),
 		};
 	}
 }

@@ -15,24 +15,26 @@ export interface SelectDialogData {
  */
 @Component({
 	standalone: false,
-    selector: 'app-select-dialog',
-    templateUrl: './select-dialog.component.html',
-    styleUrls: ['./select-dialog.component.scss'],
-    
+	selector: 'app-select-dialog',
+	templateUrl: './select-dialog.component.html',
+	styleUrls: ['./select-dialog.component.scss'],
 })
 export class SelectDialogComponent {
 	public selection = new FormGroup({
-		choice: new FormControl([''], [Validators.required])
+		choice: new FormControl([''], [Validators.required]),
 	});
 
 	public data: SelectDialogData;
 
-	constructor(public dialogRef: DynamicDialogRef, public config: DynamicDialogConfig) {
+	constructor(
+		public dialogRef: DynamicDialogRef,
+		public config: DynamicDialogConfig,
+	) {
 		this.data = config.data;
 	}
 
 	submit() {
-		this.dialogRef.close(this.selection.get('choice').value);
+		this.dialogRef.close(this.selection.get('choice')?.value);
 	}
 
 	cancel() {

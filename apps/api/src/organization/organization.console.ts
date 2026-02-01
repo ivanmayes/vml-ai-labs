@@ -3,34 +3,27 @@ import { Console, Command } from 'nestjs-console';
 
 import { ErrorLevel, Utils } from '../_core/utils/utils.console';
 import { String as StringUtils } from '../_core/utils/utils.string';
-
 import { OrganizationService } from '../organization/organization.service';
 import { Organization } from '../organization/organization.entity';
-
 import { UserConsole } from '../user/user.console';
-import { AuthenticationStrategyService } from '../authentication-strategy/authentication-strategy.service';
-import { AuthenticationStrategyConsole } from '../authentication-strategy/authentication-strategy.console';
 
 @Console()
 export class OrganizationConsole {
 	constructor(
 		private readonly organizationService: OrganizationService,
 		private readonly userConsole: UserConsole,
-		private readonly authenticationStrategyService: AuthenticationStrategyService,
-		private readonly authenticationStrategyConsole: AuthenticationStrategyConsole
 	) {}
 
 	// npm run console:dev InstallOrganization
 	@Command({
 		command: 'InstallOrganization',
-		description: 'Installs a new Organization.'
+		description: 'Installs a new Organization.',
 	})
 	public async installOrganizationCmd() {
-		const result = await this.installOrganization()
-			.catch(err => {
-				console.log(err);
-				return null;
-			});
+		await this.installOrganization().catch((err) => {
+			console.log(err);
+			return null;
+		});
 	}
 
 	public async installOrganization() {
@@ -38,35 +31,37 @@ export class OrganizationConsole {
 		console.log(`What would you like to name this Organization?`.bold);
 		const name = await Utils.getUserResponse(`\tName: `);
 
-		if(!name?.length) {
+		if (!name?.length) {
 			throw Utils.formatMessage(`Invalid name.`, ErrorLevel.Error);
 		}
 
-		console.log(`What slug would you like to use for this Organization?`.bold);
+		console.log(
+			`What slug would you like to use for this Organization?`.bold,
+		);
 		const defaultSlug = StringUtils.slugify(name);
 		let slug = await Utils.getUserResponse(
-			`\tSlug [${(' ' + defaultSlug + ' ').bgWhite.black.bold}]: `
+			`\tSlug [${(' ' + defaultSlug + ' ').bgWhite.black.bold}]: `,
 		);
 
-		if(!slug) {
+		if (!slug) {
 			slug = defaultSlug;
 		}
 
-		const existingOrg: Organization = await this.organizationService
+		const existingOrg: Organization | null = await this.organizationService
 			.findOne({
 				where: {
-					slug
-				}
+					slug,
+				},
 			})
-			.catch(err => {
+			.catch((err) => {
 				console.log(err);
 				return null;
 			});
 
-		if(existingOrg) {
+		if (existingOrg) {
 			throw Utils.formatMessage(
 				`An organization already exists with slug: ${slug}`,
-				ErrorLevel.Error
+				ErrorLevel.Error,
 			);
 		}
 
@@ -74,30 +69,33 @@ export class OrganizationConsole {
 			.save({
 				name,
 				slug,
-				enabled: true
+				enabled: true,
 			})
-			.catch(err => {
+			.catch((err) => {
 				console.log(err);
 				return null;
 			});
 
-		if(!org) {
+		if (!org) {
 			throw Utils.formatMessage(
 				`Error creating Organization, please try again.`,
-				ErrorLevel.Error
+				ErrorLevel.Error,
 			);
 		}
 
-		console.log(Utils.formatMessage(`Success! Organization created with id: ${org.id.bold}`));
-		const createUser = await Utils.getUserResponse(
-			`Would you like to install a User?\n\t[ y /${' N '.bgWhite.black.bold}]: `
+		console.log(
+			Utils.formatMessage(
+				`Success! Organization created with id: ${org.id.bold}`,
+			),
 		);
-		if(createUser?.toLowerCase() === 'y') {
-			await this.userConsole.installUser(org)
-				.catch(err => {
-					console.log(err);
-					return null;
-				});
+		const createUser = await Utils.getUserResponse(
+			`Would you like to install a User?\n\t[ y /${' N '.bgWhite.black.bold}]: `,
+		);
+		if (createUser?.toLowerCase() === 'y') {
+			await this.userConsole.installUser(org).catch((err) => {
+				console.log(err);
+				return null;
+			});
 		}
 	}
 }

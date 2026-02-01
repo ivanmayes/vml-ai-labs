@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { SessionQuery } from '../../../state/session/session.query';
 import { SessionService } from '../../../state/session/session.service';
@@ -8,6 +9,7 @@ import { ThemeService } from '../../services/theme.service';
 import { SidebarService, NavItem } from '../../services/sidebar.service';
 import type { PublicUser } from '../../../../../../api/src/user/user.entity';
 import { GlobalSettings } from '../../../state/global/global.model';
+import { UserRole } from '../../../../../../api/src/user/user-role.enum';
 
 /**
  * Sidebar Component
@@ -27,8 +29,9 @@ import { GlobalSettings } from '../../../state/global/global.model';
 	styleUrls: ['./sidebar.component.scss'],
 })
 export class SidebarComponent {
-	user$: Observable<PublicUser>;
-	settings$: Observable<GlobalSettings>;
+	user$: Observable<PublicUser | undefined>;
+	settings$: Observable<GlobalSettings | undefined>;
+	isAdmin$: Observable<boolean>;
 
 	constructor(
 		public sidebarService: SidebarService,
@@ -40,6 +43,20 @@ export class SidebarComponent {
 	) {
 		this.user$ = this.sessionQuery.select('user');
 		this.settings$ = this.globalQuery.select('settings');
+		this.isAdmin$ = this.user$.pipe(
+			map(
+				(user) =>
+					user?.role === UserRole.Admin ||
+					user?.role === UserRole.SuperAdmin,
+			),
+		);
+	}
+
+	/**
+	 * Navigate to the organization admin page
+	 */
+	navigateToAdmin(): void {
+		this.router.navigate(['/organization/admin']);
 	}
 
 	/**

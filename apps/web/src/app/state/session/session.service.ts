@@ -1,7 +1,11 @@
 import { Injectable } from '@angular/core';
 import { SessionStore } from './session.store';
 import { catchError, map, tap } from 'rxjs/operators';
-import { LoginResponse, VerifyResponse, WppOpenLoginResponse } from './session.model';
+import {
+	LoginResponse,
+	VerifyResponse,
+	WppOpenLoginResponse,
+} from './session.model';
 import { environment } from '../../../environments/environment';
 import { HttpHeaders, HttpClient } from '@angular/common/http';
 import { throwError } from 'rxjs';
@@ -13,14 +17,17 @@ import { Hierarchy } from '../../../../../api/src/_core/third-party/wpp-open/mod
  * This service is responsible for the session logic and API calls.
  */
 @Injectable({
-	providedIn: 'root'
+	providedIn: 'root',
 })
 export class SessionService {
 	public defaultHeaders = new HttpHeaders({
-		Accept: 'application/json'
+		Accept: 'application/json',
 	});
 
-	constructor(private sessionStore: SessionStore, protected httpClient: HttpClient) {}
+	constructor(
+		private sessionStore: SessionStore,
+		protected httpClient: HttpClient,
+	) {}
 
 	public wppOpenLogin(
 		token: string,
@@ -30,7 +37,7 @@ export class SessionService {
 		projectRemoteId?: string,
 		projectRemoteName?: string,
 		hierarchy?: Hierarchy,
-		tenantId?: string
+		tenantId?: string,
 	) {
 		const headers = this.defaultHeaders;
 		this.sessionStore.setLoading(true);
@@ -46,28 +53,28 @@ export class SessionService {
 					projectRemoteId,
 					projectRemoteName,
 					hierarchy,
-					tenantId
+					tenantId,
 				},
 				{
-					headers
-				}
+					headers,
+				},
 			)
 			.pipe(
-				map(resp => {
+				map((resp) => {
 					this.sessionStore.login({
 						initialUrl: resp?.data?.redirect,
 						token: resp?.token,
-						user: resp?.profile
+						user: resp?.profile,
 					});
 
 					this.sessionStore.setLoading(false);
 
 					return resp;
 				}),
-				catchError(err => {
+				catchError((err) => {
 					this.sessionStore.setLoading(false);
 					throw err;
-				})
+				}),
 			);
 	}
 
@@ -83,26 +90,26 @@ export class SessionService {
 			.post<VerifyResponse>(
 				`${environment.apiUrl}/user/auth/request-sign-in`,
 				{ email, organizationId: environment.organizationId },
-				{ headers }
+				{ headers },
 			)
 			.pipe(
-				tap(resp => {
+				tap((resp) => {
 					this.sessionStore.setLoading(false);
+					const currentUser = this.sessionStore.getValue().user;
 					this.sessionStore.updateLoginDetails({
 						clientId: resp?.data?.clientId,
-						issuer: resp?.data.issuer,
-						user: {
-							...this.sessionStore.getValue().user,
-							email
-						}
+						issuer: resp?.data?.issuer,
+						user: currentUser
+							? { ...currentUser, email }
+							: undefined,
 					});
 				}),
-				catchError(err => {
+				catchError((err) => {
 					console.log('Login Error', err);
 					this.sessionStore.setLoading(false);
 					this.sessionStore.setError(err);
 					return throwError(err);
-				})
+				}),
 			);
 	}
 
@@ -114,27 +121,37 @@ export class SessionService {
 		const params = {
 			singlePass,
 			email,
-			organizationId: environment.organizationId
+			organizationId: environment.organizationId,
 		};
 		const headers = this.defaultHeaders;
 		this.sessionStore.setLoading(true);
 
-		return this.httpClient.post<LoginResponse>(`${environment.apiUrl}/user/auth/basic/code-sign-in`, params, { headers }).pipe(
-			tap(resp => {
-				this.sessionStore.login({
-					token: resp?.data?.token,
-					user: resp?.data?.user
-				});
+		return this.httpClient
+			.post<LoginResponse>(
+				`${environment.apiUrl}/user/auth/basic/code-sign-in`,
+				params,
+				{ headers },
+			)
+			.pipe(
+				tap((resp) => {
+					this.sessionStore.login({
+						token: resp?.data?.token,
+						user: resp?.data?.user,
+					});
 
-				this.sessionStore.setLoading(false);
-			})
-		);
+					this.sessionStore.setLoading(false);
+				}),
+			);
 	}
 
 	/**
 	 * Attempt to sign in via okta based on the org settings.
 	 */
-	public oktaSignIn(email: string, accessToken: AccessToken, idToken: IDToken) {
+	public oktaSignIn(
+		email: string,
+		accessToken: AccessToken,
+		idToken: IDToken,
+	) {
 		const headers = this.defaultHeaders;
 		this.sessionStore.setLoading(true);
 
@@ -145,19 +162,19 @@ export class SessionService {
 					email,
 					organizationId: environment.organizationId,
 					accessToken,
-					idToken
+					idToken,
 				},
-				{ headers }
+				{ headers },
 			)
 			.pipe(
-				tap(resp => {
+				tap((resp) => {
 					this.sessionStore.login({
 						token: resp?.data?.token,
-						user: resp?.data?.user
+						user: resp?.data?.user,
 					});
 
 					this.sessionStore.setLoading(false);
-				})
+				}),
 			);
 	}
 
@@ -173,36 +190,38 @@ export class SessionService {
 				`${environment.apiUrl}/user/auth/saml/sign-in`,
 				{
 					organizationId,
-					authChallenge
+					authChallenge,
 				},
 				{
-					headers
-				}
+					headers,
+				},
 			)
 			.pipe(
-				tap(resp => {
+				tap((resp) => {
 					this.sessionStore.login({
 						token: resp?.data?.token,
-						user: resp?.data?.user
+						user: resp?.data?.user,
 					});
 					this.sessionStore.setLoading(false);
-				})
+				}),
 			);
 	}
 
 	/**
 	 * Check a user's token for validity, return user profile.
 	 */
-	public getUserStatus(token: string) {
+	public getUserStatus(_token: string) {
 		console.log('Getting User Status');
-		return this.httpClient.get<LoginResponse>(`${environment.apiUrl}/user/refresh`).pipe(
-			tap((resp: LoginResponse) => {
-				this.sessionStore.login({
-					token: resp?.data?.token,
-					user: resp?.data?.user
-				});
-			})
-		);
+		return this.httpClient
+			.get<LoginResponse>(`${environment.apiUrl}/user/refresh`)
+			.pipe(
+				tap((resp: LoginResponse) => {
+					this.sessionStore.login({
+						token: resp?.data?.token,
+						user: resp?.data?.user,
+					});
+				}),
+			);
 	}
 
 	/**
@@ -217,7 +236,7 @@ export class SessionService {
 	 */
 	public setInitialUrl(url: string) {
 		this.sessionStore.update({
-			initialUrl: url
+			initialUrl: url,
 		});
 	}
 

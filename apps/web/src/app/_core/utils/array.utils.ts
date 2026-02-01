@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - lodash types not installed
 import { groupBy, sortBy } from 'lodash';
 import { resolveDotNotationPath } from './object.utils';
 
@@ -7,11 +9,15 @@ import { resolveDotNotationPath } from './object.utils';
  * @param oldIndex
  * @param newIndex
  */
-export function arrayMove(arr, oldIndex, newIndex) {
+export function arrayMove<T>(
+	arr: T[],
+	oldIndex: number,
+	newIndex: number,
+): T[] {
 	if (newIndex >= arr.length) {
 		let k = newIndex - arr.length + 1;
 		while (k--) {
-			arr.push(undefined);
+			arr.push(undefined as T);
 		}
 	}
 	arr.splice(newIndex, 0, arr.splice(oldIndex, 1)[0]);

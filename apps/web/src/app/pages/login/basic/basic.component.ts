@@ -21,14 +21,14 @@ import { fade } from '../../../_core/utils/animations.utils';
 	animations: [fade('fade', 400, '-50%')],
 })
 export class BasicAuthComponent {
-	@Input() email: string;
-	@Input() authConfig: VerifyResponse;
+	@Input() email!: string;
+	@Input() authConfig!: VerifyResponse;
 	@Output() loggedIn = new EventEmitter<boolean>();
 
-	public key: string;
+	public key!: string;
 	public resendComplete = false;
 	public error: any;
-	public siteSettings$: Observable<GlobalSettings>;
+	public siteSettings$: Observable<GlobalSettings | undefined>;
 	public loading$: Observable<boolean>;
 
 	constructor(

@@ -10,19 +10,23 @@ import {
 	Put,
 	Query,
 	UseGuards,
-	UseInterceptors
+	UseInterceptors,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+
 import { ApiKeyLogInterceptor } from '../api-key/interceptors/api-key-log.interceptor';
-import { ResponseEnvelope, ResponseEnvelopeFind, ResponseStatus } from '../_core/models';
+import {
+	ResponseEnvelope,
+	ResponseEnvelopeFind,
+	ResponseStatus,
+} from '../_core/models';
 import { Strapi, Utils as StrapiUtils } from '../_core/third-party/strapi';
+
 import { ApiKeyOnlyReq } from './dtos/api-key-only-req.dto';
 
 @Controller('sample')
 export class SampleController {
-	constructor(
-		
-	) {}
+	constructor() {}
 
 	// An example endpoint that requires an API key
 	// It also has a simple interceptor that can be used to
@@ -33,9 +37,7 @@ export class SampleController {
 	@Post('api-key-only')
 	@UseGuards(AuthGuard('bearer'))
 	@UseInterceptors(ApiKeyLogInterceptor)
-	public async writeAPIKey(
-		@Body() apiKeyOnlyReq: ApiKeyOnlyReq
-	) {
+	public async writeAPIKey(@Body() _apiKeyOnlyReq: ApiKeyOnlyReq) {
 		return new ResponseEnvelope(ResponseStatus.Success, 'WriteAPIKey');
 	}
 
@@ -49,25 +51,30 @@ export class SampleController {
 	@UseGuards(AuthGuard())
 	public async find(
 		@Query('page', new DefaultValuePipe(1)) page: number,
-		@Query('perPage', new DefaultValuePipe(10)) perPage: number
+		@Query('perPage', new DefaultValuePipe(10)) perPage: number,
 	) {
-		const cmsResponse = await Strapi.queryCollection('samples', page, perPage)
-			.catch((err) => {
-				console.log(err);
-				return null;
-			});
+		const cmsResponse = await Strapi.queryCollection(
+			'samples',
+			page,
+			perPage,
+		).catch((_err) => {
+			return null;
+		});
 
-		if(!cmsResponse) {
+		if (!cmsResponse) {
 			throw new HttpException(
-				new ResponseEnvelope(ResponseStatus.Error, 'Failed to query collection'),
-				HttpStatus.INTERNAL_SERVER_ERROR
+				new ResponseEnvelope(
+					ResponseStatus.Error,
+					'Failed to query collection',
+				),
+				HttpStatus.INTERNAL_SERVER_ERROR,
 			);
 		}
 
 		return new ResponseEnvelopeFind(
 			ResponseStatus.Success,
 			undefined,
-			StrapiUtils.collectionResponseToFindResponse(cmsResponse)
+			StrapiUtils.collectionResponseToFindResponse(cmsResponse),
 		);
 	}
 

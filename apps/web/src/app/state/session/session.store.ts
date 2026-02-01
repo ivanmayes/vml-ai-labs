@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Store, StoreConfig } from '@datorama/akita';
-import type { Profile, PublicUser } from '../../../../../api/src/user/user.entity';
+import type { PublicUser } from '../../../../../api/src/user/user.entity';
 import { SessionState } from './session.model';
 import { environment } from '../../../environments/environment';
 
@@ -9,22 +9,16 @@ export const ORG_SETTINGS = `${environment.organizationId}-Settings`;
 
 export function createInitialSessionState(): SessionState {
 	return {
-		token: null,
-		clientId: null,
-		issuer: null,
-		user: {
-			id: undefined,
-			email: undefined,
-			nameFirst: undefined,
-			nameLast: undefined,
-			role: undefined
-		},
+		token: null as unknown as string,
+		clientId: null as unknown as string,
+		issuer: null as unknown as string,
+		user: undefined,
 		...getSession(),
 		isLoggedIn: false,
 		ui: {
-			emailInput: undefined
+			emailInput: undefined as unknown as string,
 		},
-		initialUrl: undefined
+		initialUrl: undefined as unknown as string,
 	};
 }
 
@@ -42,18 +36,18 @@ export class SessionStore extends Store<SessionState> {
 
 	updateLoginDetails(session: Partial<SessionState>) {
 		localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-		this.update(state => ({
+		this.update((state) => ({
 			...state,
-			...session
+			...session,
 		}));
 	}
 
 	login(session: Partial<SessionState>) {
 		localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-		this.update(state => ({
+		this.update((state) => ({
 			...state,
 			...session,
-			isLoggedIn: true
+			isLoggedIn: true,
 		}));
 	}
 
@@ -67,12 +61,9 @@ export class SessionStore extends Store<SessionState> {
 	 * Merge any user properties in with existing user
 	 */
 	updateUser(user: Partial<PublicUser>) {
-		this.update(state => ({
+		this.update((state) => ({
 			...state,
-			user: {
-				...state.user,
-				...user
-			}
+			user: state.user ? { ...state.user, ...user } : undefined,
 		}));
 	}
 }

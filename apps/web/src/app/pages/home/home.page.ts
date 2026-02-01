@@ -1,7 +1,5 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { fade } from '../../_core/utils/animations.utils';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
 import { MessageService } from 'primeng/api';
 
 /**
@@ -31,7 +29,7 @@ interface Feature {
 	animations: [fade('fade', 400, '-50%')],
 })
 export class HomeComponent {
-	@ViewChild('setupSection') setupSection: ElementRef;
+	@ViewChild('setupSection') setupSection!: ElementRef;
 
 	/**
 	 * Features included in the boilerplate
@@ -73,10 +71,7 @@ export class HomeComponent {
 		},
 	];
 
-	constructor(
-		private readonly http: HttpClient,
-		private readonly messageService: MessageService,
-	) {}
+	constructor(private readonly messageService: MessageService) {}
 
 	/**
 	 * Scroll to the setup section smoothly

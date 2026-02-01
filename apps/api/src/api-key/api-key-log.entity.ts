@@ -1,26 +1,29 @@
 import {
 	Column,
 	Entity,
-	Index,
 	JoinColumn,
 	ManyToOne,
-	PrimaryGeneratedColumn
+	PrimaryGeneratedColumn,
 } from 'typeorm';
-import { ApiKey } from './api-key.entity';
+
 import { RequestEnvelope } from '../_core/models';
 
-export type PublicApiKeyLog = Pick<ApiKeyLog,
-	'id'
-> & {
+import { ApiKey } from './api-key.entity';
+
+export type PublicApiKeyLog = Pick<ApiKeyLog, 'id'> & {
 	// Other Public Properties
-}
+};
 
 @Entity('apiKeyLogs')
 export class ApiKeyLog {
+	[key: string]: unknown;
+
 	constructor(value?: Partial<ApiKeyLog>) {
 		value = structuredClone(value);
-		for(const k in value) {
-			this[k] = value[k];
+		for (const k in value) {
+			(this as Record<string, unknown>)[k] = (
+				value as Record<string, unknown>
+			)[k];
 		}
 	}
 
@@ -29,12 +32,9 @@ export class ApiKeyLog {
 
 	@Column('uuid')
 	apiKeyId: string;
-	@ManyToOne(
-		() => ApiKey,
-		{
-			nullable: false
-		}
-	)
+	@ManyToOne(() => ApiKey, {
+		nullable: false,
+	})
 	@JoinColumn({ name: 'apiKeyId' })
 	apiKey: ApiKey;
 
@@ -49,7 +49,7 @@ export class ApiKeyLog {
 
 	public toPublic() {
 		const pub: Partial<PublicApiKeyLog> = {
-			id: this.id
+			id: this.id,
 		};
 
 		// Other public transformations

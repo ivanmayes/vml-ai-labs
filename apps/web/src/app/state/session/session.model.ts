@@ -1,4 +1,4 @@
-import type { Profile, PublicUser } from '../../../../../api/src/user/user.entity';
+import type { PublicUser } from '../../../../../api/src/user/user.entity';
 
 export interface SessionState {
 	token: string;
@@ -44,7 +44,6 @@ export interface LoginResponse extends DefaultResponse<any> {
 		redirect?: string;
 	};
 }
-
 
 export interface WppOpenLoginResponse extends DefaultResponse<any> {
 	status: string;

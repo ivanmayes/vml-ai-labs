@@ -1,42 +1,58 @@
 export class ObjectUtils {
-	public static isObject(item) {
-		return item && typeof item === 'object' && !Array.isArray(item);
+	public static isObject(item: unknown): boolean {
+		return (
+			item !== null && typeof item === 'object' && !Array.isArray(item)
+		);
 	}
 
-	public static mergeDeep(target, source) {
-		if(!this.isObject(target) || !this.isObject(source)) {
+	public static mergeDeep<T extends Record<string, unknown>>(
+		target: T,
+		source: T,
+	): T {
+		if (!this.isObject(target) || !this.isObject(source)) {
 			return target;
 		}
 		// Clone
-		target = structuredClone(target);
-		source = structuredClone(source);
-		for(const [k, v] of Object.entries(source)) {
-			if(this.isObject(v)) {
-				if(typeof target[k] === 'undefined') {
-					target[k] = new (Object.getPrototypeOf(v).constructor)();
+		const clonedTarget = structuredClone(target) as Record<string, unknown>;
+		const clonedSource = structuredClone(source) as Record<string, unknown>;
+		for (const [k, v] of Object.entries(clonedSource)) {
+			if (this.isObject(v)) {
+				if (typeof clonedTarget[k] === 'undefined') {
+					clonedTarget[k] = new (Object.getPrototypeOf(
+						v,
+					).constructor)();
 				}
-				target[k] = this.mergeDeep(target[k], source[k]);
+				clonedTarget[k] = this.mergeDeep(
+					clonedTarget[k] as Record<string, unknown>,
+					clonedSource[k] as Record<string, unknown>,
+				);
 			} else {
-				target[k] = v;
+				clonedTarget[k] = v;
 			}
 		}
-		return target;
+		return clonedTarget as T;
 	}
 
-	public static getPropertyByName(input: Object | any[], keyName: string) {
-		for(const [k, v] of Object.entries(input)) {
-			if(k === keyName) {
+	public static getPropertyByName(
+		input: object | unknown[],
+		keyName: string,
+	): unknown {
+		for (const [k, v] of Object.entries(input)) {
+			if (k === keyName) {
 				return v;
 			}
-			if(Array.isArray(v)) {
-				const result = this.getPropertyByName(v, keyName);
-				if(result !== -1) {
+			if (Array.isArray(v)) {
+				const result: unknown = this.getPropertyByName(v, keyName);
+				if (result !== -1) {
 					return result;
 				}
 			}
-			if(typeof v === 'object') {
-				const result = this.getPropertyByName(v, keyName);
-				if(result !== -1) {
+			if (typeof v === 'object' && v !== null) {
+				const result: unknown = this.getPropertyByName(
+					v as object,
+					keyName,
+				);
+				if (result !== -1) {
 					return result;
 				}
 			}

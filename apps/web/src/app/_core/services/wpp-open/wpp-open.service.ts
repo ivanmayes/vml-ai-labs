@@ -23,7 +23,7 @@ export class WppOpenService {
 		debug: true,
 	};
 
-	private _context: OsContext;
+	private _context!: OsContext;
 	public get context(): OsContext {
 		return this._context;
 	}
@@ -124,9 +124,9 @@ export class WppOpenService {
 			throw new Error('Workspace ID not found.');
 		}
 
-		const scopeId = Object.values(this.context?.workspace?.mapping).find(
-			(v) => !v.parentAzId,
-		)?.azId;
+		const scopeId = Object.values(
+			this.context?.workspace?.mapping ?? {},
+		).find((v) => !v.parentAzId)?.azId;
 
 		return {
 			workspaceId,
@@ -146,7 +146,7 @@ export class WppOpenService {
 			throw new Error('Connection not established.');
 		}
 
-		for (const v of Object.values(this.context?.workspace?.mapping)) {
+		for (const v of Object.values(this.context?.workspace?.mapping ?? {})) {
 			if (v.type === DefaultHierarchyLevelType.Client) {
 				return v;
 			}

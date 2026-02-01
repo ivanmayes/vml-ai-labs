@@ -21,10 +21,10 @@ import type { PublicUser } from '../../../../../../../api/src/user/user.entity';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavigationBarComponent {
-	@Input() activeRouteState: ActiveRouteState;
+	@Input() activeRouteState: ActiveRouteState | null = null;
 
-	public settings$: Observable<GlobalSettings>;
-	public user$: Observable<PublicUser>;
+	public settings$: Observable<GlobalSettings | undefined>;
+	public user$: Observable<PublicUser | undefined>;
 	public production = environment.production;
 
 	constructor(

@@ -33,15 +33,14 @@ import { environment } from '../../../environments/environment';
  */
 @Component({
 	standalone: false,
-    selector: 'app-login',
-    templateUrl: './login.page.html',
-    styleUrls: ['./login.page.scss'],
-    animations: [fade('fade', 400, '-50%')],
-    
+	selector: 'app-login',
+	templateUrl: './login.page.html',
+	styleUrls: ['./login.page.scss'],
+	animations: [fade('fade', 400, '-50%')],
 })
 export class LoginComponent implements OnInit, OnDestroy {
 	// Observables
-	public siteSettings$: Observable<GlobalSettings>;
+	public siteSettings$: Observable<GlobalSettings | undefined>;
 	public loading$: Observable<boolean>;
 
 	// Forms
@@ -50,13 +49,13 @@ export class LoginComponent implements OnInit, OnDestroy {
 
 	// State management
 	public state: 'enter-email' | 'basic' | 'okta' = 'enter-email';
-	public email: string;
-	public authConfig: VerifyResponse;
+	public email!: string;
+	public authConfig!: VerifyResponse;
 
 	// Error handling
 	public emailError: any;
 	public otpError = false;
-	public settingsError: string;
+	public settingsError!: string;
 	public resendSuccess = false;
 	public isSubmitting = false;
 
@@ -70,24 +69,31 @@ export class LoginComponent implements OnInit, OnDestroy {
 		private readonly sessionQuery: SessionQuery,
 		private readonly sessionService: SessionService,
 		private readonly router: Router,
-		private readonly activatedRoute: ActivatedRoute
+		private readonly activatedRoute: ActivatedRoute,
 	) {
 		this.siteSettings$ = this.globalQuery.select('settings');
 		this.loading$ = this.sessionQuery.selectLoading();
 
 		// Initialize email form with validation
 		this.emailForm = this.formBuilder.group({
-			email: ['', [Validators.required, Validators.email]]
+			email: ['', [Validators.required, Validators.email]],
 		});
 
 		// Initialize OTP form
 		// Note: InputOtp component expects a string of digits
 		this.otpForm = this.formBuilder.group({
-			code: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]]
+			code: [
+				'',
+				[
+					Validators.required,
+					Validators.minLength(6),
+					Validators.maxLength(6),
+				],
+			],
 		});
 
 		// Subscribe to OTP form changes for auto-submit
-		this.otpForm.get('code')?.valueChanges.subscribe(value => {
+		this.otpForm.get('code')?.valueChanges.subscribe((value) => {
 			// Auto-submit when 6 digits are entered
 			if (value && value.length === 6) {
 				this.activateCode();
@@ -110,14 +116,14 @@ export class LoginComponent implements OnInit, OnDestroy {
 
 		// Get our org settings
 		this.globalService.getPublic().subscribe(
-			settings => {
+			(settings) => {
 				console.log('Loaded Global Public Settings', settings);
 				this.globalService.setTitle('Login');
 			},
-			err => {
+			(err) => {
 				this.settingsError = err.message;
 				console.log('Settings Error', err);
-			}
+			},
 		);
 
 		const snapshot = this.activatedRoute.snapshot;
@@ -131,14 +137,17 @@ export class LoginComponent implements OnInit, OnDestroy {
 			}
 		} else if (snapshot.data.samlCallback) {
 			const orgId = snapshot.params.orgId;
-			const authChallenge = decodeURIComponent(snapshot.params.authChallenge);
-			this.sessionService.samlSignIn(orgId, authChallenge)
-				.subscribe(
-					response => {
-						console.log(response);
-						this.router.navigate([this.sessionQuery.getValue().initialUrl || 'home']);
-					},
-					err => this.handleError(err?.error?.statusCode)
+			const authChallenge = decodeURIComponent(
+				snapshot.params.authChallenge,
+			);
+			this.sessionService.samlSignIn(orgId, authChallenge).subscribe(
+				(response) => {
+					console.log(response);
+					this.router.navigate([
+						this.sessionQuery.getValue().initialUrl || 'home',
+					]);
+				},
+				(err) => this.handleError(err?.error?.statusCode),
 			);
 		}
 	}
@@ -167,7 +176,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
 		// Request verification code or SSO redirect from API
 		this.sessionService.requestCode(this.email).subscribe(
-			response => {
+			(response) => {
 				this.authConfig = response;
 
 				// Route to appropriate auth strategy
@@ -176,7 +185,8 @@ export class LoginComponent implements OnInit, OnDestroy {
 					this.oktaLoginRedirect(this.authConfig);
 				} else if (response?.data?.strategy === 'saml2.0') {
 					// Redirect to SAML SSO provider
-					window.location.href = response?.data?.authenticationUrl;
+					window.location.href =
+						response?.data?.authenticationUrl ?? '';
 				} else {
 					// Show basic auth OTP verification
 					this.state = response?.data?.strategy as any;
@@ -185,7 +195,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 					this.otpError = false;
 				}
 			},
-			err => this.handleError(err?.error?.statusCode)
+			(err) => this.handleError(err?.error?.statusCode),
 		);
 	}
 
@@ -215,7 +225,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 				this.isSubmitting = false;
 				this.loggedIn();
 			},
-			err => {
+			(_err) => {
 				// Show error and allow retry
 				this.isSubmitting = false;
 				this.otpError = true;
@@ -224,7 +234,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 				setTimeout(() => (this.otpError = false), 4000);
 				// Reset form to allow new code entry
 				this.otpForm.patchValue({ code: '' });
-			}
+			},
 		);
 	}
 
@@ -239,7 +249,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
 		// Request new code
 		this.sessionService.requestCode(this.email).subscribe(
-			response => {
+			(response) => {
 				// Update auth config with new token (for dev mode display)
 				this.authConfig = response;
 				// Show success feedback
@@ -249,11 +259,11 @@ export class LoginComponent implements OnInit, OnDestroy {
 				// Reset OTP form for new code entry
 				this.otpForm.reset();
 			},
-			err => {
+			(_err) => {
 				// Show error if resend fails
 				this.otpError = true;
 				setTimeout(() => (this.otpError = false), 4000);
-			}
+			},
 		);
 	}
 
@@ -268,7 +278,9 @@ export class LoginComponent implements OnInit, OnDestroy {
 			.get()
 			.pipe(take(1))
 			.subscribe(() => {
-				this.router.navigate([this.sessionQuery.getValue().initialUrl || 'home']);
+				this.router.navigate([
+					this.sessionQuery.getValue().initialUrl || 'home',
+				]);
 			});
 	}
 
@@ -287,12 +299,12 @@ export class LoginComponent implements OnInit, OnDestroy {
 			clientId: authConfig?.data?.clientId,
 			issuer: authConfig?.data?.issuer,
 			redirectUri: `${window.location.origin}/sso/okta/${orgId}/login`,
-			pkce: true
+			pkce: true,
 		});
 
 		// Launches the login redirect.
 		oktaAuth.token.getWithRedirect({
-			scopes: ['openid', 'email', 'profile']
+			scopes: ['openid', 'email', 'profile'],
 		});
 	}
 
@@ -305,17 +317,26 @@ export class LoginComponent implements OnInit, OnDestroy {
 				clientId: this.sessionQuery.getValue().clientId,
 				issuer: this.sessionQuery.getValue().issuer,
 				redirectUri: `${window.location.origin}/sso/okta/${environment.organizationId}/login`,
-				pkce: true
+				pkce: true,
 			});
 
 			const tokenContainer = await oktaAuth.token.parseFromUrl();
 
 			// Send to API to save
-			this.sessionService
-				.oktaSignIn(this.sessionQuery.getValue().user?.email, tokenContainer.tokens.accessToken, tokenContainer.tokens.idToken)
-				.subscribe(resp => {
-					this.loggedIn();
-				});
+			if (
+				tokenContainer.tokens.accessToken &&
+				tokenContainer.tokens.idToken
+			) {
+				this.sessionService
+					.oktaSignIn(
+						this.sessionQuery.getValue().user?.email ?? '',
+						tokenContainer.tokens.accessToken,
+						tokenContainer.tokens.idToken,
+					)
+					.subscribe((_resp) => {
+						this.loggedIn();
+					});
+			}
 
 			return tokenContainer.tokens;
 		} catch (e) {
@@ -325,7 +346,10 @@ export class LoginComponent implements OnInit, OnDestroy {
 				this.activatedRoute.snapshot.queryParams?.error ||
 				'Could not get tokens from Okta, please check with IT on your access settings.';
 
-			this.globalService.triggerErrorMessage(undefined, `Okta Error: ${errorMessage}`);
+			this.globalService.triggerErrorMessage(
+				undefined,
+				`Okta Error: ${errorMessage}`,
+			);
 
 			return undefined;
 		}

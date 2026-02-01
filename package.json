@@ -4,11 +4,53 @@
   "description": "VML Open Boilerplate - Monorepo",
   "private": true,
   "scripts": {
-    "start": "concurrently -p \"[{name}]\" -n \"API,WEB\" -c \"bgBlue.bold,bgMagenta.bold\" \"cd apps/api && npm run start:dev\" \"cd apps/web && npm run start:dev\"",
+    "dev": "concurrently -p \"[{name}]\" -n \"API,WEB\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd apps/api && npm run start:dev",
+    "dev:web": "cd apps/web && npm run start:dev",
+    "start": "npm run dev",
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "cd apps/api && npm run build",
+    "build:web": "cd apps/web && npm run build",
+    "lint": "npm run lint:api && npm run lint:web && npm run lint:styles",
+    "lint:api": "cd apps/api && npm run lint",
+    "lint:web": "cd apps/web && npm run lint",
+    "lint:styles": "cd apps/web && npx stylelint \"src/**/*.scss\" --allow-empty-input",
+    "lint:fix": "npm run lint:api -- --fix && npm run lint:web -- --fix && npm run lint:styles -- --fix",
+    "typecheck": "npm run typecheck:api && npm run typecheck:web",
+    "typecheck:api": "cd apps/api && npx tsc --noEmit",
+    "typecheck:web": "cd apps/web && npx tsc --noEmit",
+    "test": "npm run test:api && npm run test:web",
+    "test:api": "cd apps/api && npm run test",
+    "test:web": "cd apps/web && npm run test -- --watch=false --browsers=ChromeHeadless",
+    "validate": "npm run lint && npm run typecheck && echo '✅ All validations passed!'",
+    "ubs": "ubs . --profile=loose --include-ext=ts,js,tsx,jsx,html --format=text",
+    "ubs:staged": "ubs --staged --profile=loose --include-ext=ts,js,tsx,jsx,html --format=text",
+    "ubs:strict": "ubs . --profile=strict --include-ext=ts,js,tsx,jsx,html --format=text",
+    "ubs:api": "ubs apps/api --profile=loose --include-ext=ts,js --format=text",
+    "ubs:web": "ubs apps/web --profile=loose --include-ext=ts,js,html --format=text",
+    "setup:ubs": "bash scripts/setup-ubs.sh",
+    "api:manifest": "bash scripts/generate-api-manifest.sh",
+    "prepare": "husky || true",
     "postinstall": "cd apps/api && npm install && cd ../web && npm install"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10"
+  },
+  "lint-staged": {
+    "apps/web/src/**/*.{ts,html}": [
+      "eslint --fix --no-warn-ignored",
+      "prettier --write"
+    ],
+    "apps/web/src/**/*.scss": [
+      "stylelint --fix --allow-empty-input",
+      "prettier --write"
+    ],
+    "apps/api/src/**/*.ts": [
+      "eslint --fix --no-warn-ignored",
+      "prettier --write"
+    ]
   },
   "engines": {
     "node": ">=18.0.0"

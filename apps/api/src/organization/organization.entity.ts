@@ -1,9 +1,17 @@
-import { Column, Entity, PrimaryGeneratedColumn, Index, OneToMany, OneToOne, ManyToOne, JoinColumn } from 'typeorm';
+import {
+	Column,
+	Entity,
+	PrimaryGeneratedColumn,
+	Index,
+	OneToMany,
+	ManyToOne,
+	JoinColumn,
+} from 'typeorm';
+
 import {
 	AuthenticationStrategy,
-	PublicAuthenticationStrategy
+	PublicAuthenticationStrategy,
 } from '../authentication-strategy/authentication-strategy.entity';
-
 import { User } from '../user/user.entity';
 
 import { UpdateOrgSettingsDto } from './dtos/update-org-settings.dto';
@@ -23,46 +31,48 @@ export type PublicOrganization = Pick<
 @Entity('organizations')
 @Index(['slug'], { unique: true })
 export class Organization {
+	[key: string]: unknown;
+
 	constructor(value?: Partial<Organization>) {
-		if(value) {
+		if (value) {
 			value = structuredClone(value);
 		}
-		for(const k in value) {
+		for (const k in value) {
 			this[k] = value[k];
 		}
 	}
 
 	@PrimaryGeneratedColumn('uuid')
-	id: string;
+	id!: string;
 
 	@Column('text', {
-		nullable: false
+		nullable: false,
 	})
-	name: string;
+	name!: string;
 
 	@Column('text', {
-		nullable: false
+		nullable: false,
 	})
-	slug: string;
+	slug!: string;
 
 	@Column('boolean', {
 		nullable: false,
-		default: false
+		default: false,
 	})
-	enabled: boolean;
+	enabled!: boolean;
 
 	@Column('boolean', {
 		nullable: false,
-		default: false
+		default: false,
 	})
-	redirectToSpace: boolean;
+	redirectToSpace!: boolean;
 
 	@OneToMany(
 		() => AuthenticationStrategy,
-		authenticationStrategy => authenticationStrategy.organizationId,
+		(authenticationStrategy) => authenticationStrategy.organizationId,
 		{
-			eager: false
-		}
+			eager: false,
+		},
 	)
 	authenticationStrategies?: AuthenticationStrategy[];
 
@@ -70,23 +80,19 @@ export class Organization {
 	defaultAuthenticationStrategyId?: string;
 	@ManyToOne(
 		() => AuthenticationStrategy,
-		authenticationStrategy => authenticationStrategy.id,
+		(authenticationStrategy) => authenticationStrategy.id,
 		{
 			//onDelete: 'CASCADE',
-			nullable: true
-		}
+			nullable: true,
+		},
 	)
 	@JoinColumn({ name: 'defaultAuthenticationStrategyId' })
 	defaultAuthenticationStrategy?: AuthenticationStrategy;
 
-	@OneToMany(
-		() => User,
-		user => user.organization,
-		{
-			eager: false
-		}
-	)
-	users: User[];
+	@OneToMany(() => User, (user) => user.organization, {
+		eager: false,
+	})
+	users!: User[];
 
 	@Column('jsonb', { nullable: true })
 	settings?: UpdateOrgSettingsDto;
@@ -97,11 +103,11 @@ export class Organization {
 	// notificationConfigDecrypted?: NotificationConfig;
 
 	@Column({ type: 'timestamptz', default: () => 'NOW()' })
-	created: string;
+	created!: string;
 
 	public toPublic(
-		include: Array<keyof Organization> = [],
-		exclude: Array<keyof Organization> = []
+		include: (keyof Organization)[] = [],
+		exclude: (keyof Organization)[] = [],
 	): PublicOrganization {
 		const pub: Partial<PublicOrganization> = {
 			id: this.id,
@@ -109,20 +115,19 @@ export class Organization {
 			slug: this.slug,
 			settings: this.settings,
 			created: this.created,
-			redirectToSpace: this.redirectToSpace ?? false
+			redirectToSpace: this.redirectToSpace ?? false,
 		};
 
-		if(
+		if (
 			include?.includes('authenticationStrategies') &&
 			this.authenticationStrategies?.length
 		) {
 			pub.authenticationStrategies = (
 				this.authenticationStrategies as AuthenticationStrategy[]
-			)?.map(a => new AuthenticationStrategy(a)
-				.toPublic());
+			)?.map((a) => new AuthenticationStrategy(a).toPublic());
 		}
 
-		if(exclude.includes('created')) {
+		if (exclude.includes('created')) {
 			delete pub.created;
 		}
 

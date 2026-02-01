@@ -1,6 +1,7 @@
 import { IntersectionType } from '@nestjs/swagger';
-import { RequestEnvelope } from '../../_core/models';
 import { IsString } from 'class-validator';
+
+import { RequestEnvelope } from '../../_core/models';
 
 class APIKeySampleParams {
 	@IsString()

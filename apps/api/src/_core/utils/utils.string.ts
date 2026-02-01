@@ -1,30 +1,32 @@
 const isDebug = process.env.DEBUG || false;
 
 export interface Address {
-	street: string;
-	city: string;
-	state: string;
-	zip: string;
+	street?: string;
+	city?: string;
+	state?: string;
+	zip?: string;
 }
 
 export class String {
 	// Note, this will NOT work for anything but the simplest cases.
 	// ex: McTavish, will not come out properly.
 	public static titleCase(input: any): any {
-		if(!(typeof input === 'string')) {
+		if (!(typeof input === 'string')) {
 			return input;
 		}
 		return input
 			.split(' ')
-			.map(i => {
-				return i[0].toUpperCase() + (i.length > 1 ? i.slice(1)
-					.toLowerCase() : '');
+			.map((i) => {
+				return (
+					i[0].toUpperCase() +
+					(i.length > 1 ? i.slice(1).toLowerCase() : '')
+				);
 			})
 			.join(' ');
 	}
 
 	public static slugify(input: string) {
-		if(!input) {
+		if (!input) {
 			input = '';
 		}
 		return input
@@ -35,19 +37,19 @@ export class String {
 	}
 
 	public static addTrailingSlash(input: string) {
-		if(!input) {
+		if (!input) {
 			input = '';
 		}
 		return input.endsWith('/') ? input : input + '/';
 	}
 
 	public static toAddress(address: string): Address {
-		if(!address || !address.length) {
+		if (!address || !address.length) {
 			return {
 				street: undefined,
 				city: undefined,
 				state: undefined,
-				zip: undefined
+				zip: undefined,
 			};
 		}
 		// Remove double spaces.
@@ -64,17 +66,20 @@ export class String {
 				.substring(address.lastIndexOf(',') + 1, address.length)
 				.trim()
 				.split(' ');
-			const streetCity = address.substring(0, address.lastIndexOf(','))
+			const streetCity = address
+				.substring(0, address.lastIndexOf(','))
 				.trim();
 
-			street = streetCity.substring(0, streetCity.lastIndexOf(','))
+			street = streetCity
+				.substring(0, streetCity.lastIndexOf(','))
 				.trim();
-			city = streetCity.substring(streetCity.lastIndexOf(',') + 1, streetCity.length)
+			city = streetCity
+				.substring(streetCity.lastIndexOf(',') + 1, streetCity.length)
 				.trim();
 			state = stateZip[0];
 			zip = stateZip[1];
-		} catch(err) {
-			if(isDebug) {
+		} catch (err) {
+			if (isDebug) {
 				console.log(err);
 			}
 		}
@@ -83,27 +88,30 @@ export class String {
 			street,
 			city,
 			state,
-			zip
+			zip,
 		};
 	}
 
 	public static cleanIPAddress(ip: string): string {
-		if(!ip?.length) {
+		if (!ip?.length) {
 			return '';
 		}
 
 		ip = ip.trim();
 
 		// V6-V4 wrapper.
-		if(ip.includes('::ffff:')) {
+		if (ip.includes('::ffff:')) {
 			ip = ip.replace(/::ffff:/g, '');
 		}
 		// V6 with port.
-		if(ip.includes(']')) {
-			return ip.slice(0, ip.lastIndexOf(':')).replace('[', '').replace(']', '');
+		if (ip.includes(']')) {
+			return ip
+				.slice(0, ip.lastIndexOf(':'))
+				.replace('[', '')
+				.replace(']', '');
 		}
 		// V4 with port.
-		else if(ip.match(/:/g)?.length === 1) {
+		else if (ip.match(/:/g)?.length === 1) {
 			return ip.split(':')[0];
 		}
 

@@ -1,6 +1,7 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
-import { PermissionType } from '../permission/models/permission.enum';
+import { IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+import { PermissionType } from '../permission/models/permission.enum';
 
 export { CodeRequestDto } from './code-request.dto';
 export { CodeLoginRequestDto } from './code-login-request.dto';

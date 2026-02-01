@@ -1,15 +1,22 @@
 // Handle environment file
 import fs from 'fs';
+
 import dotenv from 'dotenv';
-if(fs.existsSync('.env')) {
+if (fs.existsSync('.env')) {
 	dotenv.config();
 } else {
-	if(process.env.PRIVATE_KEY) {
-		process.env.PRIVATE_KEY = process.env.PRIVATE_KEY.replace(/\\n/gm, '\n').replace(/"/gm, '');
+	if (process.env.PRIVATE_KEY) {
+		process.env.PRIVATE_KEY = process.env.PRIVATE_KEY.replace(
+			/\\n/gm,
+			'\n',
+		).replace(/"/gm, '');
 	}
 
-	if(process.env.PUBLIC_KEY) {
-		process.env.PUBLIC_KEY = process.env.PUBLIC_KEY.replace(/\\n/gm, '\n').replace(/"/gm, '');
+	if (process.env.PUBLIC_KEY) {
+		process.env.PUBLIC_KEY = process.env.PUBLIC_KEY.replace(
+			/\\n/gm,
+			'\n',
+		).replace(/"/gm, '');
 	}
 }
 
@@ -17,28 +24,22 @@ import { json } from 'body-parser';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AppModule } from './app.module';
-
-import { debugLoggingOnly } from './_core/utils/utils.logging';
-
 import compression from 'compression';
 import helmet from 'helmet';
-import csurf from 'csurf';
 import enforce from 'express-sslify';
-
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
+import { debugLoggingOnly } from './_core/utils/utils.logging';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
 	const isLocal = process.env.LOCALHOST || false;
 	const isDebug = process.env.DEBUG || false;
-	const app = await NestFactory.create<NestExpressApplication>(
-		AppModule,
-		{
-			cors: {
-				origin: checkCORS.bind(this)
-			}
-		}
-	);
+	const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+		cors: {
+			origin: checkCORS,
+		},
+	});
 
 	app.set('query parser', 'extended');
 
@@ -46,19 +47,21 @@ async function bootstrap() {
 
 	app.use(json({ limit: '10mb' }));
 
-	app.useGlobalPipes(new ValidationPipe({
-		transform: true,
-		whitelist: true,
-		forbidNonWhitelisted: true
-	}));
+	app.useGlobalPipes(
+		new ValidationPipe({
+			transform: true,
+			whitelist: true,
+			forbidNonWhitelisted: true,
+		}),
+	);
 
 	// Require SSL
-	if(!isLocal) {
+	if (!isLocal) {
 		app.use(enforce.HTTPS({ trustProtoHeader: true }));
 	}
 
 	// Disable logging.
-	if(!isDebug) {
+	if (!isDebug) {
 		debugLoggingOnly();
 	}
 
@@ -66,18 +69,18 @@ async function bootstrap() {
 	app.use(helmet());
 
 	// Swagger documentation
-	if(process.env.SWAGGER_ENABLE) {
+	if (process.env.SWAGGER_ENABLE) {
 		const config = new DocumentBuilder()
 			.setTitle('Your new API')
 			.setDescription('API for doing stuff.')
 			.setVersion('1.0')
 			.addBearerAuth({
-					description: `Please enter token in following format: Bearer <JWT>`,
-					name: 'Authorization',
-					bearerFormat: 'Bearer',
-					scheme: 'Bearer',
-					type: 'http',
-					in: 'Header'
+				description: `Please enter token in following format: Bearer <JWT>`,
+				name: 'Authorization',
+				bearerFormat: 'Bearer',
+				scheme: 'Bearer',
+				type: 'http',
+				in: 'Header',
 			})
 			.build();
 		const document = SwaggerModule.createDocument(app, config);
@@ -88,38 +91,43 @@ async function bootstrap() {
 }
 
 // Used for application whitelisting.
-function checkCORS(origin: string, cb) {
+function checkCORS(
+	origin: string,
+	cb: (err: Error | null, allow: boolean) => void,
+) {
 	const isLocal = process.env.LOCALHOST || false;
 	const envOrigins = process.env.ORIGINS?.split(',');
 
-	if(typeof origin === 'undefined') {
+	if (typeof origin === 'undefined') {
 		cb(null, false);
 		return;
 	}
 
 	let matchedOrigin = false;
-	if(envOrigins?.length) {
+	if (envOrigins?.length) {
 		const trimmed = origin
 			.replace(/(http|https):\/\//g, '')
 			.replace(/:(.*)/, '')
 			.replace(/\/(.*)/, '');
 
-		for(const o of envOrigins) {
-			if(o.indexOf('*') === 0) {
-				const regString = o
-					.replace(/\*\./, '')
-					.replace(/\./g, '\\.');
-				matchedOrigin = (trimmed.match(new RegExp(`${regString}$`))) ? true : false;
+		for (const o of envOrigins) {
+			if (o.indexOf('*') === 0) {
+				const regString = o.replace(/\*\./, '').replace(/\./g, '\\.');
+				matchedOrigin = trimmed.match(new RegExp(`${regString}$`))
+					? true
+					: false;
 			} else {
-				matchedOrigin = (trimmed.match(new RegExp(`${o}$`))) ? true : false;
+				matchedOrigin = trimmed.match(new RegExp(`${o}$`))
+					? true
+					: false;
 			}
-			if(matchedOrigin) {
+			if (matchedOrigin) {
 				break;
 			}
-		};
+		}
 	}
 
-	if(isLocal && origin.includes('localhost')) {
+	if (isLocal && origin.includes('localhost')) {
 		matchedOrigin = true;
 	}
 

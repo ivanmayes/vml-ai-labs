@@ -1,12 +1,12 @@
 import { Type } from 'class-transformer';
 import {
 	IsNotEmpty,
-	IsObject,
 	IsOptional,
 	IsString,
 	IsUUID,
 	ValidateNested,
 } from 'class-validator';
+
 import { Hierarchy } from '../../_core/third-party/wpp-open/models';
 
 export class WPPOpenLoginRequestDto {

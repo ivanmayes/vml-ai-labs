@@ -6,7 +6,6 @@ import {
 	ValidateNested,
 	IsNumber,
 	IsOptional,
-	IsUUID
 } from 'class-validator';
 
 export class OktaOauthClaims {
@@ -19,7 +18,7 @@ export class OktaOauthClaims {
 	jti?: string;
 
 	@IsString()
-	iss: string;
+	iss!: string;
 
 	@IsOptional()
 	@IsString()
@@ -35,7 +34,7 @@ export class OktaOauthClaims {
 
 	@IsNotEmpty()
 	@IsString()
-	cid: string;
+	cid!: string;
 
 	@IsOptional()
 	@IsString()
@@ -57,46 +56,46 @@ export class OktaOauthToken {
 
 	@IsNotEmpty()
 	@IsString()
-	accessToken: string;
+	accessToken!: string;
 
 	@ValidateNested()
 	@Type(() => OktaOauthClaims)
-	claims: OktaOauthClaims;
+	claims!: OktaOauthClaims;
 
 	@IsNotEmpty()
 	@IsNumber()
-	expiresAt: number;
+	expiresAt!: number;
 
 	@IsNotEmpty()
 	@IsString()
-	tokenType: string;
+	tokenType!: string;
 
 	@IsNotEmpty()
 	@IsString({ each: true })
-	scopes: string[];
+	scopes!: string[];
 
 	@IsNotEmpty()
 	@IsString()
-	authorizeUrl: string;
+	authorizeUrl!: string;
 
 	@IsNotEmpty()
 	@IsString()
-	userinfoUrl: string;
+	userinfoUrl!: string;
 }
 
 export class OktaLoginRequestDto {
 	@ValidateNested()
 	@Type(() => OktaOauthToken)
-	accessToken: OktaOauthToken;
+	accessToken!: OktaOauthToken;
 
 	@IsNotEmpty()
-	idToken: string[];
+	idToken!: string[];
 
 	@IsNotEmpty()
 	@IsEmail()
-	email: string;
+	email!: string;
 
 	@IsNotEmpty()
 	@IsString()
-	organizationId: string;
+	organizationId!: string;
 }

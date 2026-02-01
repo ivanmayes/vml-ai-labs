@@ -4,8 +4,9 @@ import {
 	Index,
 	JoinColumn,
 	ManyToOne,
-	PrimaryGeneratedColumn
+	PrimaryGeneratedColumn,
 } from 'typeorm';
+
 import { Organization } from '../organization/organization.entity';
 
 export const KEY_SIZE_BYTES = 128;
@@ -13,10 +14,14 @@ export const KEY_SIZE_BYTES = 128;
 @Entity('apiKeys')
 @Index(['key'], { unique: true })
 export class ApiKey {
+	[key: string]: unknown;
+
 	constructor(value?: Partial<ApiKey>) {
 		value = structuredClone(value);
-		for(const k in value) {
-			this[k] = value[k];
+		for (const k in value) {
+			(this as Record<string, unknown>)[k] = (
+				value as Record<string, unknown>
+			)[k];
 		}
 	}
 
@@ -32,12 +37,9 @@ export class ApiKey {
 
 	@Column('uuid')
 	organizationId: string;
-	@ManyToOne(
-		() => Organization,
-		{
-			nullable: false
-		}
-	)
+	@ManyToOne(() => Organization, {
+		nullable: false,
+	})
 	@JoinColumn({ name: 'organizationId' })
 	organization: Organization;
 

@@ -11,7 +11,7 @@ import { Directive, OnInit, Renderer2, Input, ElementRef } from '@angular/core';
 export class FillHeightDirective implements OnInit {
 	@Input() paddingBottom = 0;
 
-	public domElement;
+	public domElement: HTMLElement | undefined;
 
 	constructor(
 		private renderer: Renderer2,
@@ -29,6 +29,7 @@ export class FillHeightDirective implements OnInit {
 	}
 
 	fillHeight() {
+		if (!this.domElement) return;
 		const top = this.domElement.getBoundingClientRect().top;
 		const height = window.innerHeight - top - this.paddingBottom;
 		this.renderer.setStyle(this.domElement, 'overflow', `auto`);

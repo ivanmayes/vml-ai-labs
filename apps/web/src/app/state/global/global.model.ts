@@ -2,7 +2,7 @@ import type { OrganizationSettings } from '../../../../../api/src/organization/o
 
 export interface GlobalState {
 	header: HeaderSettings;
-	settings: GlobalSettings;
+	settings: GlobalSettings | undefined;
 	adminMode: boolean;
 }
 
@@ -10,10 +10,10 @@ export const initialGlobalState: GlobalState = {
 	header: {
 		visible: true,
 		invert: false,
-		floating: false
+		floating: false,
 	},
 	settings: undefined,
-	adminMode: false
+	adminMode: false,
 };
 
 /**
@@ -25,6 +25,7 @@ export const initialGlobalState: GlobalState = {
 export interface GlobalSettings {
 	id: string;
 	name: string;
+	logo?: string;
 	settings: OrganizationSettings;
 	authenticationStrategies: any;
 }

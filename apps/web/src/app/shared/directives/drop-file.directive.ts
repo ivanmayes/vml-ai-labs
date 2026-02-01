@@ -1,4 +1,10 @@
-import { Directive, Output, Input, EventEmitter, HostBinding, HostListener } from '@angular/core';
+import {
+	Directive,
+	Output,
+	EventEmitter,
+	HostBinding,
+	HostListener,
+} from '@angular/core';
 
 /**
  * Drop File Directive
@@ -6,37 +12,36 @@ import { Directive, Output, Input, EventEmitter, HostBinding, HostListener } fro
  */
 @Directive({
 	standalone: false,
-    selector: '[appDropFile]',
-    
+	selector: '[appDropFile]',
 })
 export class DropFileDirective {
 	@Output() filesDropped = new EventEmitter<any>();
 
-	@HostBinding('class.drag-over') private dragOver = false;
+	@HostBinding('class.drag-over') public dragOver = false;
 
 	// Drag Over listener
-	@HostListener('dragover', ['$event']) onDragOver(ev) {
+	@HostListener('dragover', ['$event']) onDragOver(ev: DragEvent) {
 		ev.preventDefault();
 		ev.stopPropagation();
 		this.dragOver = true;
 	}
 
 	// Drag Leave listener
-	@HostListener('dragleave', ['$event']) public onDragLeave(ev) {
+	@HostListener('dragleave', ['$event']) public onDragLeave(ev: DragEvent) {
 		ev.preventDefault();
 		ev.stopPropagation();
 		this.dragOver = false;
 	}
 
 	// Drop listener
-	@HostListener('drop', ['$event']) public ondrop(ev) {
+	@HostListener('drop', ['$event']) public ondrop(ev: DragEvent) {
 		ev.preventDefault();
 		ev.stopPropagation();
 		this.dragOver = false;
 
-		const files = ev.dataTransfer.files;
+		const files = ev.dataTransfer?.files;
 		console.log('Dropped Files', files);
-		if (files.length > 0) {
+		if (files && files.length > 0) {
 			this.filesDropped.emit(files);
 		}
 	}

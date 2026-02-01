@@ -1,21 +1,32 @@
 import { Injectable } from '@angular/core';
-import { Router, CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import {
+	Router,
+	CanActivate,
+	ActivatedRouteSnapshot,
+	RouterStateSnapshot,
+} from '@angular/router';
 import { SessionQuery } from '../../state/session/session.query';
 import { UserRole } from '../../../../../api/src/user/user-role.enum';
 
 @Injectable({
-	providedIn: 'root'
+	providedIn: 'root',
 })
 export class AdminRoleGuard implements CanActivate {
 	constructor(
 		private readonly sessionQuery: SessionQuery,
-		private readonly router: Router
+		private readonly router: Router,
 	) {}
 
-	canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
+	canActivate(
+		_route: ActivatedRouteSnapshot,
+		_state: RouterStateSnapshot,
+	): boolean {
 		const user = this.sessionQuery.getValue().user;
 
-		if (user && (user.role === UserRole.Admin || user.role === UserRole.SuperAdmin)) {
+		if (
+			user &&
+			(user.role === UserRole.Admin || user.role === UserRole.SuperAdmin)
+		) {
 			return true;
 		}
 

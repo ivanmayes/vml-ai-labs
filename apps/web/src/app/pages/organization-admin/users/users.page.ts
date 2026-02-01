@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService } from 'primeng/dynamicdialog';
 import { SessionQuery } from '../../../state/session/session.query';
 import { OrganizationAdminService } from '../../../shared/services/organization-admin.service';
 import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
@@ -14,14 +14,14 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
-	
-	providers: [ConfirmationService]
+
+	providers: [ConfirmationService],
 })
 export class UsersPage implements OnInit, OnDestroy {
 	users: any[] = [];
 	loading = false;
 	currentUser: any;
-	organizationId: string;
+	organizationId!: string;
 	currentSortField = 'email';
 	currentSortOrder = 'asc';
 	currentSearchQuery = '';
@@ -33,16 +33,15 @@ export class UsersPage implements OnInit, OnDestroy {
 		private readonly sessionQuery: SessionQuery,
 		private readonly messageService: MessageService,
 		private readonly dialogService: DialogService,
-		private readonly confirmationService: ConfirmationService
+		private readonly confirmationService: ConfirmationService,
 	) {
 		// Debounce search input by 400ms
-		this.searchSubject.pipe(
-			debounceTime(400),
-			distinctUntilChanged()
-		).subscribe(query => {
-			this.currentSearchQuery = query;
-			this.loadUsers(query);
-		});
+		this.searchSubject
+			.pipe(debounceTime(400), distinctUntilChanged())
+			.subscribe((query) => {
+				this.currentSearchQuery = query;
+				this.loadUsers(query);
+			});
 	}
 
 	ngOnInit(): void {
@@ -54,15 +53,21 @@ export class UsersPage implements OnInit, OnDestroy {
 		}
 	}
 
-	loadUsers(searchQuery?: string, sortField?: string, sortOrder?: string): void {
+	loadUsers(
+		searchQuery?: string,
+		sortField?: string,
+		sortOrder?: string,
+	): void {
 		this.loading = true;
 
 		// Use provided values or fall back to current state
-		const query = searchQuery !== undefined ? searchQuery : this.currentSearchQuery;
+		const query =
+			searchQuery !== undefined ? searchQuery : this.currentSearchQuery;
 		const field = sortField || this.currentSortField;
 		const order = sortOrder || this.currentSortOrder;
 
-		this.adminService.getUsers(this.organizationId, field, order, query)
+		this.adminService
+			.getUsers(this.organizationId, field, order, query)
 			.subscribe({
 				next: (response) => {
 					this.users = response.data || [];
@@ -74,10 +79,10 @@ export class UsersPage implements OnInit, OnDestroy {
 						severity: 'error',
 						summary: 'Error',
 						detail: 'Failed to load users',
-						life: 3000
+						life: 3000,
 					});
 					this.loading = false;
-				}
+				},
 			});
 	}
 
@@ -93,51 +98,55 @@ export class UsersPage implements OnInit, OnDestroy {
 	onSort(event: any): void {
 		this.currentSortField = event.field;
 		this.currentSortOrder = event.order === 1 ? 'asc' : 'desc';
-		this.loadUsers(this.currentSearchQuery, this.currentSortField, this.currentSortOrder);
+		this.loadUsers(
+			this.currentSearchQuery,
+			this.currentSortField,
+			this.currentSortOrder,
+		);
 	}
 
 	openInviteDialog(): void {
-		const ref: DynamicDialogRef = this.dialogService.open(InviteUserDialogComponent, {
+		const ref = this.dialogService.open(InviteUserDialogComponent, {
 			header: 'Invite User',
 			width: '500px',
 			data: {
 				currentUserRole: this.currentUser.role,
-				organizationId: this.organizationId
-			}
+				organizationId: this.organizationId,
+			},
 		});
 
-		ref.onClose.subscribe((result) => {
+		ref?.onClose.subscribe((result) => {
 			if (result) {
 				this.loadUsers();
 				this.messageService.add({
 					severity: 'success',
 					summary: 'Success',
 					detail: 'User invited successfully',
-					life: 3000
+					life: 3000,
 				});
 			}
 		});
 	}
 
 	openPromoteDialog(user: any): void {
-		const ref: DynamicDialogRef = this.dialogService.open(PromoteUserDialogComponent, {
+		const ref = this.dialogService.open(PromoteUserDialogComponent, {
 			header: 'Change User Role',
 			width: '500px',
 			data: {
 				user,
 				currentUserRole: this.currentUser.role,
-				organizationId: this.organizationId
-			}
+				organizationId: this.organizationId,
+			},
 		});
 
-		ref.onClose.subscribe((result) => {
+		ref?.onClose.subscribe((result) => {
 			if (result) {
 				this.loadUsers();
 				this.messageService.add({
 					severity: 'success',
 					summary: 'Success',
 					detail: 'User role updated successfully',
-					life: 3000
+					life: 3000,
 				});
 			}
 		});
@@ -154,30 +163,32 @@ export class UsersPage implements OnInit, OnDestroy {
 			header: 'Confirm',
 			icon: 'pi pi-exclamation-triangle',
 			accept: () => {
-				this.adminService.banUser(this.organizationId, {
-					userId: user.id,
-					banned: !user.deactivated
-				}).subscribe({
-					next: () => {
-						this.loadUsers();
-						this.messageService.add({
-							severity: 'success',
-							summary: 'Success',
-							detail: `User ${action}ned successfully`,
-							life: 3000
-						});
-					},
-					error: (error) => {
-						console.error('Error updating user status:', error);
-						this.messageService.add({
-							severity: 'error',
-							summary: 'Error',
-							detail: `Failed to ${action} user`,
-							life: 3000
-						});
-					}
-				});
-			}
+				this.adminService
+					.banUser(this.organizationId, {
+						userId: user.id,
+						banned: !user.deactivated,
+					})
+					.subscribe({
+						next: () => {
+							this.loadUsers();
+							this.messageService.add({
+								severity: 'success',
+								summary: 'Success',
+								detail: `User ${action}ned successfully`,
+								life: 3000,
+							});
+						},
+						error: (error) => {
+							console.error('Error updating user status:', error);
+							this.messageService.add({
+								severity: 'error',
+								summary: 'Error',
+								detail: `Failed to ${action} user`,
+								life: 3000,
+							});
+						},
+					});
+			},
 		});
 	}
 
@@ -187,12 +198,12 @@ export class UsersPage implements OnInit, OnDestroy {
 		}
 
 		const roleHierarchy: any = {
-			'guest': 0,
-			'analyst': 1,
-			'reviewer': 2,
-			'manager': 3,
-			'admin': 4,
-			'super-admin': 5
+			guest: 0,
+			analyst: 1,
+			reviewer: 2,
+			manager: 3,
+			admin: 4,
+			'super-admin': 5,
 		};
 
 		const currentUserLevel = roleHierarchy[this.currentUser.role] || 0;
@@ -201,7 +212,9 @@ export class UsersPage implements OnInit, OnDestroy {
 		return currentUserLevel >= targetUserLevel;
 	}
 
-	getRoleBadgeSeverity(role: string): string {
+	getRoleBadgeSeverity(
+		role: string,
+	): 'info' | 'danger' | 'warn' | 'secondary' | 'success' | 'contrast' {
 		switch (role) {
 			case 'super-admin':
 				return 'danger';
@@ -214,7 +227,9 @@ export class UsersPage implements OnInit, OnDestroy {
 		}
 	}
 
-	getStatusBadgeSeverity(deactivated: boolean): string {
+	getStatusBadgeSeverity(
+		deactivated: boolean,
+	): 'info' | 'danger' | 'warn' | 'secondary' | 'success' | 'contrast' {
 		return deactivated ? 'danger' : 'success';
 	}
 

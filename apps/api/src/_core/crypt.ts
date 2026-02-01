@@ -2,33 +2,34 @@
  * NPM Modules
  */
 import crypto, { Encoding } from 'crypto';
+
 import bcrypt from 'bcrypt';
 
 export enum CIPHERS {
 	AES_128 = 'aes128',
 	AES_128_CBC = 'aes-128-cbc',
 	AES_192 = 'aes192',
-	AES_256 = 'aes256'
+	AES_256 = 'aes256',
 }
 
 export enum CIPHER_ENCODINGS {
 	'ascii',
 	'utf8',
 	'hex',
-	'base64'
+	'base64',
 }
 
 export class Crypt {
-	private static readonly isDebug = process.env.DEBUG || false;
-	private static readonly bcryptSaltRounds = process.env.BCRYPT_SALT_ROUNDS || 11;
+	private static readonly bcryptSaltRounds =
+		process.env.BCRYPT_SALT_ROUNDS || 11;
 
 	/**
 	 * Creates a cryptographically secure random number.
-	 * 
+	 *
 	 * @param bytes (optional) Number of bytes of randomness to generate
 	 */
 	public static random(bytes?: number): number {
-		if(!bytes) {
+		if (!bytes) {
 			bytes = 32;
 		}
 
@@ -38,11 +39,11 @@ export class Crypt {
 
 	/**
 	 * Creates a cryptographically secure random hex string.
-	 * 
+	 *
 	 * @param bytes (optional) Number of bytes of randomness to generate.
 	 */
 	public static randomHex(bytes?: number): string {
-		if(!bytes) {
+		if (!bytes) {
 			bytes = 32;
 		}
 		const buf = crypto.randomBytes(bytes);
@@ -52,11 +53,11 @@ export class Crypt {
 
 	/**
 	 * Creates a cryptographically secure random base64 string.
-	 * 
+	 *
 	 * @param bytes (optional) Number of bytes of randomness to generate.
 	 */
 	public static randomBase64(bytes?: number): string {
-		if(!bytes) {
+		if (!bytes) {
 			bytes = 32;
 		}
 		const buf = crypto.randomBytes(bytes);
@@ -69,9 +70,13 @@ export class Crypt {
 		key: string,
 		iv: string,
 		algorithm: CIPHERS = CIPHERS.AES_256,
-		encoding: Encoding = 'base64'
+		encoding: Encoding = 'base64',
 	): string {
-		const cipher = crypto.createCipheriv(algorithm, Buffer.from(key, 'base64'), iv);
+		const cipher = crypto.createCipheriv(
+			algorithm,
+			Buffer.from(key, 'base64'),
+			iv,
+		);
 
 		return cipher.update(data, 'utf8', encoding) + cipher.final(encoding);
 	}
@@ -81,9 +86,13 @@ export class Crypt {
 		key: string,
 		iv: string,
 		algorithm: CIPHERS = CIPHERS.AES_256,
-		encoding: Encoding = 'base64'
+		encoding: Encoding = 'base64',
 	): string {
-		const decipher = crypto.createDecipheriv(algorithm, Buffer.from(key, 'base64'), iv);
+		const decipher = crypto.createDecipheriv(
+			algorithm,
+			Buffer.from(key, 'base64'),
+			iv,
+		);
 
 		return decipher.update(data, encoding) + decipher.final('utf8');
 	}
@@ -103,7 +112,7 @@ export class Crypt {
 	/**
 	 * Generates a bcrypt hash for a given password.
 	 * @param password The plain-text password to hash.
-	 * 
+	 *
 	 * @returns Hashed password.
 	 */
 	public static async hashPassword(password: string): Promise<string> {
@@ -114,9 +123,12 @@ export class Crypt {
 	 * Checks to make sure a password matches a given bcrypt hash.
 	 * @param password The plain-text password to match.
 	 * @param hash A bcrypt hash to validate.
-	 * 
+	 *
 	 */
-	public static async checkPassword(password: string, hash: string): Promise<boolean> {
+	public static async checkPassword(
+		password: string,
+		hash: string,
+	): Promise<boolean> {
 		return bcrypt.compare(password, hash);
 	}
 }
