@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { HttpModule } from '@nestjs/axios';
 
 import { DatabaseModule } from './database.module';
+import { AIModule } from './ai/ai.module';
 import { CLIConsole } from './console/cli.console';
 import { JwtStrategy } from './user/auth/jwt.strategy';
 import { BearerStrategy } from './api-key/auth/bearer.strategy';
@@ -42,24 +43,25 @@ const providerList = [
 	AuthenticationStrategyConsole,
 	OrganizationConsole,
 	ApiKeyConsole,
-	UserConsole
+	UserConsole,
 ];
 
 @Module({
 	imports: [
 		HttpModule,
 		DatabaseModule,
+		AIModule,
 		PassportModule.register({ defaultStrategy: 'jwt' }),
 		JwtModule.register({
 			privateKey: process.env.PRIVATE_KEY,
 			publicKey: process.env.PUBLIC_KEY,
 			signOptions: {
 				expiresIn: '30days',
-				algorithm: 'RS256'
-			}
-		})
+				algorithm: 'RS256',
+			},
+		}),
 	],
 	providers: providerList,
-	exports: [...providerList, PassportModule, JwtModule]
+	exports: [...providerList, PassportModule, JwtModule],
 })
 export class CommonModule {}

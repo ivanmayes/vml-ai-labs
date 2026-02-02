@@ -71,7 +71,7 @@ export class ApiKeyConsole {
 			process.env.PII_SIGNING_OFFSET ?? '',
 		);
 
-		const apiKey = await this.apiKeyService
+		await this.apiKeyService
 			.addOne({
 				name,
 				key: keyEncrypted,
