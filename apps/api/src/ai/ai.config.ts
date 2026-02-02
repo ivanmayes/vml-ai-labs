@@ -17,8 +17,8 @@ import {
  * Parse provider from environment variable
  */
 function parseProvider(value: string | undefined): AIProvider | undefined {
-	if (!value) return undefined;
-	const normalized = value.toLowerCase().trim();
+	const normalized = value?.toLowerCase().trim();
+	if (!normalized) return undefined;
 	const providerMap: Record<string, AIProvider> = {
 		openai: AIProvider.OpenAI,
 		anthropic: AIProvider.Anthropic,
@@ -50,7 +50,7 @@ function parseBoolean(
 function parseNumber(value: string | undefined, defaultValue: number): number {
 	if (!value) return defaultValue;
 	const parsed = parseInt(value, 10);
-	return isNaN(parsed) ? defaultValue : parsed;
+	return Number.isNaN(parsed) ? defaultValue : parsed;
 }
 
 /**
