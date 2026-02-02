@@ -9,6 +9,9 @@ import {
 	HttpStatus,
 	Param,
 	Query,
+	Req,
+	Res,
+	NotFoundException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtService } from '@nestjs/jwt';
@@ -17,12 +20,16 @@ import axios from 'axios';
 
 import { HasOrganizationAccessGuard } from '../organization/guards/has-organization-access.guard';
 import { NotificationService } from '../notification/notification.service';
-import { OrganizationService } from '../organization/organization.service';
+import {
+	RemoteStatus,
+	OrganizationService,
+} from '../organization/organization.service';
 import { Organization } from '../organization/organization.entity';
 import {
 	AuthenticationStrategyType,
 	OktaConfig,
 } from '../authentication-strategy/authentication-strategy.entity';
+import { Crypt } from '../_core/crypt';
 import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
 import { ResponseEnvelope, ResponseStatus } from '../_core/models';
 import { WPPOpen } from '../_core/third-party/wpp-open';
@@ -30,6 +37,7 @@ import {
 	WorkspaceHierarchy,
 	WPPOpenTokenResponse,
 } from '../_core/third-party/wpp-open/models';
+import { SpaceUserService } from '../space-user/space-user.service';
 import { SpaceService } from '../space/space.service';
 import { Space } from '../space/space.entity';
 import { SpaceRole } from '../space-user/space-role.enum';
@@ -37,6 +45,12 @@ import { SpaceUser } from '../space-user/space-user.entity';
 
 import { WPPOpenLoginRequestDto } from './dtos/wpp-open-login-request.dto';
 import { PermissionsGuard } from './permission/permission.guard';
+import { Permissions } from './permission/permission.decorator';
+import { PermissionType } from './permission/models/permission.enum';
+import {
+	SAML2_0LoginRequestDto,
+	SAML2_0Response,
+} from './dtos/saml-login-request.dto';
 import { AuthService } from './auth/auth.service';
 import {
 	CodeRequestDto,
@@ -61,6 +75,7 @@ export class UserAuthController {
 		private readonly authService: AuthService,
 		private readonly notificationService: NotificationService,
 		private readonly organizationService: OrganizationService,
+		private readonly spaceUserService: SpaceUserService,
 		private readonly spaceService: SpaceService,
 	) {}
 
@@ -473,8 +488,19 @@ export class UserAuthController {
 			throw new HttpException('Invalid scopeId.', HttpStatus.BAD_REQUEST);
 		}
 
-		// Use tenant ID if provided, otherwise fall back to workspace ID
+		// Log tenant ID for debugging
 		const tenantIdToMatch = loginReq.tenantId;
+		console.log('🔑 [WPP Open] Tenant ID from login:', tenantIdToMatch);
+		console.log(
+			'🔑 [WPP Open] Workspace ID from login:',
+			scope.workspace.id,
+		);
+		console.log(
+			'🏢 [WPP Open] Organization redirectToSpace:',
+			organization.redirectToSpace,
+		);
+
+		// Use tenant ID if provided, otherwise fall back to workspace ID
 		const idToMatch = tenantIdToMatch || scope.workspace.id;
 
 		const spaces: Space[] = await this.spaceService
@@ -496,6 +522,18 @@ export class UserAuthController {
 			);
 		}
 
+		console.log('🔍 [WPP Open] Found spaces matching ID:', spaces.length);
+		if (spaces.length > 0) {
+			console.log(
+				'📋 [WPP Open] Matching spaces:',
+				spaces.map((s) => ({
+					id: s.id,
+					name: s.name,
+					approvedWPPOpenTenantIds: s.approvedWPPOpenTenantIds,
+				})),
+			);
+		}
+
 		// Check if we should redirect to a space
 		let redirectSpaceId: string | null = null;
 		if (organization.redirectToSpace && spaces.length > 0) {
@@ -505,7 +543,22 @@ export class UserAuthController {
 			);
 			if (matchingSpace) {
 				redirectSpaceId = matchingSpace.id ?? null;
+				console.log(
+					'✅ [WPP Open] Redirect space ID set to:',
+					redirectSpaceId,
+				);
+			} else {
+				console.log(
+					'⚠️ [WPP Open] No matching space found despite query results',
+				);
 			}
+		} else {
+			console.log(
+				'ℹ️ [WPP Open] Not redirecting - redirectToSpace:',
+				organization.redirectToSpace,
+				'spaces found:',
+				spaces.length,
+			);
 		}
 
 		const email = FraudPrevention.Forms.Normalization.normalizeEmail(
@@ -888,6 +941,73 @@ export class UserAuthController {
 		return new ResponseEnvelope(
 			ResponseStatus.Success,
 			'You are an admin.',
+		);
+	}
+
+	@Get('dev/test-tokens')
+	public async getTestTokens(): Promise<ResponseEnvelope> {
+		// Security gate - explicit env var check
+		if (
+			process.env.ENABLE_TEST_AUTH !== 'true' ||
+			process.env.LOCALHOST !== 'true'
+		) {
+			throw new NotFoundException();
+		}
+
+		const testUsersEnv = process.env.TEST_USERS || '';
+		if (!testUsersEnv.trim()) {
+			return new ResponseEnvelope(
+				ResponseStatus.Failure,
+				'TEST_USERS environment variable is not configured',
+			);
+		}
+
+		// Parse and normalize emails (same pattern as existing code)
+		const emails = testUsersEnv
+			.split(',')
+			.map((e) => e.trim().toLowerCase())
+			.filter((e) => e.length > 0);
+
+		const uniqueEmails = [...new Set(emails)];
+
+		// Batch lookup users
+		const users = await this.userService.findByEmails(uniqueEmails);
+
+		if (users.length === 0) {
+			return new ResponseEnvelope(
+				ResponseStatus.Failure,
+				'No users found for provided emails',
+			);
+		}
+
+		// Generate tokens using existing pattern from GetUserToken CLI
+		const tokens = [];
+		for (const user of users) {
+			const token = this.jwtService.sign({
+				id: user.id,
+				email: user.email,
+				emailNormalized: user.emailNormalized,
+				organizationId: user.organizationId,
+			});
+
+			// Add to authTokens array (existing pattern for revocation support)
+			user.authTokens = user.authTokens || [];
+			user.authTokens.push(token);
+
+			tokens.push({
+				email: user.email,
+				userId: user.id,
+				token,
+			});
+		}
+
+		// Batch save all users with new tokens
+		await this.userService.saveMany(users);
+
+		return new ResponseEnvelope(
+			ResponseStatus.Success,
+			`Generated ${tokens.length} tokens`,
+			{ tokens },
 		);
 	}
 }

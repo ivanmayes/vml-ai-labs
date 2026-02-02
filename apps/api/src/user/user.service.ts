@@ -5,6 +5,7 @@ import {
 	FindOneOptions,
 	FindManyOptions,
 	DataSource,
+	In,
 } from 'typeorm';
 
 import { SortStrategy } from '../_core/models/sort-strategy';
@@ -63,6 +64,17 @@ export class UserService {
 
 	public async save(user: User) {
 		return this.userRepository.save(user);
+	}
+
+	public async findByEmails(emails: string[]): Promise<User[]> {
+		if (!emails.length) return [];
+		return this.userRepository.find({
+			where: { emailNormalized: In(emails) },
+		});
+	}
+
+	public async saveMany(users: User[]): Promise<User[]> {
+		return this.userRepository.save(users);
 	}
 
 	public async canAccess(user: User, accessList: AccessList) {

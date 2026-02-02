@@ -419,6 +419,56 @@ npx stylelint "**/*.{css,scss}"
 # Should show 0 errors (warnings are acceptable)
 ```
 
+## API Testing
+
+### Test Token Endpoint
+
+Get bearer tokens for API testing without manual login. **Always use this endpoint when testing authenticated API endpoints.**
+
+#### Setup
+
+Add to `apps/api/.env`:
+
+```bash
+ENABLE_TEST_AUTH=true
+TEST_USERS=admin@test.local,user@test.local
+```
+
+Users must exist in database (create via `npm run console:dev InstallUser`).
+
+#### Usage
+
+```bash
+# Get tokens for all configured test users
+curl http://localhost:3000/user-auth/dev/test-tokens
+
+# Use token in authenticated requests
+TOKEN=$(curl -s http://localhost:3000/user-auth/dev/test-tokens | jq -r '.data.tokens[0].token')
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/endpoint
+```
+
+#### Response Format
+
+```json
+{
+  "status": "success",
+  "message": "Generated 2 tokens",
+  "data": {
+    "tokens": [
+      { "email": "admin@test.local", "userId": "uuid", "token": "eyJ..." },
+      { "email": "user@test.local", "userId": "uuid", "token": "eyJ..." }
+    ]
+  }
+}
+```
+
+#### Troubleshooting
+
+| Issue              | Solution                                                   |
+| ------------------ | ---------------------------------------------------------- |
+| 404 response       | Set `ENABLE_TEST_AUTH=true` and `LOCALHOST=true` in `.env` |
+| No tokens returned | Check `TEST_USERS` is set and users exist in database      |
+
 ## Checklist Before Generating Code
 
 - [ ] Using PrimeNG components instead of custom implementations
