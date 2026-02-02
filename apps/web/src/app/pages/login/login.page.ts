@@ -1,6 +1,12 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import {
+	FormBuilder,
+	FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { OktaAuth } from '@okta/okta-auth-js';
 import { Observable } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -13,6 +19,10 @@ import { SessionQuery } from '../../state/session/session.query';
 import { SessionService } from '../../state/session/session.service';
 import { fade } from '../../_core/utils/animations.utils';
 import { environment } from '../../../environments/environment';
+import { PrimeNgModule } from '../../shared/primeng.module';
+
+import { BasicAuthComponent } from './basic/basic.component';
+import { OktaAuthComponent } from './okta/okta.component';
 
 /**
  * Login Page
@@ -34,10 +44,17 @@ import { environment } from '../../../environments/environment';
  */
 @Component({
 	selector: 'app-login',
-	standalone: false,
 	templateUrl: './login.page.html',
 	styleUrls: ['./login.page.scss'],
 	animations: [fade('fade', 400, '-50%')],
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		RouterModule,
+		BasicAuthComponent,
+		OktaAuthComponent,
+		PrimeNgModule,
+	],
 })
 export class LoginComponent implements OnInit, OnDestroy {
 	// Observables

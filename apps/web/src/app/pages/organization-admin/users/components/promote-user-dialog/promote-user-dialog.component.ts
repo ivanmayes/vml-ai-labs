@@ -7,7 +7,6 @@ import { OrganizationAdminService } from '../../../../../shared/services/organiz
 
 @Component({
 	selector: 'app-promote-user-dialog',
-
 	templateUrl: './promote-user-dialog.component.html',
 })
 export class PromoteUserDialogComponent implements OnInit {

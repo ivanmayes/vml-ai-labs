@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
 
 import { ConfirmDialogComponent } from './confirm-dialog.component';
@@ -10,8 +9,7 @@ describe('ConfirmDialogComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			declarations: [ConfirmDialogComponent],
-			schemas: [NO_ERRORS_SCHEMA],
+			imports: [ConfirmDialogComponent],
 			providers: [
 				{
 					provide: DynamicDialogRef,

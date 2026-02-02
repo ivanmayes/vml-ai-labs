@@ -8,9 +8,9 @@ import { environment } from '../../../environments/environment';
 
 @Component({
 	selector: 'app-space',
-
 	templateUrl: './space.page.html',
 	styleUrls: ['./space.page.scss'],
+
 	providers: [MessageService],
 })
 export class SpacePage implements OnInit {

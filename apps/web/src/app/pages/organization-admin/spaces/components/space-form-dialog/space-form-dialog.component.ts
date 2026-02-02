@@ -7,7 +7,6 @@ import { SpaceService } from '../../../../../shared/services/space.service';
 
 @Component({
 	selector: 'app-space-form-dialog',
-
 	templateUrl: './space-form-dialog.component.html',
 })
 export class SpaceFormDialogComponent implements OnInit {

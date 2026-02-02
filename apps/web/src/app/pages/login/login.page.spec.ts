@@ -3,8 +3,6 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { of } from 'rxjs';
 
 import { GlobalQuery } from '../../state/global/global.query';
@@ -20,9 +18,7 @@ describe('LoginComponent', () => {
 
 	beforeEach(waitForAsync(() => {
 		TestBed.configureTestingModule({
-			declarations: [LoginComponent],
-			imports: [CommonModule],
-			schemas: [NO_ERRORS_SCHEMA],
+			imports: [LoginComponent],
 			providers: [
 				provideRouter([]),
 				provideHttpClient(),

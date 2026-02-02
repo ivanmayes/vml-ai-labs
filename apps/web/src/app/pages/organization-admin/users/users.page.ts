@@ -13,9 +13,9 @@ import { PromoteUserDialogComponent } from './components/promote-user-dialog/pro
 
 @Component({
 	selector: 'app-users',
-
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
+
 	providers: [ConfirmationService],
 })
 export class UsersPage implements OnInit, OnDestroy {

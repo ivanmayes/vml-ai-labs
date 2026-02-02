@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { DialogService } from 'primeng/dynamicdialog';
 import { of } from 'rxjs';
 
@@ -16,8 +15,7 @@ import { WppOpenService } from './_core/services/wpp-open/wpp-open.service';
 describe('AppComponent', () => {
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			declarations: [AppComponent],
-			schemas: [NO_ERRORS_SCHEMA],
+			imports: [AppComponent],
 			providers: [
 				provideRouter([]),
 				provideHttpClient(),

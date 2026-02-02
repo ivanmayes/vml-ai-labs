@@ -13,9 +13,9 @@ import { SpaceFormDialogComponent } from './components/space-form-dialog/space-f
 
 @Component({
 	selector: 'app-spaces',
-
 	templateUrl: './spaces.page.html',
 	styleUrls: ['./spaces.page.scss'],
+
 	providers: [ConfirmationService],
 })
 export class SpacesPage implements OnInit, OnDestroy {

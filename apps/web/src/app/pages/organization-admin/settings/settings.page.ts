@@ -6,7 +6,6 @@ import { environment } from '../../../../environments/environment';
 
 @Component({
 	selector: 'app-settings',
-
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],
 })

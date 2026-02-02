@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 
 @Component({
 	selector: 'app-organization-admin',
-
 	templateUrl: './organization-admin.page.html',
 	styleUrls: ['./organization-admin.page.scss'],
 })

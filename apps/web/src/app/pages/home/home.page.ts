@@ -1,7 +1,9 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MessageService } from 'primeng/api';
 
 import { fade } from '../../_core/utils/animations.utils';
+import { PrimeNgModule } from '../../shared/primeng.module';
 
 /**
  * Feature interface for the features overview section
@@ -24,10 +26,10 @@ interface Feature {
  */
 @Component({
 	selector: 'app-home',
-	standalone: false,
 	templateUrl: './home.page.html',
 	styleUrls: ['./home.page.scss'],
 	animations: [fade('fade', 400, '-50%')],
+	imports: [CommonModule, PrimeNgModule],
 })
 export class HomeComponent {
 	@ViewChild('setupSection') setupSection!: ElementRef;
