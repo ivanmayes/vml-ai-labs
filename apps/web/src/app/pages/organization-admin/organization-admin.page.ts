@@ -1,9 +1,14 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+
+import { PrimeNgModule } from '../../shared/primeng.module';
 
 @Component({
 	selector: 'app-organization-admin',
 	templateUrl: './organization-admin.page.html',
 	styleUrls: ['./organization-admin.page.scss'],
+	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class OrganizationAdminPage {
 	sidebarVisible = true;

@@ -1,13 +1,16 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { SpaceService } from '../../../shared/services/space.service';
 import { Space } from '../../../shared/models/space.model';
 import { environment } from '../../../../environments/environment';
+import { PrimeNgModule } from '../../../shared/primeng.module';
 
 import { SpaceFormDialogComponent } from './components/space-form-dialog/space-form-dialog.component';
 
@@ -15,7 +18,7 @@ import { SpaceFormDialogComponent } from './components/space-form-dialog/space-f
 	selector: 'app-spaces',
 	templateUrl: './spaces.page.html',
 	styleUrls: ['./spaces.page.scss'],
-
+	imports: [CommonModule, PrimeNgModule, ConfirmDialogModule],
 	providers: [ConfirmationService],
 })
 export class SpacesPage implements OnInit, OnDestroy {

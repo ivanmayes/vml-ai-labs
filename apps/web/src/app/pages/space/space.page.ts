@@ -1,16 +1,18 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
 import { SpaceService } from '../../shared/services/space.service';
 import { Space } from '../../shared/models/space.model';
 import { environment } from '../../../environments/environment';
+import { PrimeNgModule } from '../../shared/primeng.module';
 
 @Component({
 	selector: 'app-space',
 	templateUrl: './space.page.html',
 	styleUrls: ['./space.page.scss'],
-
+	imports: [CommonModule, PrimeNgModule],
 	providers: [MessageService],
 })
 export class SpacePage implements OnInit {

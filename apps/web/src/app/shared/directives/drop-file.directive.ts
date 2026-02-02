@@ -12,6 +12,7 @@ import {
  */
 @Directive({
 	selector: '[appDropFile]',
+	standalone: true,
 })
 export class DropFileDirective {
 	@Output() filesDropped = new EventEmitter<any>();

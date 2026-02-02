@@ -27,29 +27,31 @@ import { PluckFromArrayPipe } from './pipes/pluck-from-array.pipe';
 import { ShortNumberPipe } from './pipes/short-number.pipe';
 
 @NgModule({
-	declarations: [
-		HeaderComponent,
-		AccountBarComponent,
-		NavigationBarComponent,
-		SidebarComponent,
-		JoinWithPropPipe,
-		ConfirmDialogComponent,
-		FillHeightDirective,
-		DropFileDirective,
-		SecureRequestPipe,
-		SafeUrlPipe,
-		SafeHtmlPipe,
-		EntityFieldMaskPipe,
-		PluckFromArrayPipe,
-		SelectDialogComponent,
-		ShortNumberPipe,
-	],
 	imports: [
+		// Angular modules
 		PrimeNgModule,
 		CommonModule,
 		RouterModule,
 		FormsModule,
 		ReactiveFormsModule,
+		// Standalone components
+		HeaderComponent,
+		AccountBarComponent,
+		NavigationBarComponent,
+		SidebarComponent,
+		ConfirmDialogComponent,
+		SelectDialogComponent,
+		// Standalone pipes
+		JoinWithPropPipe,
+		SecureRequestPipe,
+		SafeUrlPipe,
+		SafeHtmlPipe,
+		EntityFieldMaskPipe,
+		PluckFromArrayPipe,
+		ShortNumberPipe,
+		// Standalone directives
+		FillHeightDirective,
+		DropFileDirective,
 	],
 	exports: [
 		CommonModule,

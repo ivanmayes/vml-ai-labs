@@ -1,14 +1,22 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import {
+	FormBuilder,
+	FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from '@angular/forms';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
 
 import { SpaceRole } from '../../../../../shared/models/space-role.enum';
 import { SpaceUser } from '../../../../../shared/models/space-user.model';
+import { PrimeNgModule } from '../../../../../shared/primeng.module';
 
 @Component({
 	selector: 'app-change-role-dialog',
 	templateUrl: './change-role-dialog.component.html',
 	styleUrls: ['./change-role-dialog.component.scss'],
+	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class ChangeRoleDialogComponent implements OnInit {
 	roleForm: FormGroup;

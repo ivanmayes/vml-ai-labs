@@ -22,8 +22,6 @@ const routes: Routes = [
 		SharedModule,
 		PrimeNgModule,
 		RouterModule.forChild(routes),
-	],
-	declarations: [
 		UsersPage,
 		InviteUserDialogComponent,
 		ChangeRoleDialogComponent,

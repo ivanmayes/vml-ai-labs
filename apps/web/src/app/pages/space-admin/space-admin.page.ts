@@ -1,14 +1,17 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 
 import { SpaceService } from '../../shared/services/space.service';
 import { Space } from '../../shared/models/space.model';
 import { environment } from '../../../environments/environment';
+import { PrimeNgModule } from '../../shared/primeng.module';
 
 @Component({
 	selector: 'app-space-admin',
 	templateUrl: './space-admin.page.html',
 	styleUrls: ['./space-admin.page.scss'],
+	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class SpaceAdminPage implements OnInit {
 	sidebarVisible = true;

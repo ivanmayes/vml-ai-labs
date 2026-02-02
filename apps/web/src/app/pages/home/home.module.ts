@@ -18,7 +18,7 @@ import { HomeComponent } from './home.page';
 				component: HomeComponent,
 			},
 		]),
+		HomeComponent,
 	],
-	declarations: [HomeComponent],
 })
 export class HomePageModule {}

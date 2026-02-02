@@ -20,6 +20,7 @@ import { SelectDialogComponent } from './shared/components/select-dialog/select-
 import { ORG_SETTINGS } from './state/session/session.store';
 import { WppOpenService } from './_core/services/wpp-open/wpp-open.service';
 import { HeaderComponent } from './shared/components/header/header.component';
+import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
 import { PrimeNgModule } from './shared/primeng.module';
 
 interface ApiSetting {
@@ -40,7 +41,13 @@ interface WppOpenLoginResponse {
 	templateUrl: './app.component.html',
 	styleUrls: ['./app.component.scss'],
 	animations: [fade('fade', 500)],
-	imports: [CommonModule, RouterModule, HeaderComponent, PrimeNgModule],
+	imports: [
+		CommonModule,
+		RouterModule,
+		HeaderComponent,
+		SidebarComponent,
+		PrimeNgModule,
+	],
 })
 export class AppComponent implements OnInit {
 	public loaded = false;

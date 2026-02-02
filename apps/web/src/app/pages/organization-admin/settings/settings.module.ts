@@ -15,12 +15,12 @@ const routes: Routes = [
 ];
 
 @NgModule({
-	declarations: [SettingsPage],
 	imports: [
 		CommonModule,
 		SharedModule,
 		PrimeNgModule,
 		RouterModule.forChild(routes),
+		SettingsPage,
 	],
 })
 export class SettingsPageModule {}

@@ -1,17 +1,25 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import {
+	FormBuilder,
+	FormGroup,
+	FormsModule,
+	ReactiveFormsModule,
+	Validators,
+} from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
 import { SpaceService } from '../../../shared/services/space.service';
 import { Space } from '../../../shared/models/space.model';
 import { environment } from '../../../../environments/environment';
+import { PrimeNgModule } from '../../../shared/primeng.module';
 
 @Component({
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],
-
+	imports: [CommonModule, FormsModule, ReactiveFormsModule, PrimeNgModule],
 	providers: [MessageService],
 })
 export class SettingsPage implements OnInit {

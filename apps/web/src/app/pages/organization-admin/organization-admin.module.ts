@@ -13,7 +13,7 @@ import { OrganizationAdminPage } from './organization-admin.page';
 		SharedModule,
 		PrimeNgModule,
 		OrganizationAdminRoutingModule,
+		OrganizationAdminPage,
 	],
-	declarations: [OrganizationAdminPage],
 })
 export class OrganizationAdminModule {}

@@ -23,7 +23,9 @@ import { OktaAuthComponent } from './okta/okta.component';
 				component: LoginComponent,
 			},
 		]),
+		LoginComponent,
+		BasicAuthComponent,
+		OktaAuthComponent,
 	],
-	declarations: [LoginComponent, BasicAuthComponent, OktaAuthComponent],
 })
 export class LoginPageModule {}

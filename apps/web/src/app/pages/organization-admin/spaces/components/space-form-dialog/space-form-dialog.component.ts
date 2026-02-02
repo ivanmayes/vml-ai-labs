@@ -1,13 +1,21 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import {
+	FormBuilder,
+	FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MessageService } from 'primeng/api';
 
 import { SpaceService } from '../../../../../shared/services/space.service';
+import { PrimeNgModule } from '../../../../../shared/primeng.module';
 
 @Component({
 	selector: 'app-space-form-dialog',
 	templateUrl: './space-form-dialog.component.html',
+	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class SpaceFormDialogComponent implements OnInit {
 	form!: FormGroup;

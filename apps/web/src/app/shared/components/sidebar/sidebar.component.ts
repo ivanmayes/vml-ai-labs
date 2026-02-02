@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 import { SessionQuery } from '../../../state/session/session.query';
 import { SessionService } from '../../../state/session/session.service';
@@ -11,6 +12,7 @@ import { SidebarService, NavItem } from '../../services/sidebar.service';
 import type { PublicUser } from '../../../../../../api/src/user/user.entity';
 import { GlobalSettings } from '../../../state/global/global.model';
 import { UserRole } from '../../../../../../api/src/user/user-role.enum';
+import { PrimeNgModule } from '../../primeng.module';
 
 /**
  * Sidebar Component
@@ -27,6 +29,7 @@ import { UserRole } from '../../../../../../api/src/user/user-role.enum';
 	selector: 'app-sidebar',
 	templateUrl: './sidebar.component.html',
 	styleUrls: ['./sidebar.component.scss'],
+	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class SidebarComponent {
 	user$: Observable<PublicUser | undefined>;

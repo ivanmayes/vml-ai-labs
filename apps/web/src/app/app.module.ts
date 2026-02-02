@@ -108,7 +108,6 @@ const WppOpenPreset = definePreset(Lara, {
 });
 
 @NgModule({
-	declarations: [AppComponent],
 	imports: [
 		BrowserModule,
 		AppRoutingModule,
@@ -116,6 +115,7 @@ const WppOpenPreset = definePreset(Lara, {
 		AkitaNgRouterStoreModule,
 		PrimeNgModule,
 		SharedModule,
+		AppComponent,
 	],
 	providers: [
 		Title,

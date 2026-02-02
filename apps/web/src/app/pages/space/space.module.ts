@@ -16,7 +16,6 @@ const routes: Routes = [
 ];
 
 @NgModule({
-	declarations: [SpacePage],
 	imports: [
 		CommonModule,
 		RouterModule.forChild(routes),
@@ -25,6 +24,7 @@ const routes: Routes = [
 		ToastModule,
 		ProgressSpinnerModule,
 		CardModule,
+		SpacePage,
 	],
 })
 export class SpacePageModule {}

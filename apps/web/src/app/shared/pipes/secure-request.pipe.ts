@@ -14,6 +14,7 @@ import { SessionQuery } from '../../state/session/session.query';
  */
 @Pipe({
 	name: 'secure',
+	standalone: true,
 })
 export class SecureRequestPipe implements PipeTransform {
 	constructor(

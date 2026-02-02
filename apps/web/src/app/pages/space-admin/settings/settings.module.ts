@@ -20,7 +20,7 @@ const routes: Routes = [
 		SharedModule,
 		PrimeNgModule,
 		RouterModule.forChild(routes),
+		SettingsPage,
 	],
-	declarations: [SettingsPage],
 })
 export class SettingsPageModule {}

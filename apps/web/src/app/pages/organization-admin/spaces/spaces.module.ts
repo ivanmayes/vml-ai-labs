@@ -25,7 +25,8 @@ import { SpaceFormDialogComponent } from './components/space-form-dialog/space-f
 				component: SpacesPage,
 			},
 		]),
+		SpacesPage,
+		SpaceFormDialogComponent,
 	],
-	declarations: [SpacesPage, SpaceFormDialogComponent],
 })
 export class SpacesPageModule {}

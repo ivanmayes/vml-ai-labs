@@ -13,7 +13,7 @@ import { SpaceAdminPage } from './space-admin.page';
 		SharedModule,
 		PrimeNgModule,
 		SpaceAdminRoutingModule,
+		SpaceAdminPage,
 	],
-	declarations: [SpaceAdminPage],
 })
 export class SpaceAdminPageModule {}

@@ -6,6 +6,7 @@ import { Directive, OnInit, Renderer2, Input, ElementRef } from '@angular/core';
  */
 @Directive({
 	selector: '[appFillHeight]',
+	standalone: true,
 })
 export class FillHeightDirective implements OnInit {
 	@Input() paddingBottom = 0;

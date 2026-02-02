@@ -26,8 +26,6 @@ import { PromoteUserDialogComponent } from './components/promote-user-dialog/pro
 				component: UsersPage,
 			},
 		]),
-	],
-	declarations: [
 		UsersPage,
 		InviteUserDialogComponent,
 		PromoteUserDialogComponent,

@@ -1,13 +1,21 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import {
+	FormBuilder,
+	FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { MessageService } from 'primeng/api';
 
 import { OrganizationAdminService } from '../../../../../shared/services/organization-admin.service';
+import { PrimeNgModule } from '../../../../../shared/primeng.module';
 
 @Component({
 	selector: 'app-promote-user-dialog',
 	templateUrl: './promote-user-dialog.component.html',
+	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class PromoteUserDialogComponent implements OnInit {
 	form!: FormGroup;

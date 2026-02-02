@@ -1,13 +1,17 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 
 import { OrganizationAdminService } from '../../../shared/services/organization-admin.service';
 import { environment } from '../../../../environments/environment';
+import { PrimeNgModule } from '../../../shared/primeng.module';
 
 @Component({
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],
+	imports: [CommonModule, FormsModule, PrimeNgModule],
 })
 export class SettingsPage implements OnInit {
 	loading = false;

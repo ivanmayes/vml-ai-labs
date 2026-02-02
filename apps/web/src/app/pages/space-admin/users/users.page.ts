@@ -1,13 +1,16 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { SpaceUserService } from '../../../shared/services/space-user.service';
 import { SpaceUser } from '../../../shared/models/space-user.model';
 import { SpaceRole } from '../../../shared/models/space-role.enum';
+import { PrimeNgModule } from '../../../shared/primeng.module';
 
 import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
 import { ChangeRoleDialogComponent } from './components/change-role-dialog/change-role-dialog.component';
@@ -16,7 +19,7 @@ import { ChangeRoleDialogComponent } from './components/change-role-dialog/chang
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
-
+	imports: [CommonModule, PrimeNgModule, ConfirmDialogModule],
 	providers: [ConfirmationService, MessageService],
 })
 export class UsersPage implements OnInit, OnDestroy {

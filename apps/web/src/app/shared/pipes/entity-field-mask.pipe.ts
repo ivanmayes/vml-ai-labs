@@ -5,6 +5,7 @@ import { resolveDotNotationPath } from '../../_core/utils/object.utils';
 
 @Pipe({
 	name: 'entityFieldMask',
+	standalone: true,
 })
 export class EntityFieldMaskPipe implements PipeTransform {
 	constructor(private readonly globalQuery: GlobalQuery) {}

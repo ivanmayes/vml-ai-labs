@@ -1,12 +1,15 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { SessionQuery } from '../../../state/session/session.query';
 import { OrganizationAdminService } from '../../../shared/services/organization-admin.service';
 import { environment } from '../../../../environments/environment';
+import { PrimeNgModule } from '../../../shared/primeng.module';
 
 import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
 import { PromoteUserDialogComponent } from './components/promote-user-dialog/promote-user-dialog.component';
@@ -15,7 +18,7 @@ import { PromoteUserDialogComponent } from './components/promote-user-dialog/pro
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
-
+	imports: [CommonModule, PrimeNgModule, ConfirmDialogModule],
 	providers: [ConfirmationService],
 })
 export class UsersPage implements OnInit, OnDestroy {
