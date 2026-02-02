@@ -1,26 +1,30 @@
-import { Component, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
 import { SpaceService } from '../../shared/services/space.service';
 import { Space } from '../../shared/models/space.model';
-import { environment } from '../../../environments/environment';
 import { PrimeNgModule } from '../../shared/primeng.module';
 
 @Component({
 	selector: 'app-space',
 	templateUrl: './space.page.html',
 	styleUrls: ['./space.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, PrimeNgModule],
 	providers: [MessageService],
 })
 export class SpacePage implements OnInit {
 	spaceId!: string;
-	space: Space | null = null;
-	loading = true;
-	organizationId: string = environment.organizationId;
-	accessDenied = false;
+	space = signal<Space | null>(null);
+	loading = signal(true);
+	accessDenied = signal(false);
 
 	constructor(
 		private route: ActivatedRoute,
@@ -38,19 +42,19 @@ export class SpacePage implements OnInit {
 	}
 
 	loadSpace(): void {
-		this.loading = true;
-		this.accessDenied = false;
+		this.loading.set(true);
+		this.accessDenied.set(false);
 
 		this.spaceService.getSpace(this.spaceId).subscribe({
 			next: (response) => {
-				this.space = response.data;
-				this.loading = false;
+				this.space.set(response.data);
+				this.loading.set(false);
 			},
 			error: (error) => {
 				console.error('Error loading space:', error);
 
 				if (error.status === 403) {
-					this.accessDenied = true;
+					this.accessDenied.set(true);
 				} else {
 					this.messageService.add({
 						severity: 'error',
@@ -60,7 +64,7 @@ export class SpacePage implements OnInit {
 					});
 				}
 
-				this.loading = false;
+				this.loading.set(false);
 			},
 		});
 	}

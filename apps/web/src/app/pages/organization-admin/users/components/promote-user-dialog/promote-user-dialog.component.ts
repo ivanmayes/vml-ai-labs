@@ -1,4 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	FormBuilder,
@@ -15,11 +20,12 @@ import { PrimeNgModule } from '../../../../../shared/primeng.module';
 @Component({
 	selector: 'app-promote-user-dialog',
 	templateUrl: './promote-user-dialog.component.html',
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class PromoteUserDialogComponent implements OnInit {
 	form!: FormGroup;
-	loading = false;
+	loading = signal(false);
 	availableRoles: any[] = [];
 	user: any;
 
@@ -69,7 +75,7 @@ export class PromoteUserDialogComponent implements OnInit {
 			return;
 		}
 
-		this.loading = true;
+		this.loading.set(true);
 		const formValue = this.form.value;
 		const organizationId = this.config.data?.organizationId;
 
@@ -80,7 +86,7 @@ export class PromoteUserDialogComponent implements OnInit {
 			})
 			.subscribe({
 				next: () => {
-					this.loading = false;
+					this.loading.set(false);
 					this.ref.close(true);
 				},
 				error: (error) => {
@@ -93,7 +99,7 @@ export class PromoteUserDialogComponent implements OnInit {
 							'Failed to update user role',
 						life: 3000,
 					});
-					this.loading = false;
+					this.loading.set(false);
 				},
 			});
 	}

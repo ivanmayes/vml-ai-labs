@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	FormControl,
@@ -25,6 +25,7 @@ export interface SelectDialogData {
 	selector: 'app-select-dialog',
 	templateUrl: './select-dialog.component.html',
 	styleUrls: ['./select-dialog.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class SelectDialogComponent {

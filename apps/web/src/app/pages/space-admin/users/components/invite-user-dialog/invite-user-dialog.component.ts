@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	FormBuilder,
@@ -15,6 +15,7 @@ import { PrimeNgModule } from '../../../../../shared/primeng.module';
 	selector: 'app-invite-user-dialog',
 	templateUrl: './invite-user-dialog.component.html',
 	styleUrls: ['./invite-user-dialog.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class InviteUserDialogComponent {
@@ -23,7 +24,7 @@ export class InviteUserDialogComponent {
 		{ label: 'Admin', value: SpaceRole.SpaceAdmin },
 		{ label: 'User', value: SpaceRole.SpaceUser },
 	];
-	loading = false;
+	loading = signal(false);
 
 	constructor(
 		private fb: FormBuilder,

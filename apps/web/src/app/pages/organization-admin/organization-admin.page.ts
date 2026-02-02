@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
@@ -8,12 +8,13 @@ import { PrimeNgModule } from '../../shared/primeng.module';
 	selector: 'app-organization-admin',
 	templateUrl: './organization-admin.page.html',
 	styleUrls: ['./organization-admin.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class OrganizationAdminPage {
-	sidebarVisible = true;
+	sidebarVisible = signal(true);
 
-	menuItems = [
+	readonly menuItems = [
 		{
 			label: 'Users',
 			icon: 'pi pi-users',
@@ -32,6 +33,6 @@ export class OrganizationAdminPage {
 	];
 
 	toggleSidebar(): void {
-		this.sidebarVisible = !this.sidebarVisible;
+		this.sidebarVisible.update((v) => !v);
 	}
 }

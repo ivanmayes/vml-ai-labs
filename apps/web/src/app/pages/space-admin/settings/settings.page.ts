@@ -1,4 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	FormBuilder,
@@ -19,6 +24,7 @@ import { PrimeNgModule } from '../../../shared/primeng.module';
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, FormsModule, ReactiveFormsModule, PrimeNgModule],
 	providers: [MessageService],
 })
@@ -26,10 +32,10 @@ export class SettingsPage implements OnInit {
 	settingsForm: FormGroup;
 	spaceId!: string;
 	organizationId: string = environment.organizationId;
-	loading = false;
-	saving = false;
-	tenantIds: string[] = [];
-	newTenantId = '';
+	loading = signal(false);
+	saving = signal(false);
+	tenantIds = signal<string[]>([]);
+	newTenantId = signal('');
 
 	constructor(
 		private fb: FormBuilder,
@@ -84,7 +90,7 @@ export class SettingsPage implements OnInit {
 			return;
 		}
 
-		this.loading = true;
+		this.loading.set(true);
 
 		// For now, we'll use the regular getSpaces endpoint to get the space data
 		// In production, you might want a dedicated getSpace(id) endpoint
@@ -102,8 +108,9 @@ export class SettingsPage implements OnInit {
 								: true,
 						primaryColor: space.settings?.primaryColor || '#000000',
 					});
-					this.tenantIds =
-						(space as any).approvedWPPOpenTenantIds || [];
+					this.tenantIds.set(
+						(space as any).approvedWPPOpenTenantIds || [],
+					);
 					// Mark form as pristine after loading initial values
 					this.settingsForm.markAsPristine();
 				} else {
@@ -115,7 +122,7 @@ export class SettingsPage implements OnInit {
 						life: 3000,
 					});
 				}
-				this.loading = false;
+				this.loading.set(false);
 			},
 			error: (error) => {
 				console.error('Error loading space settings:', error);
@@ -125,7 +132,7 @@ export class SettingsPage implements OnInit {
 					detail: 'Failed to load space settings',
 					life: 3000,
 				});
-				this.loading = false;
+				this.loading.set(false);
 			},
 		});
 	}
@@ -136,7 +143,7 @@ export class SettingsPage implements OnInit {
 			return;
 		}
 
-		this.saving = true;
+		this.saving.set(true);
 		const formValue = this.settingsForm.value;
 
 		const updateDto = {
@@ -145,7 +152,7 @@ export class SettingsPage implements OnInit {
 			settings: {
 				primaryColor: formValue.primaryColor,
 			},
-			approvedWPPOpenTenantIds: this.tenantIds,
+			approvedWPPOpenTenantIds: this.tenantIds(),
 		};
 
 		this.spaceService
@@ -158,7 +165,7 @@ export class SettingsPage implements OnInit {
 						detail: 'Space settings updated successfully',
 						life: 3000,
 					});
-					this.saving = false;
+					this.saving.set(false);
 					// Mark form as pristine after successful save
 					this.settingsForm.markAsPristine();
 				},
@@ -170,24 +177,33 @@ export class SettingsPage implements OnInit {
 						detail: 'Failed to update space settings',
 						life: 3000,
 					});
-					this.saving = false;
+					this.saving.set(false);
 				},
 			});
 	}
 
 	addTenantId(): void {
-		if (this.newTenantId && this.newTenantId.trim()) {
-			const trimmedId = this.newTenantId.trim();
-			if (!this.tenantIds.includes(trimmedId)) {
-				this.tenantIds.push(trimmedId);
-				this.newTenantId = '';
+		const currentNewId = this.newTenantId();
+		if (currentNewId && currentNewId.trim()) {
+			const trimmedId = currentNewId.trim();
+			const currentIds = this.tenantIds();
+			if (!currentIds.includes(trimmedId)) {
+				this.tenantIds.set([...currentIds, trimmedId]);
+				this.newTenantId.set('');
 				this.settingsForm.markAsDirty();
 			}
 		}
 	}
 
 	removeTenantId(index: number): void {
-		this.tenantIds.splice(index, 1);
+		const currentIds = [...this.tenantIds()];
+		currentIds.splice(index, 1);
+		this.tenantIds.set(currentIds);
 		this.settingsForm.markAsDirty();
+	}
+
+	// Helper for template two-way binding
+	setNewTenantId(value: string): void {
+		this.newTenantId.set(value);
 	}
 }

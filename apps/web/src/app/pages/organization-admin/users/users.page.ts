@@ -1,4 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	OnDestroy,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -18,19 +24,22 @@ import { PromoteUserDialogComponent } from './components/promote-user-dialog/pro
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, PrimeNgModule, ConfirmDialogModule],
 	providers: [ConfirmationService],
 })
 export class UsersPage implements OnInit, OnDestroy {
-	users: any[] = [];
-	loading = false;
+	// Signals for zoneless
+	users = signal<any[]>([]);
+	loading = signal(false);
+
 	currentUser: any;
 	organizationId!: string;
 	currentSortField = 'email';
 	currentSortOrder = 'asc';
 	currentSearchQuery = '';
 	private searchSubject = new Subject<string>();
-	Array = Array;
+	readonly skeletonRows = Array(5).fill({});
 
 	constructor(
 		private readonly adminService: OrganizationAdminService,
@@ -62,7 +71,7 @@ export class UsersPage implements OnInit, OnDestroy {
 		sortField?: string,
 		sortOrder?: string,
 	): void {
-		this.loading = true;
+		this.loading.set(true);
 
 		// Use provided values or fall back to current state
 		const query =
@@ -74,8 +83,8 @@ export class UsersPage implements OnInit, OnDestroy {
 			.getUsers(this.organizationId, field, order, query)
 			.subscribe({
 				next: (response) => {
-					this.users = response.data || [];
-					this.loading = false;
+					this.users.set(response.data || []);
+					this.loading.set(false);
 				},
 				error: (error) => {
 					console.error('Error loading users:', error);
@@ -85,7 +94,7 @@ export class UsersPage implements OnInit, OnDestroy {
 						detail: 'Failed to load users',
 						life: 3000,
 					});
-					this.loading = false;
+					this.loading.set(false);
 				},
 			});
 	}

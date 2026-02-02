@@ -1,4 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -11,15 +16,16 @@ import { PrimeNgModule } from '../../../shared/primeng.module';
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, FormsModule, PrimeNgModule],
 })
 export class SettingsPage implements OnInit {
-	loading = false;
-	saving = false;
+	loading = signal(false);
+	saving = signal(false);
 	organizationId!: string;
-	organizationName = '';
-	originalOrganizationName = '';
-	redirectToSpace = false;
+	organizationName = signal('');
+	originalOrganizationName = signal('');
+	redirectToSpace = signal(false);
 
 	constructor(
 		private readonly organizationService: OrganizationAdminService,
@@ -34,16 +40,19 @@ export class SettingsPage implements OnInit {
 	}
 
 	loadSettings(): void {
-		this.loading = true;
+		this.loading.set(true);
 		this.organizationService
 			.getOrganization(this.organizationId)
 			.subscribe({
 				next: (response) => {
-					this.organizationName = response.data?.name || '';
-					this.originalOrganizationName = response.data?.name || '';
-					this.redirectToSpace =
-						response.data?.redirectToSpace || false;
-					this.loading = false;
+					this.organizationName.set(response.data?.name || '');
+					this.originalOrganizationName.set(
+						response.data?.name || '',
+					);
+					this.redirectToSpace.set(
+						response.data?.redirectToSpace || false,
+					);
+					this.loading.set(false);
 				},
 				error: (error) => {
 					console.error('Error loading settings:', error);
@@ -53,27 +62,27 @@ export class SettingsPage implements OnInit {
 						detail: 'Failed to load organization settings',
 						life: 3000,
 					});
-					this.loading = false;
+					this.loading.set(false);
 				},
 			});
 	}
 
 	onOrganizationNameChange(): void {
-		this.saving = true;
+		this.saving.set(true);
 		this.organizationService
 			.updateOrganization(this.organizationId, {
-				name: this.organizationName,
+				name: this.organizationName(),
 			})
 			.subscribe({
 				next: () => {
-					this.originalOrganizationName = this.organizationName;
+					this.originalOrganizationName.set(this.organizationName());
 					this.messageService.add({
 						severity: 'success',
 						summary: 'Success',
 						detail: 'Organization name updated successfully',
 						life: 3000,
 					});
-					this.saving = false;
+					this.saving.set(false);
 				},
 				error: (error) => {
 					console.error('Error updating organization name:', error);
@@ -83,16 +92,16 @@ export class SettingsPage implements OnInit {
 						detail: 'Failed to update organization name',
 						life: 3000,
 					});
-					this.saving = false;
+					this.saving.set(false);
 				},
 			});
 	}
 
 	onRedirectToSpaceChange(): void {
-		this.saving = true;
+		this.saving.set(true);
 		this.organizationService
 			.updateOrganization(this.organizationId, {
-				redirectToSpace: this.redirectToSpace,
+				redirectToSpace: this.redirectToSpace(),
 			})
 			.subscribe({
 				next: () => {
@@ -102,7 +111,7 @@ export class SettingsPage implements OnInit {
 						detail: 'Settings updated successfully',
 						life: 3000,
 					});
-					this.saving = false;
+					this.saving.set(false);
 				},
 				error: (error) => {
 					console.error('Error updating settings:', error);
@@ -112,8 +121,17 @@ export class SettingsPage implements OnInit {
 						detail: 'Failed to update settings',
 						life: 3000,
 					});
-					this.saving = false;
+					this.saving.set(false);
 				},
 			});
+	}
+
+	// Helper methods for template two-way binding with signals
+	setOrganizationName(value: string): void {
+		this.organizationName.set(value);
+	}
+
+	setRedirectToSpace(value: boolean): void {
+		this.redirectToSpace.set(value);
 	}
 }

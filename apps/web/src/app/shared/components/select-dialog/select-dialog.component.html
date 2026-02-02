@@ -1,7 +1,9 @@
 <div class="dialog-content">
 	<form [formGroup]="selection">
 		<div class="p-field">
-			<label for="choice">{{ data.placeholder || 'Make a selection' }}</label>
+			<label for="choice">{{
+				data.placeholder || "Make a selection"
+			}}</label>
 			<p-select
 				id="choice"
 				name="choice"
@@ -17,7 +19,13 @@
 </div>
 
 <div class="dialog-actions">
-	<p-button label="Cancel" severity="secondary" (onClick)="cancel()" *ngIf="data.canCancel"></p-button>
+	@if (data.canCancel) {
+		<p-button
+			label="Cancel"
+			severity="secondary"
+			(onClick)="cancel()"
+		></p-button>
+	}
 	<p-button
 		label="Select"
 		[disabled]="selection.invalid"

@@ -1,4 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 
@@ -7,19 +12,26 @@ import { Space } from '../../shared/models/space.model';
 import { environment } from '../../../environments/environment';
 import { PrimeNgModule } from '../../shared/primeng.module';
 
+interface MenuItem {
+	label: string;
+	icon: string;
+	routerLink: string;
+}
+
 @Component({
 	selector: 'app-space-admin',
 	templateUrl: './space-admin.page.html',
 	styleUrls: ['./space-admin.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class SpaceAdminPage implements OnInit {
-	sidebarVisible = true;
+	sidebarVisible = signal(true);
 	spaceId!: string;
-	spaceName = 'Space Admin';
+	spaceName = signal('Space Admin');
 	organizationId: string = environment.organizationId;
 
-	menuItems = [
+	menuItems = signal<MenuItem[]>([
 		{
 			label: 'Settings',
 			icon: 'pi pi-cog',
@@ -30,7 +42,7 @@ export class SpaceAdminPage implements OnInit {
 			icon: 'pi pi-users',
 			routerLink: '',
 		},
-	];
+	]);
 
 	constructor(
 		private route: ActivatedRoute,
@@ -42,7 +54,7 @@ export class SpaceAdminPage implements OnInit {
 		this.route.params.subscribe((params) => {
 			this.spaceId = params['id'];
 			// Update menu items with the correct routes
-			this.menuItems = [
+			this.menuItems.set([
 				{
 					label: 'Settings',
 					icon: 'pi pi-cog',
@@ -53,7 +65,7 @@ export class SpaceAdminPage implements OnInit {
 					icon: 'pi pi-users',
 					routerLink: `/space/${this.spaceId}/admin/users`,
 				},
-			];
+			]);
 
 			// Load space details
 			this.loadSpaceName();
@@ -67,7 +79,7 @@ export class SpaceAdminPage implements OnInit {
 					(s: Space) => s.id === this.spaceId,
 				);
 				if (space) {
-					this.spaceName = space.name;
+					this.spaceName.set(space.name);
 				}
 			},
 			error: (error) => {
@@ -77,6 +89,6 @@ export class SpaceAdminPage implements OnInit {
 	}
 
 	toggleSidebar(): void {
-		this.sidebarVisible = !this.sidebarVisible;
+		this.sidebarVisible.update((v) => !v);
 	}
 }

@@ -1,5 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, computed } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Query, toBoolean } from '@datorama/akita';
+
+import { UserRole } from '../../shared/models/user-role.enum';
 
 import { SessionStore, getSession } from './session.store';
 import { SessionState } from './session.model';
@@ -8,8 +11,22 @@ import { SessionState } from './session.model';
 	providedIn: 'root',
 })
 export class SessionQuery extends Query<SessionState> {
+	// Observable selectors (keep for backward compatibility)
 	isLoggedIn$ = this.select('isLoggedIn');
 	user$ = this.select((state) => state.user);
+
+	// Signal-based selectors for zoneless
+	readonly user = toSignal(this.select('user'));
+	readonly token = toSignal(this.select('token'));
+	readonly isLoggedInSignal = toSignal(this.select('isLoggedIn'));
+	readonly loading = toSignal(this.selectLoading());
+
+	// Computed signals
+	readonly isAdmin = computed(() => {
+		const user = this.user();
+		const role = user?.role;
+		return role === UserRole.Admin || role === UserRole.SuperAdmin;
+	});
 
 	constructor(protected override store: SessionStore) {
 		super(store);

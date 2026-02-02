@@ -1,17 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MenuItem } from 'primeng/api';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { Router, RouterModule } from '@angular/router';
 
-import { GlobalSettings } from '../../../../state/global/global.model';
 import { GlobalQuery } from '../../../../state/global/global.query';
 import { SessionQuery } from '../../../../state/session/session.query';
 import { SessionService } from '../../../../state/session/session.service';
 import { environment } from '../../../../../environments/environment';
-import type { PublicUser } from '../../../../../../../api/src/user/user.entity';
-import { UserRole } from '../../../../../../../api/src/user/user-role.enum';
 import { ThemeService } from '../../../services/theme.service';
 import { PrimeNgModule } from '../../../primeng.module';
 
@@ -23,14 +18,16 @@ import { PrimeNgModule } from '../../../primeng.module';
 	selector: 'app-account-bar',
 	templateUrl: './account-bar.component.html',
 	styleUrls: ['./account-bar.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class AccountBarComponent implements OnInit {
-	public settings$: Observable<GlobalSettings | undefined>;
-	public user$: Observable<PublicUser | undefined>;
-	public isAdmin$: Observable<boolean>;
-	public accountMenuItems!: MenuItem[];
+	// Signal selectors
+	settings = this.globalQuery.settings;
+	user = this.sessionQuery.user;
+	isAdmin = this.sessionQuery.isAdmin;
 
+	public accountMenuItems!: MenuItem[];
 	public production = environment.production;
 
 	constructor(
@@ -39,17 +36,7 @@ export class AccountBarComponent implements OnInit {
 		private readonly sessionService: SessionService,
 		private readonly router: Router,
 		public readonly themeService: ThemeService,
-	) {
-		this.settings$ = this.globalQuery.select('settings');
-		this.user$ = this.sessionQuery.select('user');
-		this.isAdmin$ = this.user$.pipe(
-			map(
-				(user) =>
-					user?.role === UserRole.Admin ||
-					user?.role === UserRole.SuperAdmin,
-			),
-		);
-	}
+	) {}
 
 	ngOnInit(): void {
 		this.accountMenuItems = [

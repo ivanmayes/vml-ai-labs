@@ -1,4 +1,11 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnDestroy,
+	OnInit,
+	signal,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import {
 	FormBuilder,
@@ -8,10 +15,8 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { OktaAuth } from '@okta/okta-auth-js';
-import { Observable } from 'rxjs';
 import { take } from 'rxjs/operators';
 
-import { GlobalSettings } from '../../state/global/global.model';
 import { GlobalQuery } from '../../state/global/global.query';
 import { GlobalService } from '../../state/global/global.service';
 import { VerifyResponse } from '../../state/session/session.model';
@@ -46,6 +51,7 @@ import { OktaAuthComponent } from './okta/okta.component';
 	selector: 'app-login',
 	templateUrl: './login.page.html',
 	styleUrls: ['./login.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	animations: [fade('fade', 400, '-50%')],
 	imports: [
 		CommonModule,
@@ -57,25 +63,27 @@ import { OktaAuthComponent } from './okta/okta.component';
 	],
 })
 export class LoginComponent implements OnInit, OnDestroy {
-	// Observables
-	public siteSettings$: Observable<GlobalSettings | undefined>;
-	public loading$: Observable<boolean>;
+	// Signal-based state from queries
+	readonly siteSettings = toSignal(this.globalQuery.select('settings'));
+	readonly loading = toSignal(this.sessionQuery.selectLoading(), {
+		initialValue: false,
+	});
 
 	// Forms
 	public emailForm: FormGroup;
 	public otpForm: FormGroup;
 
-	// State management
-	public state: 'enter-email' | 'basic' | 'okta' = 'enter-email';
-	public email!: string;
-	public authConfig!: VerifyResponse;
+	// State management (signals)
+	state = signal<'enter-email' | 'basic' | 'okta'>('enter-email');
+	email = signal('');
+	authConfig = signal<VerifyResponse | null>(null);
 
-	// Error handling
-	public emailError: any;
-	public otpError = false;
-	public settingsError!: string;
-	public resendSuccess = false;
-	public isSubmitting = false;
+	// Error handling (signals)
+	emailError = signal<any>(undefined);
+	otpError = signal(false);
+	settingsError = signal<string | null>(null);
+	resendSuccess = signal(false);
+	isSubmitting = signal(false);
 
 	// Configuration
 	public exclusiveServer = environment.exclusive;
@@ -89,9 +97,6 @@ export class LoginComponent implements OnInit, OnDestroy {
 		private readonly router: Router,
 		private readonly activatedRoute: ActivatedRoute,
 	) {
-		this.siteSettings$ = this.globalQuery.select('settings');
-		this.loading$ = this.sessionQuery.selectLoading();
-
 		// Initialize email form with validation
 		this.emailForm = this.formBuilder.group({
 			email: ['', [Validators.required, Validators.email]],
@@ -130,7 +135,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 				this.globalService.setTitle('Login');
 			},
 			(err) => {
-				this.settingsError = err.message;
+				this.settingsError.set(err.message);
 			},
 		);
 
@@ -170,7 +175,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 	 */
 	public submit() {
 		// Reset error state
-		this.emailError = undefined;
+		this.emailError.set(undefined);
 
 		// Prevent submission if form is invalid
 		if (this.emailForm.invalid) {
@@ -179,27 +184,28 @@ export class LoginComponent implements OnInit, OnDestroy {
 		}
 
 		// Get email value from form
-		this.email = this.emailForm.get('email')?.value?.toLowerCase();
+		const emailValue = this.emailForm.get('email')?.value?.toLowerCase();
+		this.email.set(emailValue);
 
 		// Request verification code or SSO redirect from API
-		this.sessionService.requestCode(this.email).subscribe(
+		this.sessionService.requestCode(emailValue).subscribe(
 			(response) => {
-				this.authConfig = response;
+				this.authConfig.set(response);
 
 				// Route to appropriate auth strategy
 				if (response?.data?.strategy === 'okta') {
 					// Redirect to Okta SSO login
-					this.oktaLoginRedirect(this.authConfig);
+					this.oktaLoginRedirect(response);
 				} else if (response?.data?.strategy === 'saml2.0') {
 					// Redirect to SAML SSO provider
 					window.location.href =
 						response?.data?.authenticationUrl ?? '';
 				} else {
 					// Show basic auth OTP verification
-					this.state = response?.data?.strategy as any;
+					this.state.set(response?.data?.strategy as any);
 					// Reset OTP form for new code entry
 					this.otpForm.reset();
-					this.otpError = false;
+					this.otpError.set(false);
 				}
 			},
 			(err) => this.handleError(err?.error?.statusCode),
@@ -213,32 +219,32 @@ export class LoginComponent implements OnInit, OnDestroy {
 	 */
 	public activateCode() {
 		// Reset error state
-		this.otpError = false;
+		this.otpError.set(false);
 
 		// Prevent submission if form is invalid or already loading
-		if (this.otpForm.invalid || this.isSubmitting) {
+		if (this.otpForm.invalid || this.isSubmitting()) {
 			return;
 		}
 
-		this.isSubmitting = true;
+		this.isSubmitting.set(true);
 
 		// Get OTP code from form
 		const code = this.otpForm.get('code')?.value;
 
 		// Submit code to API for verification
-		this.sessionService.activateEmail(this.email, code).subscribe(
+		this.sessionService.activateEmail(this.email(), code).subscribe(
 			() => {
 				// Success - proceed to logged in state
-				this.isSubmitting = false;
+				this.isSubmitting.set(false);
 				this.loggedIn();
 			},
 			(_err) => {
 				// Show error and allow retry
-				this.isSubmitting = false;
-				this.otpError = true;
+				this.isSubmitting.set(false);
+				this.otpError.set(true);
 				this.sessionService.setLoading(false);
 				// Clear error after 4 seconds for cleaner UX
-				setTimeout(() => (this.otpError = false), 4000);
+				setTimeout(() => this.otpError.set(false), 4000);
 				// Reset form to allow new code entry
 				this.otpForm.patchValue({ code: '' });
 			},
@@ -251,25 +257,25 @@ export class LoginComponent implements OnInit, OnDestroy {
 	 */
 	public resendCode() {
 		// Reset success state
-		this.resendSuccess = false;
-		this.otpError = false;
+		this.resendSuccess.set(false);
+		this.otpError.set(false);
 
 		// Request new code
-		this.sessionService.requestCode(this.email).subscribe(
+		this.sessionService.requestCode(this.email()).subscribe(
 			(response) => {
 				// Update auth config with new token (for dev mode display)
-				this.authConfig = response;
+				this.authConfig.set(response);
 				// Show success feedback
-				this.resendSuccess = true;
+				this.resendSuccess.set(true);
 				// Hide success message after 3 seconds
-				setTimeout(() => (this.resendSuccess = false), 3000);
+				setTimeout(() => this.resendSuccess.set(false), 3000);
 				// Reset OTP form for new code entry
 				this.otpForm.reset();
 			},
 			(_err) => {
 				// Show error if resend fails
-				this.otpError = true;
-				setTimeout(() => (this.otpError = false), 4000);
+				this.otpError.set(true);
+				setTimeout(() => this.otpError.set(false), 4000);
 			},
 		);
 	}
@@ -380,9 +386,9 @@ export class LoginComponent implements OnInit, OnDestroy {
 	 * @param err Error code from API
 	 */
 	public async handleError(err: string) {
-		this.emailError = err;
+		this.emailError.set(err);
 		this.sessionService.setLoading(false);
 		// Auto-dismiss error after 4 seconds
-		setTimeout(() => (this.emailError = undefined), 4000);
+		setTimeout(() => this.emailError.set(undefined), 4000);
 	}
 }

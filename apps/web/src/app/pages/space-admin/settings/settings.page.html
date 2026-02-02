@@ -5,7 +5,8 @@
 		<h1>Space Settings</h1>
 	</div>
 
-	<div class="settings-content" *ngIf="!loading">
+	@if (!loading()) {
+	<div class="settings-content">
 		<p-card>
 			<form [formGroup]="settingsForm" (ngSubmit)="onSave()">
 				<div class="form-grid">
@@ -17,15 +18,13 @@
 							id="name"
 							formControlName="name"
 							placeholder="Enter space name"
-							[disabled]="loading || saving"
+							[disabled]="loading() || saving()"
 							class="w-full"
 						/>
-						<small
-							*ngIf="settingsForm.get('name')?.invalid && settingsForm.get('name')?.touched"
-							class="p-error"
-						>
-							Space name is required.
-						</small>
+						@if (settingsForm.get('name')?.invalid &&
+						settingsForm.get('name')?.touched) {
+						<small class="p-error"> Space name is required. </small>
+						}
 					</div>
 
 					<!-- Public/Private Toggle -->
@@ -35,17 +34,17 @@
 							<p-toggleSwitch
 								id="isPublic"
 								formControlName="isPublic"
-								[disabled]="loading || saving"
+								[disabled]="loading() || saving()"
 							></p-toggleSwitch>
 							<span class="ml-2">
-								{{ settingsForm.get('isPublic')?.value ? 'Public' : 'Private' }}
+								{{ settingsForm.get('isPublic')?.value ?
+								'Public' : 'Private' }}
 							</span>
 						</div>
 						<small class="help-text">
-							{{ settingsForm.get('isPublic')?.value
-								? 'Anyone can view this space'
-								: 'Only invited users can access this space'
-							}}
+							{{ settingsForm.get('isPublic')?.value ? 'Anyone can
+							view this space' : 'Only invited users can access
+							this space' }}
 						</small>
 					</div>
 
@@ -57,7 +56,7 @@
 								[ngModel]="settingsForm.get('primaryColor')?.value"
 								(ngModelChange)="onColorChange($event)"
 								[ngModelOptions]="{standalone: true}"
-								[disabled]="loading || saving"
+								[disabled]="loading() || saving()"
 								format="hex"
 							></p-colorPicker>
 							<input
@@ -65,38 +64,43 @@
 								id="primaryColor"
 								formControlName="primaryColor"
 								placeholder="#000000"
-								[disabled]="loading || saving"
+								[disabled]="loading() || saving()"
 								class="flex-1"
 							/>
 						</div>
-						<small
-							*ngIf="settingsForm.get('primaryColor')?.invalid && settingsForm.get('primaryColor')?.touched"
-							class="p-error"
-						>
+						@if (settingsForm.get('primaryColor')?.invalid &&
+						settingsForm.get('primaryColor')?.touched) {
+						<small class="p-error">
 							Please enter a valid hex color code (e.g., #FF5733).
 						</small>
+						}
 					</div>
 
 					<!-- Approved WPP Open Tenant IDs -->
 					<div class="form-field">
 						<label for="tenantIds">WPP Open Tenant IDs</label>
 						<div class="tenant-ids-container">
-							<div class="tenant-ids-list" *ngIf="tenantIds.length > 0">
+							@if (tenantIds().length > 0) {
+							<div class="tenant-ids-list">
+								@for (tenantId of tenantIds(); track tenantId;
+								let i = $index) {
 								<p-chip
-									*ngFor="let tenantId of tenantIds; let i = index"
 									[label]="tenantId"
-									[removable]="!loading && !saving"
+									[removable]="!loading() && !saving()"
 									(onRemove)="removeTenantId(i)"
 									styleClass="mr-2 mb-2"
 								></p-chip>
+								}
 							</div>
+							}
 							<div class="flex align-items-center gap-2 mt-2">
 								<input
 									pInputText
-									[(ngModel)]="newTenantId"
+									[ngModel]="newTenantId()"
+									(ngModelChange)="setNewTenantId($event)"
 									[ngModelOptions]="{standalone: true}"
 									placeholder="Enter tenant ID"
-									[disabled]="loading || saving"
+									[disabled]="loading() || saving()"
 									(keyup.enter)="addTenantId()"
 									class="flex-1"
 								/>
@@ -104,13 +108,14 @@
 									label="Add"
 									icon="pi pi-plus"
 									(onClick)="addTenantId()"
-									[disabled]="loading || saving || !newTenantId"
+									[disabled]="loading() || saving() || !newTenantId()"
 									size="small"
 								></p-button>
 							</div>
 						</div>
 						<small class="help-text">
-							Enter WPP Open tenant/workspace IDs that are authorized to access this space.
+							Enter WPP Open tenant/workspace IDs that are
+							authorized to access this space.
 						</small>
 					</div>
 				</div>
@@ -121,55 +126,95 @@
 						label="Save Changes"
 						icon="pi pi-check"
 						type="submit"
-						[disabled]="settingsForm.invalid || settingsForm.pristine || loading || saving"
-						[loading]="saving"
+						[disabled]="settingsForm.invalid || settingsForm.pristine || loading() || saving()"
+						[loading]="saving()"
 					></p-button>
 				</div>
 			</form>
 		</p-card>
 	</div>
-
+	} @else {
 	<!-- Skeleton Loading State -->
-	<div class="settings-content" *ngIf="loading">
+	<div class="settings-content">
 		<p-card>
 			<div class="form-grid">
 				<!-- Space Name Skeleton -->
 				<div class="form-field">
-					<p-skeleton width="8rem" height="1.5rem" styleClass="mb-2"></p-skeleton>
+					<p-skeleton
+						width="8rem"
+						height="1.5rem"
+						styleClass="mb-2"
+					></p-skeleton>
 					<p-skeleton width="100%" height="2.5rem"></p-skeleton>
 				</div>
 
 				<!-- Visibility Toggle Skeleton -->
 				<div class="form-field">
-					<p-skeleton width="6rem" height="1.5rem" styleClass="mb-2"></p-skeleton>
+					<p-skeleton
+						width="6rem"
+						height="1.5rem"
+						styleClass="mb-2"
+					></p-skeleton>
 					<div class="flex align-items-center gap-2">
-						<p-skeleton width="3rem" height="1.5rem" borderRadius="16px"></p-skeleton>
+						<p-skeleton
+							width="3rem"
+							height="1.5rem"
+							borderRadius="16px"
+						></p-skeleton>
 						<p-skeleton width="4rem" height="1rem"></p-skeleton>
 					</div>
-					<p-skeleton width="80%" height="0.875rem" styleClass="mt-2"></p-skeleton>
+					<p-skeleton
+						width="80%"
+						height="0.875rem"
+						styleClass="mt-2"
+					></p-skeleton>
 				</div>
 
 				<!-- Primary Color Skeleton -->
 				<div class="form-field">
-					<p-skeleton width="8rem" height="1.5rem" styleClass="mb-2"></p-skeleton>
+					<p-skeleton
+						width="8rem"
+						height="1.5rem"
+						styleClass="mb-2"
+					></p-skeleton>
 					<div class="flex align-items-center gap-2">
-						<p-skeleton width="2.5rem" height="2.5rem" borderRadius="4px"></p-skeleton>
+						<p-skeleton
+							width="2.5rem"
+							height="2.5rem"
+							borderRadius="4px"
+						></p-skeleton>
 						<p-skeleton width="100%" height="2.5rem"></p-skeleton>
 					</div>
 				</div>
 
 				<!-- Tenant IDs Skeleton -->
 				<div class="form-field">
-					<p-skeleton width="12rem" height="1.5rem" styleClass="mb-2"></p-skeleton>
+					<p-skeleton
+						width="12rem"
+						height="1.5rem"
+						styleClass="mb-2"
+					></p-skeleton>
 					<div class="flex gap-2 mb-2">
-						<p-skeleton width="8rem" height="2rem" borderRadius="16px"></p-skeleton>
-						<p-skeleton width="8rem" height="2rem" borderRadius="16px"></p-skeleton>
+						<p-skeleton
+							width="8rem"
+							height="2rem"
+							borderRadius="16px"
+						></p-skeleton>
+						<p-skeleton
+							width="8rem"
+							height="2rem"
+							borderRadius="16px"
+						></p-skeleton>
 					</div>
 					<div class="flex align-items-center gap-2 mt-2">
 						<p-skeleton width="100%" height="2.5rem"></p-skeleton>
 						<p-skeleton width="5rem" height="2.5rem"></p-skeleton>
 					</div>
-					<p-skeleton width="70%" height="0.875rem" styleClass="mt-2"></p-skeleton>
+					<p-skeleton
+						width="70%"
+						height="0.875rem"
+						styleClass="mt-2"
+					></p-skeleton>
 				</div>
 			</div>
 
@@ -179,4 +224,5 @@
 			</div>
 		</p-card>
 	</div>
+	}
 </div>

@@ -1,50 +1,57 @@
-<div class="left" *ngIf="settings$ | async as settings">
-	<p class="logo">
-		{{ settings.name }}
-		<span *ngIf="!production" class="non-production text-danger">
-			- Non Production Environment!</span
+@if (settings(); as settings) {
+	<div class="left">
+		<p class="logo">
+			{{ settings.name }}
+			@if (!production) {
+				<span class="non-production text-danger">
+					- Non Production Environment!</span
+				>
+			}
+		</p>
+	</div>
+}
+
+@if (user(); as user) {
+	<div class="right">
+		<!-- Admin Button (shown only for admins) -->
+		@if (isAdmin()) {
+			<p-button
+				icon="pi pi-cog"
+				[rounded]="true"
+				[text]="true"
+				severity="secondary"
+				class="admin-toggle"
+				(onClick)="navigateToAdmin()"
+				pTooltip="Organization Admin"
+				ariaLabel="Go to Organization Admin"
+			>
+			</p-button>
+		}
+
+		<!-- Theme Toggle Button -->
+		<p-button
+			icon="{{ getThemeIcon() }}"
+			[rounded]="true"
+			[text]="true"
+			severity="secondary"
+			class="theme-toggle"
+			(onClick)="toggleTheme()"
+			[pTooltip]="'Switch to ' + getThemeTooltip()"
+			[ariaLabel]="'Switch to ' + getThemeTooltip()"
 		>
-	</p>
-</div>
+		</p-button>
 
-<div class="right" *ngIf="user$ | async as user">
-	<!-- Admin Button (shown only for admins) -->
-	<p-button
-		*ngIf="isAdmin$ | async"
-		icon="pi pi-cog"
-		[rounded]="true"
-		[text]="true"
-		severity="secondary"
-		class="admin-toggle"
-		(onClick)="navigateToAdmin()"
-		pTooltip="Organization Admin"
-		ariaLabel="Go to Organization Admin"
-	>
-	</p-button>
+		<button
+			type="button"
+			class="name-container p-link"
+			(click)="accountMenu.toggle($event)"
+			aria-label="Open account menu"
+			aria-haspopup="true"
+		>
+			<span class="name">{{ user.email }}</span>
+			<i class="pi pi-chevron-down"></i>
+		</button>
 
-	<!-- Theme Toggle Button -->
-	<p-button
-		icon="{{ getThemeIcon() }}"
-		[rounded]="true"
-		[text]="true"
-		severity="secondary"
-		class="theme-toggle"
-		(onClick)="toggleTheme()"
-		[pTooltip]="'Switch to ' + getThemeTooltip()"
-		[ariaLabel]="'Switch to ' + getThemeTooltip()"
-	>
-	</p-button>
-
-	<button
-		type="button"
-		class="name-container p-link"
-		(click)="accountMenu.toggle($event)"
-		aria-label="Open account menu"
-		aria-haspopup="true"
-	>
-		<span class="name">{{ user.email }}</span>
-		<i class="pi pi-chevron-down"></i>
-	</button>
-
-	<p-menu #accountMenu [model]="accountMenuItems" [popup]="true"></p-menu>
-</div>
+		<p-menu #accountMenu [model]="accountMenuItems" [popup]="true"></p-menu>
+	</div>
+}

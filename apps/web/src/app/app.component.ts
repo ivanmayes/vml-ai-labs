@@ -1,16 +1,20 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	HostListener,
+	OnInit,
+	signal,
+} from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { DialogService } from 'primeng/dynamicdialog';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { OsContext } from '@wppopen/core';
 
 import { environment } from '../environments/environment';
 import { Hierarchy } from '../../../api/src/_core/third-party/wpp-open/models';
 
-import { HeaderSettings } from './state/global/global.model';
 import { GlobalService } from './state/global/global.service';
 import { SessionQuery } from './state/session/session.query';
 import { SessionService } from './state/session/session.service';
@@ -41,6 +45,7 @@ interface WppOpenLoginResponse {
 	templateUrl: './app.component.html',
 	styleUrls: ['./app.component.scss'],
 	animations: [fade('fade', 500)],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [
 		CommonModule,
 		RouterModule,
@@ -50,9 +55,12 @@ interface WppOpenLoginResponse {
 	],
 })
 export class AppComponent implements OnInit {
-	public loaded = false;
-	public headerSettings$: Observable<HeaderSettings>;
-	public isLoggedIn$: Observable<boolean>;
+	// Signals for zoneless
+	loaded = signal(false);
+
+	// Signal selectors from queries
+	headerSettings = this.globalQuery.header;
+	isLoggedIn = this.sessionQuery.isLoggedInSignal;
 
 	// Detect keypresses for setting admin mode
 	@HostListener('document:keydown', ['$event'])
@@ -71,10 +79,7 @@ export class AppComponent implements OnInit {
 		private readonly location: Location,
 		private readonly dialogService: DialogService,
 		private readonly wppOpenService: WppOpenService,
-	) {
-		this.headerSettings$ = this.globalQuery.select('header');
-		this.isLoggedIn$ = this.sessionQuery.isLoggedIn$;
-	}
+	) {}
 
 	async ngOnInit() {
 		// WPP Open support.
@@ -149,8 +154,8 @@ export class AppComponent implements OnInit {
 		if (this.location.path().indexOf('login') === -1) {
 			this.sessionService
 				.getUserStatus(this.sessionQuery.getToken())
-				.subscribe(
-					async () => {
+				.subscribe({
+					next: async () => {
 						// Check if we should redirect to a space
 						const wppOpenSpaceId = spaceId;
 						const currentPath = this.location.path();
@@ -172,13 +177,13 @@ export class AppComponent implements OnInit {
 								},
 							);
 
-							this.loaded = true;
+							this.loaded.set(true);
 							return;
 						}
 
-						this.loaded = true;
+						this.loaded.set(true);
 					},
-					() => {
+					error: () => {
 						// Save the location path so we can go back to it
 						this.sessionService.setInitialUrl(this.location.path());
 
@@ -187,11 +192,11 @@ export class AppComponent implements OnInit {
 							replaceUrl: true,
 							skipLocationChange: true,
 						});
-						this.loaded = true;
+						this.loaded.set(true);
 					},
-				);
+				});
 		} else {
-			this.loaded = true;
+			this.loaded.set(true);
 		}
 	}
 

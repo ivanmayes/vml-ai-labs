@@ -1,4 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	OnDestroy,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -18,18 +24,21 @@ import { SpaceFormDialogComponent } from './components/space-form-dialog/space-f
 	selector: 'app-spaces',
 	templateUrl: './spaces.page.html',
 	styleUrls: ['./spaces.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, PrimeNgModule, ConfirmDialogModule],
 	providers: [ConfirmationService],
 })
 export class SpacesPage implements OnInit, OnDestroy {
-	spaces: Space[] = [];
-	loading = false;
+	// Signals for zoneless
+	spaces = signal<Space[]>([]);
+	loading = signal(false);
+
 	organizationId!: string;
 	currentSortField = 'created';
 	currentSortOrder = 'desc';
 	currentSearchQuery = '';
 	private searchSubject = new Subject<string>();
-	Array = Array;
+	readonly skeletonRows = Array(5).fill({});
 
 	constructor(
 		private readonly spaceService: SpaceService,
@@ -60,7 +69,7 @@ export class SpacesPage implements OnInit, OnDestroy {
 		sortField?: string,
 		sortOrder?: string,
 	): void {
-		this.loading = true;
+		this.loading.set(true);
 
 		// Use provided values or fall back to current state
 		const query =
@@ -72,8 +81,8 @@ export class SpacesPage implements OnInit, OnDestroy {
 			.getSpaces(this.organizationId, query, field, order)
 			.subscribe({
 				next: (response) => {
-					this.spaces = response.data || [];
-					this.loading = false;
+					this.spaces.set(response.data || []);
+					this.loading.set(false);
 				},
 				error: (error) => {
 					console.error('Error loading spaces:', error);
@@ -83,7 +92,7 @@ export class SpacesPage implements OnInit, OnDestroy {
 						detail: 'Failed to load spaces',
 						life: 3000,
 					});
-					this.loading = false;
+					this.loading.set(false);
 				},
 			});
 	}

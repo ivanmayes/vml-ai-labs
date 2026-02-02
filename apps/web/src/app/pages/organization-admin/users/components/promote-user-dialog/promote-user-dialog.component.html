@@ -37,14 +37,14 @@
 			severity="secondary"
 			type="button"
 			(click)="onCancel()"
-			[disabled]="loading"
+			[disabled]="loading()"
 		/>
 		<p-button
 			label="Update Role"
 			[outlined]="true"
 			severity="secondary"
 			type="submit"
-			[loading]="loading"
+			[loading]="loading()"
 			[disabled]="form.invalid"
 		/>
 	</div>

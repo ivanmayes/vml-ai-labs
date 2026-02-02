@@ -8,9 +8,11 @@
 			minutes.)</small
 		>
 	</p>
-	<div class="token" *ngIf="authConfig?.data?.token">
-		{{ authConfig?.data?.token }}
-	</div>
+	@if (authConfig()?.data?.token) {
+		<div class="token">
+			{{ authConfig()?.data?.token }}
+		</div>
+	}
 
 	<form #form="ngForm" (submit)="activate()">
 		<div class="input-group">
@@ -23,7 +25,8 @@
 					class="input-key"
 					name="key"
 					required
-					[(ngModel)]="key"
+					[ngModel]="key()"
+					(ngModelChange)="updateKey($event)"
 					placeholder="eg. 123456"
 				/>
 			</div>
@@ -33,15 +36,17 @@
 			type="submit"
 			label="Verify"
 			styleClass="submit button-small"
-			[disabled]="!email || !emailField.valid || (loading$ | async)"
-			[loading]="loading$ | async"
+			[disabled]="!email() || !emailField.valid || loading()"
+			[loading]="loading() ?? false"
 		></p-button>
 	</form>
 
 	<button type="button" class="resend p-link" (click)="resend()">
 		Resend Email
 	</button>
-	<p class="resent" [class.active]="resendComplete">Resent!</p>
+	<p class="resent" [class.active]="resendComplete()">Resent!</p>
 
-	<span @fade class="error" *ngIf="error">Invalid verification code.</span>
+	@if (error()) {
+		<span @fade class="error">Invalid verification code.</span>
+	}
 </div>

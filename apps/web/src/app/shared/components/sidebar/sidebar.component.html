@@ -15,14 +15,14 @@
 			alt="Logo"
 			class="sidebar-logo"
 			[routerLink]="['/home']"
-			[pTooltip]="(settings$ | async)?.name || 'Home'"
+			[pTooltip]="settings()?.name || 'Home'"
 			tooltipPosition="right"
 		/>
 	</div> -->
 
 	<!-- Navigation Items -->
 	<div class="sidebar-nav">
-		<ng-container *ngFor="let item of sidebarService.navigationItems()">
+		@for (item of navItems(); track item.id) {
 			<p-button
 				[icon]="'pi pi-' + item.icon"
 				[text]="!(item.route && isActiveRoute(item.route))"
@@ -41,84 +41,89 @@
 				"
 			>
 				<!-- Badge for notifications/counts -->
-				<span
-					class="item-badge"
-					*ngIf="item.badge"
-					[ngClass]="'badge-' + (item.badgeColor || 'primary')"
-					[attr.aria-label]="item.badge + ' notifications'"
-				>
-					{{ item.badge }}
-				</span>
+				@if (item.badge) {
+					<span
+						class="item-badge"
+						[ngClass]="'badge-' + (item.badgeColor || 'primary')"
+						[attr.aria-label]="item.badge + ' notifications'"
+					>
+						{{ item.badge }}
+					</span>
+				}
 			</p-button>
 
 			<!-- Optional divider between sections -->
-			<p-divider *ngIf="item.dividerAfter" class="nav-divider" />
-		</ng-container>
+			@if (item.dividerAfter) {
+				<p-divider class="nav-divider" />
+			}
+		}
 	</div>
 
 	<!-- User Section at Bottom -->
 	<div class="sidebar-footer">
 		<!-- User Menu with Enhanced OverlayPanel -->
-		<div class="user-section" *ngIf="user$ | async as user">
-			<button
-				type="button"
-				class="user-avatar"
-				(click)="userOverlay.toggle($event)"
-				[pTooltip]="user.email"
-				tooltipPosition="right"
-				aria-label="Open user menu"
-				aria-haspopup="true"
-			>
-				{{ getUserInitial(user) }}
-			</button>
+		@if (user(); as user) {
+			<div class="user-section">
+				<button
+					type="button"
+					class="user-avatar"
+					(click)="userOverlay.toggle($event)"
+					[pTooltip]="user.email"
+					tooltipPosition="right"
+					aria-label="Open user menu"
+					aria-haspopup="true"
+				>
+					{{ getUserInitial(user) }}
+				</button>
 
-			<!-- Enhanced user popover with better styling -->
-			<p-popover
-				#userOverlay
-				[dismissable]="true"
-				styleClass="user-overlay-panel"
-			>
-				<div class="user-menu-content">
-					<!-- User Info Section -->
-					<div class="user-info-section">
-						<div class="user-avatar-large">
-							{{ getUserInitial(user) }}
-						</div>
-						<div class="user-details">
-							<div class="user-email">{{ user.email }}</div>
-							<div
-								class="app-name"
-								*ngIf="settings$ | async as settings"
-							>
-								{{ settings.name }}
+				<!-- Enhanced user popover with better styling -->
+				<p-popover
+					#userOverlay
+					[dismissable]="true"
+					styleClass="user-overlay-panel"
+				>
+					<div class="user-menu-content">
+						<!-- User Info Section -->
+						<div class="user-info-section">
+							<div class="user-avatar-large">
+								{{ getUserInitial(user) }}
+							</div>
+							<div class="user-details">
+								<div class="user-email">{{ user.email }}</div>
+								@if (settings(); as settings) {
+									<div class="app-name">
+										{{ settings.name }}
+									</div>
+								}
 							</div>
 						</div>
+
+						<p-divider />
+
+						<!-- Admin Button (shown only for admins) -->
+						@if (isAdmin()) {
+							<button
+								class="menu-item-button"
+								(click)="navigateToAdmin(); userOverlay.hide()"
+								aria-label="Go to Organization Admin"
+							>
+								<i class="pi pi-cog"></i>
+								<span>Organization Admin</span>
+							</button>
+						}
+
+						<!-- Logout Button -->
+						<button
+							class="menu-item-button"
+							(click)="logout(); userOverlay.hide()"
+							aria-label="Logout"
+						>
+							<i class="pi pi-sign-out"></i>
+							<span>Logout</span>
+						</button>
 					</div>
-
-					<p-divider />
-
-					<!-- Admin Button (shown only for admins) -->
-					<button
-						*ngIf="isAdmin$ | async"
-						class="menu-item-button"
-						(click)="navigateToAdmin(); userOverlay.hide()"
-						aria-label="Go to Organization Admin"
-					>
-						<i class="pi pi-cog"></i>
-						<span>Organization Admin</span>
-					</button>
-
-					<!-- Logout Button -->
-					<button
-						class="menu-item-button"
-						(click)="logout(); userOverlay.hide()"
-						aria-label="Logout"
-					>
-						<i class="pi pi-sign-out"></i>
-						<span>Logout</span>
-					</button>
-				</div>
-			</p-popover>
-		</div>
+				</p-popover>
+			</div>
+		}
 	</div>
 </nav>

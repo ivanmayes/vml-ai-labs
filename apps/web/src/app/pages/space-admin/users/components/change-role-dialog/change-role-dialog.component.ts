@@ -1,4 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	FormBuilder,
@@ -16,6 +21,7 @@ import { PrimeNgModule } from '../../../../../shared/primeng.module';
 	selector: 'app-change-role-dialog',
 	templateUrl: './change-role-dialog.component.html',
 	styleUrls: ['./change-role-dialog.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class ChangeRoleDialogComponent implements OnInit {
@@ -25,7 +31,7 @@ export class ChangeRoleDialogComponent implements OnInit {
 		{ label: 'Admin', value: SpaceRole.SpaceAdmin },
 		{ label: 'User', value: SpaceRole.SpaceUser },
 	];
-	loading = false;
+	loading = signal(false);
 
 	constructor(
 		private fb: FormBuilder,

@@ -1,32 +1,40 @@
 <div class="space-page">
 	<p-toast></p-toast>
 
-	<div class="space-header" *ngIf="!loading && space">
-		<h1>{{ space.name }}</h1>
-		<p class="space-subtitle">Space ID: {{ space.id }}</p>
+	@if (!loading() && space(); as spaceData) {
+	<div class="space-header">
+		<h1>{{ spaceData.name }}</h1>
+		<p class="space-subtitle">Space ID: {{ spaceData.id }}</p>
 		<p class="space-visibility">
-			<i class="pi" [ngClass]="space.isPublic ? 'pi-globe' : 'pi-lock'"></i>
-			{{ space.isPublic ? 'Public Space' : 'Private Space' }}
+			<i
+				class="pi"
+				[ngClass]="spaceData.isPublic ? 'pi-globe' : 'pi-lock'"
+			></i>
+			{{ spaceData.isPublic ? 'Public Space' : 'Private Space' }}
 		</p>
 	</div>
-
-	<div class="space-loading" *ngIf="loading">
+	} @if (loading()) {
+	<div class="space-loading">
 		<p-progressSpinner></p-progressSpinner>
 		<p>Loading space...</p>
 	</div>
-
-	<div class="access-denied-container" *ngIf="!loading && accessDenied">
+	} @if (!loading() && accessDenied()) {
+	<div class="access-denied-container">
 		<p-card>
 			<div class="access-denied-content">
 				<i class="pi pi-lock access-denied-icon"></i>
 				<h2>Access Denied</h2>
 				<p>You do not have permission to access this space.</p>
-				<p class="access-denied-hint">Please contact your administrator if you believe this is an error.</p>
+				<p class="access-denied-hint">
+					Please contact your administrator if you believe this is an
+					error.
+				</p>
 			</div>
 		</p-card>
 	</div>
-
-	<div class="space-content" *ngIf="!loading && !space && !accessDenied">
+	} @if (!loading() && !space() && !accessDenied()) {
+	<div class="space-content">
 		<p>Space not found or you do not have access.</p>
 	</div>
+	}
 </div>

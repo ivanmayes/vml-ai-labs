@@ -19,7 +19,8 @@
 					styleClass="w-full"
 				></p-select>
 				<small class="help-text">
-					Admins can manage space settings and users. Users have regular access.
+					Admins can manage space settings and users. Users have
+					regular access.
 				</small>
 			</div>
 		</div>
@@ -35,8 +36,8 @@
 			<p-button
 				label="Save Changes"
 				type="submit"
-				[disabled]="roleForm.invalid || loading"
-				[loading]="loading"
+				[disabled]="roleForm.invalid || loading()"
+				[loading]="loading()"
 			></p-button>
 		</div>
 	</form>

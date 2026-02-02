@@ -1,7 +1,5 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { Router, RouterModule } from '@angular/router';
 
 import { SessionQuery } from '../../../state/session/session.query';
@@ -10,8 +8,6 @@ import { GlobalQuery } from '../../../state/global/global.query';
 import { ThemeService } from '../../services/theme.service';
 import { SidebarService, NavItem } from '../../services/sidebar.service';
 import type { PublicUser } from '../../../../../../api/src/user/user.entity';
-import { GlobalSettings } from '../../../state/global/global.model';
-import { UserRole } from '../../../../../../api/src/user/user-role.enum';
 import { PrimeNgModule } from '../../primeng.module';
 
 /**
@@ -29,12 +25,17 @@ import { PrimeNgModule } from '../../primeng.module';
 	selector: 'app-sidebar',
 	templateUrl: './sidebar.component.html',
 	styleUrls: ['./sidebar.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class SidebarComponent {
-	user$: Observable<PublicUser | undefined>;
-	settings$: Observable<GlobalSettings | undefined>;
-	isAdmin$: Observable<boolean>;
+	// Signal selectors
+	user = this.sessionQuery.user;
+	settings = this.globalQuery.settings;
+	isAdmin = this.sessionQuery.isAdmin;
+
+	// Existing signal from SidebarService
+	navItems = this.sidebarService.navigationItems;
 
 	constructor(
 		public sidebarService: SidebarService,
@@ -43,17 +44,7 @@ export class SidebarComponent {
 		private sessionService: SessionService,
 		private globalQuery: GlobalQuery,
 		private router: Router,
-	) {
-		this.user$ = this.sessionQuery.select('user');
-		this.settings$ = this.globalQuery.select('settings');
-		this.isAdmin$ = this.user$.pipe(
-			map(
-				(user) =>
-					user?.role === UserRole.Admin ||
-					user?.role === UserRole.SuperAdmin,
-			),
-		);
-	}
+	) {}
 
 	/**
 	 * Navigate to the organization admin page
@@ -84,7 +75,7 @@ export class SidebarComponent {
 	 * Get user's initial from email for avatar display
 	 * Falls back to 'U' if email is not available
 	 */
-	getUserInitial(user: PublicUser): string {
+	getUserInitial(user: PublicUser | undefined): string {
 		if (user?.email) {
 			return user.email.charAt(0).toUpperCase();
 		}

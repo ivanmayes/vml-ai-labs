@@ -21,24 +21,20 @@
 	<div class="flex items-center gap-4 mb-8">
 		<div class="w-24"></div>
 		<div class="flex-auto">
-			<small
-				class="p-error block"
-				*ngIf="
-					form.get('name')?.hasError('required') &&
-					form.get('name')?.touched
-				"
-			>
-				Space name is required
-			</small>
-			<small
-				class="p-error block"
-				*ngIf="
-					form.get('name')?.hasError('minlength') &&
-					form.get('name')?.touched
-				"
-			>
-				Space name must be at least 2 characters
-			</small>
+			@if (
+				form.get("name")?.hasError("required") &&
+				form.get("name")?.touched
+			) {
+				<small class="p-error block"> Space name is required </small>
+			}
+			@if (
+				form.get("name")?.hasError("minlength") &&
+				form.get("name")?.touched
+			) {
+				<small class="p-error block">
+					Space name must be at least 2 characters
+				</small>
+			}
 		</div>
 	</div>
 
@@ -49,14 +45,14 @@
 			severity="secondary"
 			type="button"
 			(click)="onCancel()"
-			[disabled]="loading"
+			[disabled]="loading()"
 		/>
 		<p-button
 			[label]="mode === 'create' ? 'Create Space' : 'Update Space'"
 			[outlined]="true"
 			severity="secondary"
 			type="submit"
-			[loading]="loading"
+			[loading]="loading()"
 			[disabled]="form.invalid"
 		/>
 	</div>

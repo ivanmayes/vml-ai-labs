@@ -1,9 +1,12 @@
 <div class="dialog-content">
-	<p *ngIf="this.data.message" [innerHTML]="this.data.message | safeHtml"></p>
+	@if (data.message) {
+		<p [innerHTML]="data.message | safeHtml"></p>
+	}
 
-	<ng-container *ngIf="confirmation && data.confirmWithString">
+	@if (confirmation && data.confirmWithString) {
 		<p>
-			Please type <strong>{{ data.confirmationString }}</strong> below to confirm.
+			Please type <strong>{{ data.confirmationString }}</strong> below to
+			confirm.
 		</p>
 		<br />
 
@@ -21,16 +24,17 @@
 				/>
 			</div>
 		</form>
-	</ng-container>
+	}
 </div>
 
 <div class="dialog-actions">
 	<p-button label="Cancel" severity="secondary" (onClick)="no()"></p-button>
-	<p-button
-		*ngIf="confirmation"
-		[label]="this.data.confirm || 'Confirm'"
-		[disabled]="data.confirmWithString && confirmation.invalid"
-		severity="danger"
-		(onClick)="yes()"
-	></p-button>
+	@if (confirmation) {
+		<p-button
+			[label]="data.confirm || 'Confirm'"
+			[disabled]="data.confirmWithString && confirmation.invalid"
+			severity="danger"
+			(onClick)="yes()"
+		></p-button>
+	}
 </div>

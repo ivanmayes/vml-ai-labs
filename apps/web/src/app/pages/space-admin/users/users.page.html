@@ -26,11 +26,11 @@
 	</p-toolbar>
 
 	<p-table
-		[value]="loading ? Array(5).fill({}) : users"
+		[value]="loading() ? skeletonRows : users()"
 		[lazy]="true"
 		[paginator]="true"
 		[rows]="rowsPerPage"
-		[totalRecords]="totalRecords"
+		[totalRecords]="totalRecords()"
 		(onLazyLoad)="onLazyLoad($event)"
 		[rowsPerPageOptions]="[10, 25, 50]"
 		[showCurrentPageReport]="true"
@@ -56,15 +56,13 @@
 		</ng-template>
 
 		<ng-template pTemplate="body" let-user>
-			<tr *ngIf="!loading">
+			@if (!loading()) {
+			<tr>
 				<td>{{ user.user?.email || 'N/A' }}</td>
 				<td>
-					<span
-						*ngIf="user.user?.firstName || user.user?.lastName; else noName"
-					>
-						{{ user.user.firstName }} {{ user.user.lastName }}
-					</span>
-					<ng-template #noName>—</ng-template>
+					@if (user.user?.firstName || user.user?.lastName) { {{
+					user.user.firstName }} {{ user.user.lastName }} } @else { —
+					}
 				</td>
 				<td>
 					<p-badge
@@ -94,13 +92,15 @@
 					</div>
 				</td>
 			</tr>
-			<tr *ngIf="loading">
+			} @else {
+			<tr>
 				<td><p-skeleton /></td>
 				<td><p-skeleton /></td>
 				<td><p-skeleton /></td>
 				<td><p-skeleton /></td>
 				<td><p-skeleton /></td>
 			</tr>
+			}
 		</ng-template>
 
 		<ng-template pTemplate="emptymessage">

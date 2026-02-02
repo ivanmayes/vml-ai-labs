@@ -1,9 +1,13 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	input,
+	output,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable } from 'rxjs';
 
-import { GlobalSettings } from '../../../state/global/global.model';
 import { GlobalQuery } from '../../../state/global/global.query';
 import { VerifyResponse } from '../../../state/session/session.model';
 import { SessionQuery } from '../../../state/session/session.query';
@@ -21,54 +25,58 @@ import { PrimeNgModule } from '../../../shared/primeng.module';
 	selector: 'app-auth-basic',
 	templateUrl: './basic.component.html',
 	styleUrls: ['./basic.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	animations: [fade('fade', 400, '-50%')],
 	imports: [CommonModule, FormsModule, PrimeNgModule],
 })
 export class BasicAuthComponent {
-	@Input() email!: string;
-	@Input() authConfig!: VerifyResponse;
-	@Output() loggedIn = new EventEmitter<boolean>();
+	// Input signals
+	email = input.required<string>();
+	authConfig = input.required<VerifyResponse>();
 
-	public key!: string;
-	public resendComplete = false;
-	public error: any;
-	public siteSettings$: Observable<GlobalSettings | undefined>;
-	public loading$: Observable<boolean>;
+	// Output signal
+	loggedIn = output<boolean>();
+
+	// Local state signals
+	key = signal('');
+	resendComplete = signal(false);
+	error = signal<string | null>(null);
+
+	// Signal selectors
+	siteSettings = this.globalQuery.settings;
+	loading = this.sessionQuery.loading;
 
 	constructor(
 		private readonly globalQuery: GlobalQuery,
 		private readonly sessionService: SessionService,
 		private readonly sessionQuery: SessionQuery,
-	) {
-		this.siteSettings$ = this.globalQuery.select('settings');
-		this.loading$ = this.sessionQuery.selectLoading();
-	}
+	) {}
 
 	/**
 	 * Send the activation code to the API to see if its correct for the previously entered email.
 	 */
 	public activate() {
 		this.sessionService
-			.activateEmail(this.email?.toLowerCase(), this.key)
-			.subscribe(
-				() => {
+			.activateEmail(this.email()?.toLowerCase(), this.key())
+			.subscribe({
+				next: () => {
 					this.loggedIn.emit(true);
 				},
-				(err) => this.handleError(err?.error?.statusCode),
-			);
+				error: (err) => this.handleError(err?.error?.statusCode),
+			});
 	}
 
 	/**
 	 * Resend the activation code
 	 */
 	public resend() {
-		this.resendComplete = false;
+		this.resendComplete.set(false);
 		this.sessionService
-			.requestCode(this.email?.toLowerCase())
+			.requestCode(this.email()?.toLowerCase())
 			.subscribe(() => {
-				this.error = undefined;
-				setTimeout(() => (this.resendComplete = true), 100);
-				setTimeout(() => (this.resendComplete = false), 3000);
+				this.error.set(null);
+				setTimeout(() => this.resendComplete.set(true), 100);
+				setTimeout(() => this.resendComplete.set(false), 3000);
 			});
 	}
 
@@ -77,8 +85,13 @@ export class BasicAuthComponent {
 	 * @param err
 	 */
 	public async handleError(err: string) {
-		this.error = err;
+		this.error.set(err);
 		this.sessionService.setLoading(false);
-		setTimeout(() => (this.error = undefined), 4000);
+		setTimeout(() => this.error.set(null), 4000);
+	}
+
+	// Helper for two-way binding with signals
+	updateKey(value: string) {
+		this.key.set(value);
 	}
 }

@@ -12,12 +12,22 @@
 					class="w-full"
 				/>
 				<small class="help-text">
-					Enter the email address of the user you want to invite. If the user doesn't exist, they will be created automatically.
+					Enter the email address of the user you want to invite. If
+					the user doesn't exist, they will be created automatically.
 				</small>
-				<small class="error-text" *ngIf="inviteForm.get('email')?.invalid && inviteForm.get('email')?.touched">
-					<span *ngIf="inviteForm.get('email')?.errors?.['required']">Email is required</span>
-					<span *ngIf="inviteForm.get('email')?.errors?.['email']">Please enter a valid email address</span>
-				</small>
+				@if (
+					inviteForm.get("email")?.invalid &&
+					inviteForm.get("email")?.touched
+				) {
+					<small class="error-text">
+						@if (inviteForm.get("email")?.errors?.["required"]) {
+							<span>Email is required</span>
+						}
+						@if (inviteForm.get("email")?.errors?.["email"]) {
+							<span>Please enter a valid email address</span>
+						}
+					</small>
+				}
 			</div>
 
 			<!-- Role Selection -->
@@ -33,7 +43,8 @@
 					styleClass="w-full"
 				></p-select>
 				<small class="help-text">
-					Admins can manage space settings and users. Users have regular access.
+					Admins can manage space settings and users. Users have
+					regular access.
 				</small>
 			</div>
 		</div>
@@ -49,8 +60,8 @@
 			<p-button
 				label="Invite User"
 				type="submit"
-				[disabled]="inviteForm.invalid || loading"
-				[loading]="loading"
+				[disabled]="inviteForm.invalid || loading()"
+				[loading]="loading()"
 			></p-button>
 		</div>
 	</form>

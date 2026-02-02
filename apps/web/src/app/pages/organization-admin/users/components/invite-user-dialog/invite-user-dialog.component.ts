@@ -1,4 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	FormBuilder,
@@ -15,11 +20,12 @@ import { PrimeNgModule } from '../../../../../shared/primeng.module';
 @Component({
 	selector: 'app-invite-user-dialog',
 	templateUrl: './invite-user-dialog.component.html',
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class InviteUserDialogComponent implements OnInit {
 	form!: FormGroup;
-	loading = false;
+	loading = signal(false);
 	availableRoles: any[] = [];
 
 	constructor(
@@ -73,7 +79,7 @@ export class InviteUserDialogComponent implements OnInit {
 			return;
 		}
 
-		this.loading = true;
+		this.loading.set(true);
 		const formValue = this.form.value;
 		const organizationId = this.config.data?.organizationId;
 
@@ -91,7 +97,7 @@ export class InviteUserDialogComponent implements OnInit {
 			)
 			.subscribe({
 				next: () => {
-					this.loading = false;
+					this.loading.set(false);
 					this.ref.close(true);
 				},
 				error: (error) => {
@@ -102,7 +108,7 @@ export class InviteUserDialogComponent implements OnInit {
 						detail: error.error?.message || 'Failed to invite user',
 						life: 3000,
 					});
-					this.loading = false;
+					this.loading.set(false);
 				},
 			});
 	}

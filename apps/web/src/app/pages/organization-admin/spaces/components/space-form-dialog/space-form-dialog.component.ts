@@ -1,4 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
 	FormBuilder,
@@ -15,11 +20,12 @@ import { PrimeNgModule } from '../../../../../shared/primeng.module';
 @Component({
 	selector: 'app-space-form-dialog',
 	templateUrl: './space-form-dialog.component.html',
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class SpaceFormDialogComponent implements OnInit {
 	form!: FormGroup;
-	loading = false;
+	loading = signal(false);
 	mode: 'create' | 'edit' = 'create';
 
 	constructor(
@@ -52,14 +58,14 @@ export class SpaceFormDialogComponent implements OnInit {
 			return;
 		}
 
-		this.loading = true;
+		this.loading.set(true);
 		const organizationId = this.config.data?.organizationId;
 		const formValue = this.form.value;
 
 		if (this.mode === 'create') {
 			this.spaceService.createSpace(organizationId, formValue).subscribe({
 				next: () => {
-					this.loading = false;
+					this.loading.set(false);
 					this.ref.close(true);
 				},
 				error: (error) => {
@@ -71,7 +77,7 @@ export class SpaceFormDialogComponent implements OnInit {
 							error.error?.message || 'Failed to create space',
 						life: 3000,
 					});
-					this.loading = false;
+					this.loading.set(false);
 				},
 			});
 		} else {
@@ -80,7 +86,7 @@ export class SpaceFormDialogComponent implements OnInit {
 				.updateSpace(organizationId, spaceId, formValue)
 				.subscribe({
 					next: () => {
-						this.loading = false;
+						this.loading.set(false);
 						this.ref.close(true);
 					},
 					error: (error) => {
@@ -93,7 +99,7 @@ export class SpaceFormDialogComponent implements OnInit {
 								'Failed to update space',
 							life: 3000,
 						});
-						this.loading = false;
+						this.loading.set(false);
 					},
 				});
 		}

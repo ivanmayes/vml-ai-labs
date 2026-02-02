@@ -1,3 +1,5 @@
 <div id="okta-signin-container"></div>
 
-<p class="error" *ngIf="error">{{ error }}</p>
+@if (error()) {
+	<p class="error">{{ error() }}</p>
+}

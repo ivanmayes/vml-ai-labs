@@ -1,4 +1,9 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	ElementRef,
+	ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MessageService } from 'primeng/api';
 
@@ -28,6 +33,7 @@ interface Feature {
 	selector: 'app-home',
 	templateUrl: './home.page.html',
 	styleUrls: ['./home.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	animations: [fade('fade', 400, '-50%')],
 	imports: [CommonModule, PrimeNgModule],
 })

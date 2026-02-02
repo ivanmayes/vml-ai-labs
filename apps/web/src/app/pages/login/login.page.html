@@ -5,9 +5,11 @@
 	- Progressive disclosure: only show relevant UI for each step
 	- Accessible with proper ARIA labels and focus management
 -->
-<div class="login-wrapper" *ngIf="siteSettings$ | async as settings">
+@if (siteSettings(); as settings) {
+<div class="login-wrapper">
 	<!-- STEP 1: Email Entry -->
-	<p-card *ngIf="state === 'enter-email'" class="login-card" styleClass="login-card-content">
+	@if (state() === 'enter-email') {
+	<p-card class="login-card" styleClass="login-card-content">
 		<!-- Logo lockup for brand recognition -->
 		<ng-template pTemplate="header">
 			<div class="logo-container">
@@ -47,29 +49,31 @@
 				UX: Show validation errors inline for immediate feedback
 				Only show after user interaction to avoid premature error messages
 			-->
+			@if (emailForm.get('email')?.invalid &&
+			emailForm.get('email')?.touched) {
 			<p-message
-				*ngIf="emailForm.get('email')?.invalid && emailForm.get('email')?.touched"
 				severity="error"
 				text="Please enter a valid email address"
 				styleClass="w-full mt-2"
 			></p-message>
+			}
 
 			<!-- API error feedback -->
+			@if (emailError() && emailError() === 403) {
 			<p-message
-				*ngIf="emailError && emailError === 403"
 				severity="error"
 				text="This email address is not authorized for this organization"
 				styleClass="w-full mt-2"
 				[@fade]
 			></p-message>
-
+			} @if (emailError() && emailError() !== 403) {
 			<p-message
-				*ngIf="emailError && emailError !== 403"
 				severity="error"
 				text="Unable to send verification code. Please try again."
 				styleClass="w-full mt-2"
 				[@fade]
 			></p-message>
+			}
 
 			<!--
 				UX: Button states provide clear feedback
@@ -81,15 +85,16 @@
 				type="submit"
 				label="Continue"
 				styleClass="w-full mt-4"
-				[disabled]="emailForm.invalid || (loading$ | async)"
-				[loading]="loading$ | async"
+				[disabled]="emailForm.invalid || loading()"
+				[loading]="loading()"
 				[attr.aria-label]="'Continue to verification'"
 			></p-button>
 		</form>
 
 		<!-- Secondary action for multi-tenant scenarios -->
 		<ng-template pTemplate="footer">
-			<div class="card-footer" *ngIf="!exclusiveServer">
+			@if (!exclusiveServer) {
+			<div class="card-footer">
 				<p-divider styleClass="my-3"></p-divider>
 				<p-button
 					label="Change Organization"
@@ -99,11 +104,14 @@
 					[attr.aria-label]="'Change organization'"
 				></p-button>
 			</div>
+			}
 		</ng-template>
 	</p-card>
+	}
 
 	<!-- STEP 2: OTP Verification (Basic Auth) -->
-	<p-card *ngIf="state === 'basic'" class="login-card" styleClass="login-card-content">
+	@if (state() === 'basic') {
+	<p-card class="login-card" styleClass="login-card-content">
 		<!-- Logo remains visible for context -->
 		<ng-template pTemplate="header">
 			<div class="logo-container">
@@ -119,11 +127,14 @@
 			<h1 class="title">Check your email</h1>
 			<p class="subtitle">
 				We sent a verification code to<br />
-				<strong>{{ email }}</strong>
+				<strong>{{ email() }}</strong>
 			</p>
 			<p class="help-text">
 				Enter the 6-digit code below to complete sign in.<br />
-				<small>Check your spam folder if you don't see it in a few minutes.</small>
+				<small
+					>Check your spam folder if you don't see it in a few
+					minutes.</small
+				>
 			</p>
 		</div>
 
@@ -135,15 +146,21 @@
 			- Large, touch-friendly targets
 			- Clear visual feedback
 		-->
-		<form [formGroup]="otpForm" (ngSubmit)="activateCode()" class="otp-form">
+		<form
+			[formGroup]="otpForm"
+			(ngSubmit)="activateCode()"
+			class="otp-form"
+		>
 			<!-- Dev token display (only in development) -->
-			<div class="dev-token" *ngIf="authConfig?.data?.token">
+			@if (authConfig()?.data?.token) {
+			<div class="dev-token">
 				<p-message
 					severity="info"
-					[text]="'Development Code: ' + authConfig?.data?.token"
+					[text]="'Development Code: ' + authConfig()?.data?.token"
 					styleClass="w-full"
 				></p-message>
 			</div>
+			}
 
 			<!--
 				UX: 6-digit OTP with integer-only input
@@ -159,13 +176,14 @@
 			</div>
 
 			<!-- Error feedback for invalid codes -->
+			@if (otpError()) {
 			<p-message
-				*ngIf="otpError"
 				severity="error"
 				text="Invalid verification code. Please try again."
 				styleClass="w-full mt-3"
 				[@fade]
 			></p-message>
+			}
 
 			<!--
 				UX: Submit button as backup (auto-submit is primary flow)
@@ -175,8 +193,8 @@
 				type="submit"
 				label="Verify Code"
 				styleClass="w-full mt-4"
-				[disabled]="otpForm.invalid || (loading$ | async)"
-				[loading]="loading$ | async"
+				[disabled]="otpForm.invalid || loading()"
+				[loading]="loading()"
 				[attr.aria-label]="'Verify code and sign in'"
 			></p-button>
 		</form>
@@ -192,47 +210,51 @@
 						styleClass="p-button-text p-button-sm w-full"
 						(onClick)="resendCode()"
 						icon="pi pi-refresh"
-						[disabled]="loading$ | async"
+						[disabled]="loading()"
 						[attr.aria-label]="'Resend verification code'"
 					></p-button>
 					<!-- Success feedback for resend -->
+					@if (resendSuccess()) {
 					<p-message
-						*ngIf="resendSuccess"
 						severity="success"
 						text="Code resent successfully!"
 						styleClass="w-full mt-2"
 						[@fade]
 					></p-message>
+					}
 				</div>
 			</div>
 		</ng-template>
 	</p-card>
+	}
 
 	<!-- STEP 3: SSO Redirects (Okta/SAML) -->
 	<!-- UX: These are handled by redirects, component remains for callback processing -->
+	@if (state() === 'okta') {
 	<app-auth-okta
-		*ngIf="state === 'okta'"
 		(loggedIn)="loggedIn()"
-		[email]="email"
-		[authConfig]="authConfig"
+		[email]="email()"
+		[authConfig]="authConfig()!"
 	></app-auth-okta>
+	}
 </div>
+}
 
 <!--
 	UX: System error state - shown when global settings cannot be loaded
 	Clear error message with actionable next steps
 -->
-<div class="login-wrapper" *ngIf="settingsError">
+@if (settingsError()) {
+<div class="login-wrapper">
 	<p-card class="login-card error-card">
 		<div class="error-content">
 			<i class="pi pi-exclamation-triangle error-icon"></i>
 			<h2 class="error-title">Unable to Connect</h2>
 			<p class="error-message">
-				We're experiencing technical difficulties and cannot load the sign-in page.
+				We're experiencing technical difficulties and cannot load the
+				sign-in page.
 			</p>
-			<p class="error-details">
-				{{ settingsError }}
-			</p>
+			<p class="error-details">{{ settingsError() }}</p>
 			<p-button
 				label="Reload Page"
 				icon="pi pi-refresh"
@@ -240,8 +262,10 @@
 				styleClass="mt-3"
 			></p-button>
 			<p class="help-text mt-3">
-				If the problem persists, please contact your system administrator.
+				If the problem persists, please contact your system
+				administrator.
 			</p>
 		</div>
 	</p-card>
 </div>
+}

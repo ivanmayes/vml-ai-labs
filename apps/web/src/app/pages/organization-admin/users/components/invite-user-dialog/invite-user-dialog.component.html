@@ -1,5 +1,7 @@
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
-	<span class="p-text-secondary block mb-8">Send an invitation to join your organization.</span>
+	<span class="p-text-secondary block mb-8"
+		>Send an invitation to join your organization.</span
+	>
 
 	<div class="flex items-center gap-4 mb-4">
 		<label for="email" class="font-semibold w-24">Email</label>
@@ -57,7 +59,7 @@
 			severity="secondary"
 			type="button"
 			(click)="onCancel()"
-			[disabled]="loading"
+			[disabled]="loading()"
 		/>
 		<p-button
 			label="Invite User"
@@ -65,7 +67,7 @@
 			severity="secondary"
 			icon="pi pi-send"
 			type="submit"
-			[loading]="loading"
+			[loading]="loading()"
 			[disabled]="form.invalid"
 		/>
 	</div>

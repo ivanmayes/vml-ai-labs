@@ -1,4 +1,11 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	input,
+	output,
+	signal,
+	OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import OktaSignIn from '@okta/okta-signin-widget';
 
@@ -10,15 +17,20 @@ import { environment } from '../../../../environments/environment';
 	selector: 'app-auth-okta',
 	templateUrl: './okta.component.html',
 	styleUrls: ['./okta.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule],
 })
 export class OktaAuthComponent implements OnInit {
-	@Input() email!: string;
-	@Input() authConfig!: VerifyResponse;
-	@Output() loggedIn = new EventEmitter<boolean>();
+	// Input signals
+	email = input.required<string>();
+	authConfig = input.required<VerifyResponse>();
 
+	// Output signal
+	loggedIn = output<boolean>();
+
+	// Local state
 	public widget: OktaSignIn | undefined;
-	public error!: string;
+	error = signal<string | null>(null);
 
 	constructor(private readonly sessionService: SessionService) {}
 
@@ -27,12 +39,12 @@ export class OktaAuthComponent implements OnInit {
 
 		this.widget = new OktaSignIn({
 			el: '#okta-signin-container',
-			baseUrl: this.authConfig?.data?.issuer,
-			username: this.email,
+			baseUrl: this.authConfig()?.data?.issuer,
+			username: this.email(),
 			authParams: {
 				pkce: true,
 			},
-			clientId: this.authConfig?.data?.clientId,
+			clientId: this.authConfig()?.data?.clientId,
 			redirectUri: `${window.location.origin}/sso/okta/${orgId}/login`,
 		});
 
@@ -45,7 +57,7 @@ export class OktaAuthComponent implements OnInit {
 				};
 				this.sessionService
 					.oktaSignIn(
-						this.email,
+						this.email(),
 						typedTokens.accessToken as any,
 						typedTokens.idToken as any,
 					)
@@ -54,7 +66,7 @@ export class OktaAuthComponent implements OnInit {
 					});
 			})
 			.catch((err: Error) => {
-				this.error = err.message;
+				this.error.set(err.message);
 			});
 	}
 }

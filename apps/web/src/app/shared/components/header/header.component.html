@@ -1,4 +1,7 @@
 <app-account-bar></app-account-bar>
-<ng-container *ngIf="headerSettings$ | async as settings">
-	<app-navigation-bar [activeRouteState]="routerActiveState$ | async" [class.invert]="settings.invert"></app-navigation-bar>
-</ng-container>
+@if (headerSettings(); as settings) {
+	<app-navigation-bar
+		[activeRouteState]="routerActiveState() ?? null"
+		[class.invert]="settings.invert"
+	></app-navigation-bar>
+}

@@ -1,15 +1,12 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActiveRouteState } from '@datorama/akita-ng-router-store';
-import { Observable } from 'rxjs';
 import { Router, RouterModule } from '@angular/router';
 
-import { GlobalSettings } from '../../../../state/global/global.model';
 import { GlobalQuery } from '../../../../state/global/global.query';
 import { environment } from '../../../../../environments/environment';
 import { SessionQuery } from '../../../../state/session/session.query';
 import { SessionService } from '../../../../state/session/session.service';
-import type { PublicUser } from '../../../../../../../api/src/user/user.entity';
 import { PrimeNgModule } from '../../../primeng.module';
 
 /**
@@ -24,10 +21,13 @@ import { PrimeNgModule } from '../../../primeng.module';
 	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class NavigationBarComponent {
-	@Input() activeRouteState: ActiveRouteState | null = null;
+	// Input signal
+	activeRouteState = input<ActiveRouteState | null>(null);
 
-	public settings$: Observable<GlobalSettings | undefined>;
-	public user$: Observable<PublicUser | undefined>;
+	// Signal selectors
+	settings = this.globalQuery.settings;
+	user = this.sessionQuery.user;
+
 	public production = environment.production;
 
 	constructor(
@@ -35,10 +35,7 @@ export class NavigationBarComponent {
 		private readonly sessionQuery: SessionQuery,
 		private readonly sessionService: SessionService,
 		private readonly router: Router,
-	) {
-		this.settings$ = this.globalQuery.select('settings');
-		this.user$ = this.sessionQuery.select('user');
-	}
+	) {}
 
 	logout(): void {
 		this.sessionService.logout();

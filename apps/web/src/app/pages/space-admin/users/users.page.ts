@@ -1,4 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	OnDestroy,
+	signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -19,21 +25,26 @@ import { ChangeRoleDialogComponent } from './components/change-role-dialog/chang
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, PrimeNgModule, ConfirmDialogModule],
 	providers: [ConfirmationService, MessageService],
 })
 export class UsersPage implements OnInit, OnDestroy {
-	users: SpaceUser[] = [];
-	loading = false;
+	// Signals for zoneless
+	users = signal<SpaceUser[]>([]);
+	loading = signal(false);
+	totalRecords = signal(0);
+
 	spaceId!: string;
 	currentSortField = 'createdAt';
 	currentSortOrder = 'desc';
 	currentSearchQuery = '';
-	totalRecords = 0;
 	currentPage = 1;
 	rowsPerPage = 10;
 	private searchSubject = new Subject<string>();
-	Array = Array;
+
+	// For skeleton rows
+	readonly skeletonRows = Array(5).fill({});
 
 	constructor(
 		private route: ActivatedRoute,
@@ -74,7 +85,7 @@ export class UsersPage implements OnInit, OnDestroy {
 			return;
 		}
 
-		this.loading = true;
+		this.loading.set(true);
 
 		this.spaceUserService
 			.getSpaceUsers(
@@ -87,9 +98,9 @@ export class UsersPage implements OnInit, OnDestroy {
 			)
 			.subscribe({
 				next: (response) => {
-					this.users = response.data?.users || [];
-					this.totalRecords = response.data?.total || 0;
-					this.loading = false;
+					this.users.set(response.data?.users || []);
+					this.totalRecords.set(response.data?.total || 0);
+					this.loading.set(false);
 				},
 				error: (error) => {
 					console.error('Error loading space users:', error);
@@ -99,7 +110,7 @@ export class UsersPage implements OnInit, OnDestroy {
 						detail: 'Failed to load space users',
 						life: 3000,
 					});
-					this.loading = false;
+					this.loading.set(false);
 				},
 			});
 	}

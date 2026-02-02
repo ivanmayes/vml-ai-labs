@@ -1,19 +1,20 @@
 <p-toast></p-toast>
 
-<div class="app-container" *ngIf="loaded">
-	<app-sidebar *ngIf="isLoggedIn$ | async"></app-sidebar>
+@if (loaded()) {
+	<div class="app-container">
+		@if (isLoggedIn()) {
+			<app-sidebar></app-sidebar>
+		}
 
-	<main
-		class="main-content"
-		[class.full-width]="(isLoggedIn$ | async) === false"
-	>
-		<router-outlet></router-outlet>
-	</main>
-</div>
-
-<div class="loading" *ngIf="!loaded">
-	<p-progressSpinner
-		styleClass="w-1rem h-1rem"
-		strokeWidth="4"
-	></p-progressSpinner>
-</div>
+		<main class="main-content" [class.full-width]="!isLoggedIn()">
+			<router-outlet></router-outlet>
+		</main>
+	</div>
+} @else {
+	<div class="loading">
+		<p-progressSpinner
+			styleClass="w-1rem h-1rem"
+			strokeWidth="4"
+		></p-progressSpinner>
+	</div>
+}

@@ -14,8 +14,9 @@
 		<div class="hero-content">
 			<h1 class="hero-title">Welcome to Your Boilerplate</h1>
 			<p class="hero-subtitle">
-				A modern Angular application starter with PrimeNG components, state management, and authentication built-in.
-				Get started by configuring your application and exploring the features below.
+				A modern Angular application starter with PrimeNG components,
+				state management, and authentication built-in. Get started by
+				configuring your application and exploring the features below.
 			</p>
 			<div class="hero-actions">
 				<p-button
@@ -46,13 +47,23 @@
 				<ng-template pTemplate="content">
 					<h3 class="card-title">Configure Your API</h3>
 					<p class="card-description">
-						Set up your backend API endpoints and environment configuration.
-						Update the environment files to connect to your backend services.
+						Set up your backend API endpoints and environment
+						configuration. Update the environment files to connect
+						to your backend services.
 					</p>
 					<ul class="card-checklist">
-						<li><i class="pi pi-check-circle"></i> Update environment.ts files</li>
-						<li><i class="pi pi-check-circle"></i> Configure API base URL</li>
-						<li><i class="pi pi-check-circle"></i> Set up authentication endpoints</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Update
+							environment.ts files
+						</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Configure API
+							base URL
+						</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Set up
+							authentication endpoints
+						</li>
 					</ul>
 				</ng-template>
 			</p-card>
@@ -67,13 +78,22 @@
 				<ng-template pTemplate="content">
 					<h3 class="card-title">Customize Theme</h3>
 					<p class="card-description">
-						Personalize your application's look and feel with our comprehensive design system
-						and PrimeNG theme variables.
+						Personalize your application's look and feel with our
+						comprehensive design system and PrimeNG theme variables.
 					</p>
 					<ul class="card-checklist">
-						<li><i class="pi pi-check-circle"></i> Modify color palette</li>
-						<li><i class="pi pi-check-circle"></i> Adjust typography settings</li>
-						<li><i class="pi pi-check-circle"></i> Configure component themes</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Modify color
+							palette
+						</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Adjust typography
+							settings
+						</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Configure
+							component themes
+						</li>
 					</ul>
 				</ng-template>
 			</p-card>
@@ -88,13 +108,22 @@
 				<ng-template pTemplate="content">
 					<h3 class="card-title">Add Your First Page</h3>
 					<p class="card-description">
-						Learn how to create new pages and routes in your Angular application.
-						Use our page templates to get started quickly.
+						Learn how to create new pages and routes in your Angular
+						application. Use our page templates to get started
+						quickly.
 					</p>
 					<ul class="card-checklist">
-						<li><i class="pi pi-check-circle"></i> Generate page component</li>
-						<li><i class="pi pi-check-circle"></i> Configure routing</li>
-						<li><i class="pi pi-check-circle"></i> Add to navigation menu</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Generate page
+							component
+						</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Configure routing
+						</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Add to navigation
+							menu
+						</li>
 					</ul>
 				</ng-template>
 			</p-card>
@@ -109,13 +138,21 @@
 				<ng-template pTemplate="content">
 					<h3 class="card-title">Deploy Your App</h3>
 					<p class="card-description">
-						Ready to go live? Follow our deployment guide to publish your application
-						to various hosting platforms.
+						Ready to go live? Follow our deployment guide to publish
+						your application to various hosting platforms.
 					</p>
 					<ul class="card-checklist">
-						<li><i class="pi pi-check-circle"></i> Build for production</li>
-						<li><i class="pi pi-check-circle"></i> Configure hosting</li>
-						<li><i class="pi pi-check-circle"></i> Set up CI/CD pipeline</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Build for
+							production
+						</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Configure hosting
+						</li>
+						<li>
+							<i class="pi pi-check-circle"></i> Set up CI/CD
+							pipeline
+						</li>
 					</ul>
 				</ng-template>
 			</p-card>
@@ -126,12 +163,13 @@
 	<section class="features-section">
 		<h2 class="section-title">What's Included</h2>
 		<div class="features-grid">
-			<div class="feature-item" *ngFor="let feature of features">
+			@for (feature of features; track feature.title) {
+			<div class="feature-item">
 				<i [class]="'pi pi-' + feature.icon + ' feature-icon'"></i>
 				<h4 class="feature-title">{{ feature.title }}</h4>
 				<p class="feature-description">{{ feature.description }}</p>
 			</div>
+			}
 		</div>
 	</section>
-
 </div>
