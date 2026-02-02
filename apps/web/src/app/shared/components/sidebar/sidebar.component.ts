@@ -25,6 +25,7 @@ import { UserRole } from '../../../../../../api/src/user/user-role.enum';
  */
 @Component({
 	selector: 'app-sidebar',
+	standalone: false,
 	templateUrl: './sidebar.component.html',
 	styleUrls: ['./sidebar.component.scss'],
 })

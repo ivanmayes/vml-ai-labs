@@ -14,9 +14,9 @@ import { ChangeRoleDialogComponent } from './components/change-role-dialog/chang
 
 @Component({
 	selector: 'app-users',
+
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
-
 	providers: [ConfirmationService, MessageService],
 })
 export class UsersPage implements OnInit, OnDestroy {

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { MessageService } from 'primeng/api';
 
 import { HomeComponent } from './home.page';
@@ -12,7 +13,8 @@ describe('HomeComponent', () => {
 
 	beforeEach(waitForAsync(() => {
 		TestBed.configureTestingModule({
-			imports: [HomeComponent],
+			declarations: [HomeComponent],
+			schemas: [NO_ERRORS_SCHEMA],
 			providers: [
 				provideHttpClient(),
 				provideHttpClientTesting(),

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { of } from 'rxjs';
 import { RouterQuery } from '@datorama/akita-ng-router-store';
 
@@ -18,7 +19,8 @@ describe('HeaderComponent', () => {
 
 	beforeEach(waitForAsync(() => {
 		TestBed.configureTestingModule({
-			imports: [HeaderComponent],
+			declarations: [HeaderComponent],
+			schemas: [NO_ERRORS_SCHEMA],
 			providers: [
 				provideRouter([]),
 				provideHttpClient(),

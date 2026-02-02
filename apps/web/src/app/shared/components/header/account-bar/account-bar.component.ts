@@ -1,9 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MenuItem } from 'primeng/api';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Router, RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { GlobalSettings } from '../../../../state/global/global.model';
 import { GlobalQuery } from '../../../../state/global/global.query';
@@ -13,7 +12,6 @@ import { environment } from '../../../../../environments/environment';
 import type { PublicUser } from '../../../../../../../api/src/user/user.entity';
 import { UserRole } from '../../../../../../../api/src/user/user-role.enum';
 import { ThemeService } from '../../../services/theme.service';
-import { PrimeNgModule } from '../../../primeng.module';
 
 /**
  * Account Bar Component
@@ -21,9 +19,9 @@ import { PrimeNgModule } from '../../../primeng.module';
  */
 @Component({
 	selector: 'app-account-bar',
+	standalone: false,
 	templateUrl: './account-bar.component.html',
 	styleUrls: ['./account-bar.component.scss'],
-	imports: [CommonModule, RouterModule, PrimeNgModule],
 })
 export class AccountBarComponent implements OnInit {
 	public settings$: Observable<GlobalSettings | undefined>;

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { SessionService } from '../../../state/session/session.service';
 
@@ -12,7 +13,8 @@ describe('OktaAuthComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [OktaAuthComponent],
+			declarations: [OktaAuthComponent],
+			schemas: [NO_ERRORS_SCHEMA],
 			providers: [
 				provideHttpClient(),
 				provideHttpClientTesting(),

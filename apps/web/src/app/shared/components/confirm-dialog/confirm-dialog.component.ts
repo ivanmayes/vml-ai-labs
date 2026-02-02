@@ -1,9 +1,6 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
-
-import { PrimeNgModule } from '../../primeng.module';
 
 export interface ConfirmDialogData {
 	title?: string;
@@ -22,9 +19,9 @@ export interface ConfirmDialogData {
  */
 @Component({
 	selector: 'app-confirm-dialog',
+	standalone: false,
 	templateUrl: './confirm-dialog.component.html',
 	styleUrls: ['./confirm-dialog.component.scss'],
-	imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
 })
 export class ConfirmDialogComponent {
 	confirmation = new FormGroup({

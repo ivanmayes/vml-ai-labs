@@ -7,6 +7,7 @@ import { SpaceUser } from '../../../../../shared/models/space-user.model';
 
 @Component({
 	selector: 'app-change-role-dialog',
+
 	templateUrl: './change-role-dialog.component.html',
 	styleUrls: ['./change-role-dialog.component.scss'],
 })

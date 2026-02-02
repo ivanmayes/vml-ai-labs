@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 
 @Component({
 	selector: 'app-space-admin',
+
 	templateUrl: './space-admin.page.html',
 	styleUrls: ['./space-admin.page.scss'],
 })

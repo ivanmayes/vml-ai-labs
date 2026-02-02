@@ -1,5 +1,4 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import OktaSignIn from '@okta/okta-signin-widget';
 
 import { VerifyResponse } from '../../../state/session/session.model';
@@ -8,9 +7,9 @@ import { environment } from '../../../../environments/environment';
 
 @Component({
 	selector: 'app-auth-okta',
+	standalone: false,
 	templateUrl: './okta.component.html',
 	styleUrls: ['./okta.component.scss'],
-	imports: [CommonModule],
 })
 export class OktaAuthComponent implements OnInit {
 	@Input() email!: string;

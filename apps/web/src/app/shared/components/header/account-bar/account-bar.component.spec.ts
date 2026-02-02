@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { of } from 'rxjs';
 
 import { GlobalQuery } from '../../../../state/global/global.query';
@@ -17,7 +18,8 @@ describe('AccountBarComponent', () => {
 
 	beforeEach(waitForAsync(() => {
 		TestBed.configureTestingModule({
-			imports: [AccountBarComponent],
+			declarations: [AccountBarComponent],
+			schemas: [NO_ERRORS_SCHEMA],
 			providers: [
 				provideRouter([]),
 				provideHttpClient(),

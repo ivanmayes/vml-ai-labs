@@ -1,6 +1,6 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Location } from '@angular/common';
+import { Router } from '@angular/router';
 import { DialogService } from 'primeng/dynamicdialog';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -19,8 +19,6 @@ import { fade } from './_core/utils/animations.utils';
 import { SelectDialogComponent } from './shared/components/select-dialog/select-dialog.component';
 import { ORG_SETTINGS } from './state/session/session.store';
 import { WppOpenService } from './_core/services/wpp-open/wpp-open.service';
-import { HeaderComponent } from './shared/components/header/header.component';
-import { PrimeNgModule } from './shared/primeng.module';
 
 interface ApiSetting {
 	name: string;
@@ -37,10 +35,10 @@ interface WppOpenLoginResponse {
 
 @Component({
 	selector: 'app-root',
+	standalone: false,
 	templateUrl: './app.component.html',
 	styleUrls: ['./app.component.scss'],
 	animations: [fade('fade', 500)],
-	imports: [CommonModule, RouterModule, HeaderComponent, PrimeNgModule],
 })
 export class AppComponent implements OnInit {
 	public loaded = false;
