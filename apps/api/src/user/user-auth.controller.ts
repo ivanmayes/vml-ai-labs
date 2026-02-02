@@ -9,8 +9,6 @@ import {
 	HttpStatus,
 	Param,
 	Query,
-	Req,
-	Res,
 	NotFoundException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -20,16 +18,12 @@ import axios from 'axios';
 
 import { HasOrganizationAccessGuard } from '../organization/guards/has-organization-access.guard';
 import { NotificationService } from '../notification/notification.service';
-import {
-	RemoteStatus,
-	OrganizationService,
-} from '../organization/organization.service';
+import { OrganizationService } from '../organization/organization.service';
 import { Organization } from '../organization/organization.entity';
 import {
 	AuthenticationStrategyType,
 	OktaConfig,
 } from '../authentication-strategy/authentication-strategy.entity';
-import { Crypt } from '../_core/crypt';
 import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
 import { ResponseEnvelope, ResponseStatus } from '../_core/models';
 import { WPPOpen } from '../_core/third-party/wpp-open';
@@ -37,7 +31,6 @@ import {
 	WorkspaceHierarchy,
 	WPPOpenTokenResponse,
 } from '../_core/third-party/wpp-open/models';
-import { SpaceUserService } from '../space-user/space-user.service';
 import { SpaceService } from '../space/space.service';
 import { Space } from '../space/space.entity';
 import { SpaceRole } from '../space-user/space-role.enum';
@@ -45,12 +38,6 @@ import { SpaceUser } from '../space-user/space-user.entity';
 
 import { WPPOpenLoginRequestDto } from './dtos/wpp-open-login-request.dto';
 import { PermissionsGuard } from './permission/permission.guard';
-import { Permissions } from './permission/permission.decorator';
-import { PermissionType } from './permission/models/permission.enum';
-import {
-	SAML2_0LoginRequestDto,
-	SAML2_0Response,
-} from './dtos/saml-login-request.dto';
 import { AuthService } from './auth/auth.service';
 import {
 	CodeRequestDto,
@@ -75,7 +62,6 @@ export class UserAuthController {
 		private readonly authService: AuthService,
 		private readonly notificationService: NotificationService,
 		private readonly organizationService: OrganizationService,
-		private readonly spaceUserService: SpaceUserService,
 		private readonly spaceService: SpaceService,
 	) {}
 
