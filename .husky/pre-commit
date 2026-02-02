@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
+# Load nvm if available (for consistent Node.js version in git hooks)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 # Stage 1: lint-staged (ESLint, StyleLint, Prettier)
 echo "=== Running lint-staged ==="
 npx lint-staged

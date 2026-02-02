@@ -1,6 +1,7 @@
 /**
  * AI Service
  * Injectable NestJS service that orchestrates AI provider interactions
+ * Supports: OpenAI, Anthropic, Google, Azure OpenAI, Amazon Bedrock
  */
 
 import { Injectable, Logger } from '@nestjs/common';
