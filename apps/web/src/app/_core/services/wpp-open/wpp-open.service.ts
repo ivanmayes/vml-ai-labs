@@ -4,8 +4,9 @@ import {
 	OsContext,
 } from '@wppopen/core';
 import { connectToParent, AsyncMethodReturns } from 'penpal';
-import { environment } from '../../../../environments/environment';
 import { Injectable } from '@angular/core';
+
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
 	providedIn: 'root',
@@ -23,14 +24,13 @@ export class WppOpenService {
 		debug: true,
 	};
 
-	private _context: OsContext;
+	private _context!: OsContext;
 	public get context(): OsContext {
 		return this._context;
 	}
 
 	public connect(): Promise<void> {
 		return new Promise((resolve, reject) => {
-			console.log(this.config);
 			if (this.connected || this.connecting) {
 				resolve();
 				return;
@@ -45,8 +45,6 @@ export class WppOpenService {
 					receiveOsContext: (context: OsContext) => {
 						this.connecting = false;
 						this.connected = true;
-						console.error('RECEIVED CONTEXT VVVVV');
-						console.log(context);
 						this._context = context;
 						resolve();
 					},
@@ -58,8 +56,7 @@ export class WppOpenService {
 				.then((conn) => {
 					this.connection = conn;
 				})
-				.catch((err) => {
-					console.error(err);
+				.catch(() => {
 					this.connecting = false;
 					reject(new Error('Failed to connect to parent.'));
 				});
@@ -68,8 +65,7 @@ export class WppOpenService {
 
 	public async getAccessToken() {
 		if (!this.connection) {
-			await this.connect().catch((err) => {
-				console.error(err);
+			await this.connect().catch(() => {
 				return null;
 			});
 		}
@@ -80,8 +76,7 @@ export class WppOpenService {
 
 		const accessToken = await this.connection.osApi
 			.getAccessToken()
-			.catch((err) => {
-				console.error(err);
+			.catch(() => {
 				return null;
 			});
 
@@ -94,8 +89,7 @@ export class WppOpenService {
 
 	public async getOsContext() {
 		if (!this.connection) {
-			await this.connect().catch((err) => {
-				console.error(err);
+			await this.connect().catch(() => {
 				return null;
 			});
 		}
@@ -109,8 +103,7 @@ export class WppOpenService {
 
 	public async getWorkspaceScope() {
 		if (!this.connection) {
-			await this.connect().catch((err) => {
-				console.error(err);
+			await this.connect().catch(() => {
 				return null;
 			});
 		}
@@ -124,9 +117,9 @@ export class WppOpenService {
 			throw new Error('Workspace ID not found.');
 		}
 
-		const scopeId = Object.values(this.context?.workspace?.mapping).find(
-			(v) => !v.parentAzId,
-		)?.azId;
+		const scopeId = Object.values(
+			this.context?.workspace?.mapping ?? {},
+		).find((v) => !v.parentAzId)?.azId;
 
 		return {
 			workspaceId,
@@ -136,8 +129,7 @@ export class WppOpenService {
 
 	public async getClient() {
 		if (!this.connection) {
-			await this.connect().catch((err) => {
-				console.error(err);
+			await this.connect().catch(() => {
 				return null;
 			});
 		}
@@ -146,7 +138,7 @@ export class WppOpenService {
 			throw new Error('Connection not established.');
 		}
 
-		for (const v of Object.values(this.context?.workspace?.mapping)) {
+		for (const v of Object.values(this.context?.workspace?.mapping ?? {})) {
 			if (v.type === DefaultHierarchyLevelType.Client) {
 				return v;
 			}

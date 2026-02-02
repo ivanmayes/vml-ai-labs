@@ -2,48 +2,47 @@ import {
 	Entity,
 	Column,
 	PrimaryGeneratedColumn,
-	Unique,
 	ManyToOne,
 	JoinColumn,
-	Index
 } from 'typeorm';
+
 import { Organization } from '../organization/organization.entity';
 
 export enum AuthenticationStrategyType {
 	Basic = 'basic',
 	Okta = 'okta',
-	SAML2_0 = 'saml2.0'
+	SAML2_0 = 'saml2.0',
 }
 
 export enum OktaUiType {
 	Redirect = 'redirect',
-	Widget = 'widget'
+	Widget = 'widget',
 }
 
 export enum OktaStrategy {
 	OpenIDConnect = 'openIDConnect',
 	OAuth2 = 'oauth2',
-	SAML = 'saml'
+	SAML = 'saml',
 }
 
 export class OktaConfig {
-	clientId: string;
-	oktaDomain: string;
-	strategy: OktaStrategy;
-	uiType: OktaUiType;
+	clientId!: string;
+	oktaDomain!: string;
+	strategy!: OktaStrategy;
+	uiType!: OktaUiType;
 }
 
 export class BasicConfig {
-	codeLength: number;
-	codeLifetime: string;
+	codeLength!: number;
+	codeLifetime!: string;
 }
 
 export class SAML2_0Challenge {
-	userId: string;
-	organizationId: string;
-	nonce: string;
-	host: string;
-	expires: number;
+	userId!: string;
+	organizationId!: string;
+	nonce!: string;
+	host!: string;
+	expires!: number;
 }
 
 export type PublicAuthenticationStrategy = Pick<
@@ -53,40 +52,42 @@ export type PublicAuthenticationStrategy = Pick<
 
 @Entity('authenticationStrategies')
 export class AuthenticationStrategy {
+	[key: string]: unknown;
+
 	constructor(value?: Partial<AuthenticationStrategy>) {
-		for(const k in value) {
+		for (const k in value) {
 			this[k] = value[k];
 		}
 	}
 
 	@PrimaryGeneratedColumn('uuid')
-	id: string;
+	id!: string;
 
 	@Column('text', { nullable: false })
-	name: string;
+	name!: string;
 
 	@Column({
 		type: 'enum',
-		enum: AuthenticationStrategyType
+		enum: AuthenticationStrategyType,
 	})
-	type: AuthenticationStrategyType;
+	type!: AuthenticationStrategyType;
 
 	@Column('jsonb', { nullable: false })
-	config: BasicConfig | OktaConfig;
+	config!: BasicConfig | OktaConfig;
 
 	@Column('text')
-	organizationId: string;
-	@ManyToOne(() => Organization, organization => organization.id, {
-		onDelete: 'CASCADE'
+	organizationId!: string;
+	@ManyToOne(() => Organization, (organization) => organization.id, {
+		onDelete: 'CASCADE',
 	})
 	@JoinColumn({ name: 'organizationId' })
-	organization: Organization | Partial<Organization>;
+	organization!: Organization | Partial<Organization>;
 
 	public toPublic(): PublicAuthenticationStrategy {
 		const pub: Partial<PublicAuthenticationStrategy> = {
 			id: this.id,
 			name: this.name,
-			type: this.type
+			type: this.type,
 		};
 
 		return pub as PublicAuthenticationStrategy;

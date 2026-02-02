@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Store, StoreConfig } from '@datorama/akita';
+
 import { GlobalState, initialGlobalState } from './global.model';
 
 export function createInitialState(): GlobalState {

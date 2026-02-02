@@ -5,13 +5,12 @@ import { CollectionResponse } from './models';
 export { Utils } from './utils';
 
 export class Strapi {
-	private readonly config = {
-		host: process.env.STRAPI_HOST?.replace(/\/$/, ''),
-		token: process.env.STRAPI_TOKEN
-	};
-
-	public static async queryCollection(collection: string, page: number = 1, pageSize: number = 10): Promise<CollectionResponse<any>> {
-		if(!this.isConfigured()) {
+	public static async queryCollection(
+		collection: string,
+		page: number = 1,
+		pageSize: number = 10,
+	): Promise<CollectionResponse<any>> {
+		if (!this.isConfigured()) {
 			throw new Error('Strapi not configured');
 		}
 
@@ -23,8 +22,8 @@ export class Strapi {
 			.get(`${process.env.STRAPI_HOST}/api/${collection}`, {
 				params,
 				headers: {
-					Authorization: `Bearer ${process.env.STRAPI_TOKEN}`
-				}
+					Authorization: `Bearer ${process.env.STRAPI_TOKEN}`,
+				},
 			})
 			.then((res) => res.data)
 			.catch((err) => {
@@ -32,7 +31,7 @@ export class Strapi {
 				return null;
 			});
 
-		if(!response) {
+		if (!response) {
 			throw new Error('Failed to query collection');
 		}
 

@@ -1,10 +1,10 @@
 import readline from 'readline';
-import colors from 'colors';
+import 'colors';
 
 export enum ErrorLevel {
 	Info = 'info',
 	Warning = 'warning',
-	Error = 'error'
+	Error = 'error',
 }
 
 export class Utils {
@@ -13,16 +13,21 @@ export class Utils {
 			input: process.stdin,
 			output: process.stdout,
 		});
-	
-		return new Promise(resolve => rl.question(prompt, ans => {
-			rl.close();
-			resolve(ans);
-		}));
+
+		return new Promise((resolve) =>
+			rl.question(prompt, (ans) => {
+				rl.close();
+				resolve(ans);
+			}),
+		);
 	}
 
-	public static formatMessage(message: string, errorLevel: ErrorLevel = ErrorLevel.Info) {
+	public static formatMessage(
+		message: string,
+		errorLevel: ErrorLevel = ErrorLevel.Info,
+	) {
 		let header = '::INFO::'.bgWhite.black.bold;
-		switch(errorLevel) {
+		switch (errorLevel) {
 			case ErrorLevel.Warning:
 				header = '::WARNING::'.bgYellow.black.bold;
 				break;

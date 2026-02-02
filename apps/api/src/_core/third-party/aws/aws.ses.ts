@@ -1,4 +1,5 @@
 import { Stream } from 'stream';
+
 import AWS from 'aws-sdk';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import nodemailer from 'nodemailer';
@@ -18,12 +19,13 @@ export interface AttachmentData {
 }
 
 export class SES {
-	private static readonly isDebug = process.env.DEBUG || false;
-
 	private static sesConfig = {
 		awsRegion: process.env.AWS_SES_REGION || process.env.AWS_REGION,
-		accessKeyId: process.env.AWS_SES_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
-		secretAccessKey: process.env.AWS_SES_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY
+		accessKeyId:
+			process.env.AWS_SES_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
+		secretAccessKey:
+			process.env.AWS_SES_SECRET_ACCESS_KEY ||
+			process.env.AWS_SECRET_ACCESS_KEY,
 	};
 
 	// public static async send(
@@ -74,21 +76,21 @@ export class SES {
 		text: string,
 		html: string,
 		attachments?: AttachmentData[],
-		cc?: string | Email[],
-		bcc?: string | Email[],
-		allBcc?: boolean
+		_cc?: string | Email[],
+		_bcc?: string | Email[],
+		allBcc?: boolean,
 	) {
-		if(process.env.RUNTIME_ENVIRONMENT !== 'aws') {
+		if (process.env.RUNTIME_ENVIRONMENT !== 'aws') {
 			AWS.config.update({
 				accessKeyId: this.sesConfig.accessKeyId,
-				secretAccessKey: this.sesConfig.secretAccessKey
+				secretAccessKey: this.sesConfig.secretAccessKey,
 			});
 		}
 
 		const sesClient = new SESv2Client({ region: this.sesConfig.awsRegion });
 
 		const transport = nodemailer.createTransport({
-			SES: { sesClient, SendEmailCommand}
+			SES: { sesClient, SendEmailCommand },
 		});
 
 		const request: any = {
@@ -96,26 +98,25 @@ export class SES {
 			from,
 			subject,
 			text,
-			html
+			html,
 		};
 
-		if(allBcc) {
+		if (allBcc) {
 			request.bcc = to;
 			delete request.to;
 		}
 
-		if(attachments) {
+		if (attachments) {
 			request.attachments = attachments;
 		}
 
-		const result = await transport.sendMail(request)
-			.catch((err: any) => {
-				console.log(err);
-				return null;
-			});
+		const result = await transport.sendMail(request).catch((err: Error) => {
+			console.log(err);
+			return null;
+		});
 
-		if(!result) {
-			throw new Error('Coulnd\'t send email.');
+		if (!result) {
+			throw new Error("Coulnd't send email.");
 		}
 
 		return result;

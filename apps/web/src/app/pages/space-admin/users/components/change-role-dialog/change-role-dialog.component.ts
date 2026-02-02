@@ -1,32 +1,31 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
+
 import { SpaceRole } from '../../../../../shared/models/space-role.enum';
 import { SpaceUser } from '../../../../../shared/models/space-user.model';
 
 @Component({
-	standalone: false,
 	selector: 'app-change-role-dialog',
 	templateUrl: './change-role-dialog.component.html',
 	styleUrls: ['./change-role-dialog.component.scss'],
-	
 })
 export class ChangeRoleDialogComponent implements OnInit {
 	roleForm: FormGroup;
-	user: SpaceUser;
+	user!: SpaceUser;
 	roles = [
 		{ label: 'Admin', value: SpaceRole.SpaceAdmin },
-		{ label: 'User', value: SpaceRole.SpaceUser }
+		{ label: 'User', value: SpaceRole.SpaceUser },
 	];
 	loading = false;
 
 	constructor(
 		private fb: FormBuilder,
 		public ref: DynamicDialogRef,
-		public config: DynamicDialogConfig
+		public config: DynamicDialogConfig,
 	) {
 		this.roleForm = this.fb.group({
-			role: ['', Validators.required]
+			role: ['', Validators.required],
 		});
 	}
 
@@ -35,7 +34,7 @@ export class ChangeRoleDialogComponent implements OnInit {
 		if (this.config.data?.user) {
 			this.user = this.config.data.user;
 			this.roleForm.patchValue({
-				role: this.user.role
+				role: this.user.role,
 			});
 		}
 	}

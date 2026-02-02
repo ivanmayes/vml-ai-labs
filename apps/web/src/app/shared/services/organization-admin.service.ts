@@ -1,25 +1,29 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+
 import { environment } from '../../../environments/environment';
 
+// TODO: Move these DTOs to @api/* and import from there
+// eslint-disable-next-line no-restricted-syntax -- DTOs to be moved to API package
 export interface PromoteUserDto {
 	userId: string;
 	targetRole: string;
 }
 
+// eslint-disable-next-line no-restricted-syntax -- DTOs to be moved to API package
 export interface BanUserDto {
 	userId: string;
 	banned: boolean;
 }
 
 @Injectable({
-	providedIn: 'root'
+	providedIn: 'root',
 })
 export class OrganizationAdminService {
 	private readonly apiUrl = environment.apiUrl;
 	private readonly defaultHeaders = new HttpHeaders({
-		'Accept': 'application/json'
+		Accept: 'application/json',
 	});
 
 	constructor(private readonly http: HttpClient) {}
@@ -27,11 +31,16 @@ export class OrganizationAdminService {
 	getOrganization(orgId: string): Observable<any> {
 		return this.http.get<any>(
 			`${this.apiUrl}/organization/${orgId}/settings`,
-			{ headers: this.defaultHeaders }
+			{ headers: this.defaultHeaders },
 		);
 	}
 
-	getUsers(orgId: string, sortBy?: string, order?: string, query?: string): Observable<any> {
+	getUsers(
+		orgId: string,
+		sortBy?: string,
+		order?: string,
+		query?: string,
+	): Observable<any> {
 		let url = `${this.apiUrl}/admin/organization/${orgId}/user`;
 		const params: string[] = [];
 
@@ -56,7 +65,7 @@ export class OrganizationAdminService {
 		return this.http.post<any>(
 			`${this.apiUrl}/admin/organization/${orgId}/user/promote`,
 			dto,
-			{ headers: this.defaultHeaders }
+			{ headers: this.defaultHeaders },
 		);
 	}
 
@@ -64,11 +73,17 @@ export class OrganizationAdminService {
 		return this.http.post<any>(
 			`${this.apiUrl}/admin/organization/${orgId}/user/ban`,
 			dto,
-			{ headers: this.defaultHeaders }
+			{ headers: this.defaultHeaders },
 		);
 	}
 
-	inviteUser(orgId: string, email: string, role: string, authenticationStrategyId: string, profile: any): Observable<any> {
+	inviteUser(
+		orgId: string,
+		email: string,
+		role: string,
+		authenticationStrategyId: string | undefined,
+		profile: any,
+	): Observable<any> {
 		return this.http.post<any>(
 			`${this.apiUrl}/admin/organization/${orgId}/user`,
 			{
@@ -76,9 +91,9 @@ export class OrganizationAdminService {
 				role,
 				authenticationStrategyId,
 				profile,
-				deactivated: false
+				deactivated: false,
 			},
-			{ headers: this.defaultHeaders }
+			{ headers: this.defaultHeaders },
 		);
 	}
 
@@ -86,7 +101,7 @@ export class OrganizationAdminService {
 		return this.http.put<any>(
 			`${this.apiUrl}/organization/${orgId}`,
 			data,
-			{ headers: this.defaultHeaders }
+			{ headers: this.defaultHeaders },
 		);
 	}
 }

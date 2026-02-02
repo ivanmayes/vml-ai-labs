@@ -4,58 +4,68 @@ import {
 	PrimaryGeneratedColumn,
 	ManyToOne,
 	JoinColumn,
-	Index
+	Index,
 } from 'typeorm';
 
 import { Organization } from '../organization/organization.entity';
 
-export type PublicSpace = Pick<Space, 'id' | 'name' | 'created' | 'isPublic' | 'settings' | 'approvedWPPOpenTenantIds'>;
+export type PublicSpace = Pick<
+	Space,
+	| 'id'
+	| 'name'
+	| 'created'
+	| 'isPublic'
+	| 'settings'
+	| 'approvedWPPOpenTenantIds'
+>;
 
 export type MinimalSpace = Pick<Space, 'id' | 'name' | 'created' | 'isPublic'>;
 
 @Entity('spaces')
 @Index(['organizationId'])
 export class Space {
+	[key: string]: unknown;
+
 	constructor(value?: Partial<Space>) {
-		if(value) {
+		if (value) {
 			value = structuredClone(value);
 		}
-		for(const k in value) {
+		for (const k in value) {
 			this[k] = value[k];
 		}
 	}
 
 	@PrimaryGeneratedColumn('uuid')
-	id: string;
+	id!: string;
 
 	@Column('text', {
-		nullable: false
+		nullable: false,
 	})
-	name: string;
+	name!: string;
 
 	@Column('text')
-	organizationId: string;
+	organizationId!: string;
 	@ManyToOne(() => Organization, {
-		onDelete: 'CASCADE'
+		onDelete: 'CASCADE',
 	})
 	@JoinColumn({ name: 'organizationId' })
-	organization: Organization | Partial<Organization>;
+	organization!: Organization | Partial<Organization>;
 
 	@Column({ type: 'timestamptz', default: () => 'NOW()' })
-	created: string;
+	created!: string;
 
 	@Column('jsonb', {
-		default: {}
+		default: {},
 	})
-	settings: Record<string, any>;
+	settings!: Record<string, any>;
 
 	@Column('boolean', {
-		default: true
+		default: true,
 	})
-	isPublic: boolean;
+	isPublic!: boolean;
 
 	@Column('text', { array: true, default: '{}' })
-	approvedWPPOpenTenantIds: string[];
+	approvedWPPOpenTenantIds!: string[];
 
 	public toPublic(): PublicSpace {
 		return {
@@ -64,7 +74,7 @@ export class Space {
 			created: this.created,
 			isPublic: this.isPublic,
 			settings: this.settings,
-			approvedWPPOpenTenantIds: this.approvedWPPOpenTenantIds || []
+			approvedWPPOpenTenantIds: this.approvedWPPOpenTenantIds || [],
 		};
 	}
 
@@ -73,7 +83,7 @@ export class Space {
 			id: this.id,
 			name: this.name,
 			created: this.created,
-			isPublic: this.isPublic
+			isPublic: this.isPublic,
 		};
 	}
 }

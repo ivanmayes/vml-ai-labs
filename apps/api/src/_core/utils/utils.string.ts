@@ -1,112 +1,115 @@
 const isDebug = process.env.DEBUG || false;
 
 export interface Address {
-	street: string;
-	city: string;
-	state: string;
-	zip: string;
+	street?: string;
+	city?: string;
+	state?: string;
+	zip?: string;
 }
 
 export class String {
 	// Note, this will NOT work for anything but the simplest cases.
 	// ex: McTavish, will not come out properly.
 	public static titleCase(input: any): any {
-		if(!(typeof input === 'string')) {
+		if (!(typeof input === 'string')) {
 			return input;
 		}
 		return input
 			.split(' ')
-			.map(i => {
-				return i[0].toUpperCase() + (i.length > 1 ? i.slice(1)
-					.toLowerCase() : '');
+			.map((i) => {
+				return (
+					i[0].toUpperCase() +
+					(i.length > 1 ? i.slice(1).toLowerCase() : '')
+				);
 			})
 			.join(' ');
 	}
 
 	public static slugify(input: string) {
-		if(!input) {
-			input = '';
-		}
-		return input
+		const str = input || '';
+		return str
 			.trim()
 			.toLowerCase()
 			.replace(/\s/g, '-')
-			.replace(/[^a-z0-9\-]/g, '');
+			.replace(/[^a-z0-9-]/g, '');
 	}
 
 	public static addTrailingSlash(input: string) {
-		if(!input) {
-			input = '';
-		}
-		return input.endsWith('/') ? input : input + '/';
+		const str = input || '';
+		return str.endsWith('/') ? str : str + '/';
 	}
 
 	public static toAddress(address: string): Address {
-		if(!address || !address.length) {
+		if (!address || !address.length) {
 			return {
 				street: undefined,
 				city: undefined,
 				state: undefined,
-				zip: undefined
+				zip: undefined,
 			};
 		}
-		// Remove double spaces.
-		address = address.replace(/\s\s/g, ' ');
-		// Remove comma space.
-		address = address.replace(/\s,/g, ',');
-		// Remove junk whitespace.
-		address = address.trim();
-		let street, city, state, zip;
+		// Normalize: remove double spaces, comma space, and trim whitespace.
+		const normalized = address
+			.replace(/\s\s/g, ' ')
+			.replace(/\s,/g, ',')
+			.trim();
 
 		// Parse what we can.
 		try {
-			const stateZip = address
-				.substring(address.lastIndexOf(',') + 1, address.length)
+			const stateZip = normalized
+				.substring(normalized.lastIndexOf(',') + 1, normalized.length)
 				.trim()
 				.split(' ');
-			const streetCity = address.substring(0, address.lastIndexOf(','))
+			const streetCity = normalized
+				.substring(0, normalized.lastIndexOf(','))
 				.trim();
 
-			street = streetCity.substring(0, streetCity.lastIndexOf(','))
+			const street = streetCity
+				.substring(0, streetCity.lastIndexOf(','))
 				.trim();
-			city = streetCity.substring(streetCity.lastIndexOf(',') + 1, streetCity.length)
+			const city = streetCity
+				.substring(streetCity.lastIndexOf(',') + 1, streetCity.length)
 				.trim();
-			state = stateZip[0];
-			zip = stateZip[1];
-		} catch(err) {
-			if(isDebug) {
+			const state = stateZip[0];
+			const zip = stateZip[1];
+
+			return { street, city, state, zip };
+		} catch (err) {
+			if (isDebug) {
 				console.log(err);
 			}
+			return {
+				street: undefined,
+				city: undefined,
+				state: undefined,
+				zip: undefined,
+			};
 		}
-
-		return {
-			street,
-			city,
-			state,
-			zip
-		};
 	}
 
 	public static cleanIPAddress(ip: string): string {
-		if(!ip?.length) {
+		if (!ip?.length) {
 			return '';
 		}
 
-		ip = ip.trim();
+		let cleaned = ip.trim();
 
 		// V6-V4 wrapper.
-		if(ip.includes('::ffff:')) {
-			ip = ip.replace(/::ffff:/g, '');
+		if (cleaned.includes('::ffff:')) {
+			cleaned = cleaned.replace(/::ffff:/g, '');
 		}
 		// V6 with port.
-		if(ip.includes(']')) {
-			return ip.slice(0, ip.lastIndexOf(':')).replace('[', '').replace(']', '');
+		if (cleaned.includes(']')) {
+			return cleaned
+				.slice(0, cleaned.lastIndexOf(':'))
+				.replace('[', '')
+				.replace(']', '');
 		}
 		// V4 with port.
-		else if(ip.match(/:/g)?.length === 1) {
-			return ip.split(':')[0];
+		else if (cleaned.match(/:/g)?.length === 1) {
+			return cleaned.split(':')[0];
 		}
 
-		return ip;
+		return cleaned;
 	}
 }

@@ -43,6 +43,7 @@
 		font-weight: 700;
 		margin: 0 0 1rem;
 		line-height: 1.2;
+		color: var(--p-primary-contrast-color);
 
 		@media (width <= 768px) {
 			font-size: 2rem;

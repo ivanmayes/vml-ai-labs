@@ -8,13 +8,13 @@ import {
 	In,
 } from 'typeorm';
 
-import { UsersFilterDto } from './dtos/user-filter.dto';
+import { SortStrategy } from '../_core/models/sort-strategy';
+import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
 
+import { UsersFilterDto } from './dtos/user-filter.dto';
 import { User } from './user.entity';
 import { UserRole } from './user-role.enum';
 import { Utils } from './user.utils';
-import { SortStrategy } from '../_core/models/sort-strategy';
-import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
 
 export class AccessList {
 	organizationId: string;
@@ -34,8 +34,6 @@ export class GetAllUserOptions {
 }
 @Injectable()
 export class UserService {
-	private readonly debug = process.env.DEBUG || false;
-
 	constructor(
 		@InjectRepository(User)
 		private readonly userRepository: Repository<User>,
@@ -239,7 +237,7 @@ export class UserService {
 			);
 		}
 
-		if (sortBy && sortBy != 'name') {
+		if (sortBy && sortBy !== 'name') {
 			qb.orderBy(`user.${sortBy}`, sortOrder ?? 'ASC');
 		}
 
@@ -256,7 +254,7 @@ export class UserService {
 		requestingUser: User,
 	) {
 		// Validate the requesting user can promote to the target role
-		if (!Utils.canUserAddRole(requestingUser.role, targetRole)) {
+		if (!Utils.canUserAddRole(requestingUser.role ?? '', targetRole)) {
 			throw new Error(
 				`You don't have permission to promote users to role: ${targetRole}`,
 			);

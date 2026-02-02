@@ -1,27 +1,28 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService } from 'primeng/dynamicdialog';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+
 import { SpaceUserService } from '../../../shared/services/space-user.service';
 import { SpaceUser } from '../../../shared/models/space-user.model';
 import { SpaceRole } from '../../../shared/models/space-role.enum';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+
 import { InviteUserDialogComponent } from './components/invite-user-dialog/invite-user-dialog.component';
 import { ChangeRoleDialogComponent } from './components/change-role-dialog/change-role-dialog.component';
 
 @Component({
-	standalone: false,
 	selector: 'app-users',
 	templateUrl: './users.page.html',
 	styleUrls: ['./users.page.scss'],
-	
-	providers: [ConfirmationService, MessageService]
+
+	providers: [ConfirmationService, MessageService],
 })
 export class UsersPage implements OnInit, OnDestroy {
 	users: SpaceUser[] = [];
 	loading = false;
-	spaceId: string;
+	spaceId!: string;
 	currentSortField = 'createdAt';
 	currentSortOrder = 'desc';
 	currentSearchQuery = '';
@@ -36,17 +37,16 @@ export class UsersPage implements OnInit, OnDestroy {
 		private spaceUserService: SpaceUserService,
 		private messageService: MessageService,
 		private dialogService: DialogService,
-		private confirmationService: ConfirmationService
+		private confirmationService: ConfirmationService,
 	) {
 		// Debounce search input by 400ms
-		this.searchSubject.pipe(
-			debounceTime(400),
-			distinctUntilChanged()
-		).subscribe(query => {
-			this.currentSearchQuery = query;
-			this.currentPage = 1;
-			this.loadUsers();
-		});
+		this.searchSubject
+			.pipe(debounceTime(400), distinctUntilChanged())
+			.subscribe((query) => {
+				this.currentSearchQuery = query;
+				this.currentPage = 1;
+				this.loadUsers();
+			});
 	}
 
 	onSearch(event: Event): void {
@@ -57,7 +57,7 @@ export class UsersPage implements OnInit, OnDestroy {
 	ngOnInit(): void {
 		// Get space ID from route params (need to go up to the module route level)
 		// Route hierarchy: /space/:id/admin → SpaceAdminPage (parent) → users (this component)
-		this.route.parent?.parent?.params.subscribe(params => {
+		this.route.parent?.parent?.params.subscribe((params) => {
 			this.spaceId = params['id'];
 			if (this.spaceId) {
 				this.loadUsers();
@@ -73,30 +73,32 @@ export class UsersPage implements OnInit, OnDestroy {
 
 		this.loading = true;
 
-		this.spaceUserService.getSpaceUsers(
-			this.spaceId,
-			this.currentSearchQuery,
-			this.currentSortField,
-			this.currentSortOrder,
-			this.currentPage,
-			this.rowsPerPage
-		).subscribe({
-			next: (response) => {
-				this.users = response.data?.users || [];
-				this.totalRecords = response.data?.total || 0;
-				this.loading = false;
-			},
-			error: (error) => {
-				console.error('Error loading space users:', error);
-				this.messageService.add({
-					severity: 'error',
-					summary: 'Error',
-					detail: 'Failed to load space users',
-					life: 3000
-				});
-				this.loading = false;
-			}
-		});
+		this.spaceUserService
+			.getSpaceUsers(
+				this.spaceId,
+				this.currentSearchQuery,
+				this.currentSortField,
+				this.currentSortOrder,
+				this.currentPage,
+				this.rowsPerPage,
+			)
+			.subscribe({
+				next: (response) => {
+					this.users = response.data?.users || [];
+					this.totalRecords = response.data?.total || 0;
+					this.loading = false;
+				},
+				error: (error) => {
+					console.error('Error loading space users:', error);
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Failed to load space users',
+						life: 3000,
+					});
+					this.loading = false;
+				},
+			});
 	}
 
 	onLazyLoad(event: any): void {
@@ -122,31 +124,33 @@ export class UsersPage implements OnInit, OnDestroy {
 	openInviteDialog(): void {
 		const ref = this.dialogService.open(InviteUserDialogComponent, {
 			header: 'Invite User to Space',
-			width: '500px'
+			width: '500px',
 		});
 
-		ref.onClose.subscribe((result) => {
+		ref?.onClose.subscribe((result) => {
 			if (result) {
-				this.spaceUserService.inviteUser(this.spaceId, result).subscribe({
-					next: () => {
-						this.loadUsers();
-						this.messageService.add({
-							severity: 'success',
-							summary: 'Success',
-							detail: 'User invited to space successfully',
-							life: 3000
-						});
-					},
-					error: (error) => {
-						console.error('Error inviting user:', error);
-						this.messageService.add({
-							severity: 'error',
-							summary: 'Error',
-							detail: 'Failed to invite user to space',
-							life: 3000
-						});
-					}
-				});
+				this.spaceUserService
+					.inviteUser(this.spaceId, result)
+					.subscribe({
+						next: () => {
+							this.loadUsers();
+							this.messageService.add({
+								severity: 'success',
+								summary: 'Success',
+								detail: 'User invited to space successfully',
+								life: 3000,
+							});
+						},
+						error: (error) => {
+							console.error('Error inviting user:', error);
+							this.messageService.add({
+								severity: 'error',
+								summary: 'Error',
+								detail: 'Failed to invite user to space',
+								life: 3000,
+							});
+						},
+					});
 			}
 		});
 	}
@@ -156,32 +160,34 @@ export class UsersPage implements OnInit, OnDestroy {
 			header: 'Change User Role',
 			width: '450px',
 			data: {
-				user: user
-			}
+				user: user,
+			},
 		});
 
-		ref.onClose.subscribe((result) => {
+		ref?.onClose.subscribe((result) => {
 			if (result) {
-				this.spaceUserService.updateUserRole(this.spaceId, user.userId, result).subscribe({
-					next: () => {
-						this.loadUsers();
-						this.messageService.add({
-							severity: 'success',
-							summary: 'Success',
-							detail: 'User role updated successfully',
-							life: 3000
-						});
-					},
-					error: (error) => {
-						console.error('Error updating user role:', error);
-						this.messageService.add({
-							severity: 'error',
-							summary: 'Error',
-							detail: 'Failed to update user role',
-							life: 3000
-						});
-					}
-				});
+				this.spaceUserService
+					.updateUserRole(this.spaceId, user.userId, result)
+					.subscribe({
+						next: () => {
+							this.loadUsers();
+							this.messageService.add({
+								severity: 'success',
+								summary: 'Success',
+								detail: 'User role updated successfully',
+								life: 3000,
+							});
+						},
+						error: (error) => {
+							console.error('Error updating user role:', error);
+							this.messageService.add({
+								severity: 'error',
+								summary: 'Error',
+								detail: 'Failed to update user role',
+								life: 3000,
+							});
+						},
+					});
 			}
 		});
 	}
@@ -192,31 +198,38 @@ export class UsersPage implements OnInit, OnDestroy {
 			header: 'Confirm Remove',
 			icon: 'pi pi-exclamation-triangle',
 			accept: () => {
-				this.spaceUserService.removeUser(this.spaceId, user.userId).subscribe({
-					next: () => {
-						this.loadUsers();
-						this.messageService.add({
-							severity: 'success',
-							summary: 'Success',
-							detail: 'User removed from space successfully',
-							life: 3000
-						});
-					},
-					error: (error) => {
-						console.error('Error removing user from space:', error);
-						this.messageService.add({
-							severity: 'error',
-							summary: 'Error',
-							detail: 'Failed to remove user from space',
-							life: 3000
-						});
-					}
-				});
-			}
+				this.spaceUserService
+					.removeUser(this.spaceId, user.userId)
+					.subscribe({
+						next: () => {
+							this.loadUsers();
+							this.messageService.add({
+								severity: 'success',
+								summary: 'Success',
+								detail: 'User removed from space successfully',
+								life: 3000,
+							});
+						},
+						error: (error) => {
+							console.error(
+								'Error removing user from space:',
+								error,
+							);
+							this.messageService.add({
+								severity: 'error',
+								summary: 'Error',
+								detail: 'Failed to remove user from space',
+								life: 3000,
+							});
+						},
+					});
+			},
 		});
 	}
 
-	getRoleBadgeSeverity(role: SpaceRole): string {
+	getRoleBadgeSeverity(
+		role: SpaceRole,
+	): 'info' | 'danger' | 'warn' | 'secondary' | 'success' | 'contrast' {
 		switch (role) {
 			case SpaceRole.SpaceAdmin:
 				return 'warn';

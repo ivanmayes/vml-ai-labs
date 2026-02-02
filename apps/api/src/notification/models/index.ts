@@ -33,9 +33,7 @@ export class NotificationTrigger {
 	value: string;
 }
 
-export type MergeTagMap = {
-	[key in NotificationEvent]: MergeTag[];
-}
+export type MergeTagMap = Record<NotificationEvent, MergeTag[]>
 
 export enum MergeTag {
 	UserName = 'ENTRANT_NAME',

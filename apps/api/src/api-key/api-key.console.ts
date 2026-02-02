@@ -1,86 +1,86 @@
 import { Command, Console } from 'nestjs-console';
-import { Crypt } from '../_core/crypt';
 
-import { KEY_SIZE_BYTES } from './api-key.entity';
-import { ApiKeyService } from './api-key.service';
+import { Crypt } from '../_core/crypt';
 import { ErrorLevel, Utils } from '../_core/utils/utils.console';
 import { Organization } from '../organization/organization.entity';
 import { OrganizationService } from '../organization/organization.service';
 
+import { ApiKeyService } from './api-key.service';
+import { KEY_SIZE_BYTES } from './api-key.entity';
+
 @Console()
 export class ApiKeyConsole {
-
 	constructor(
 		private readonly apiKeyService: ApiKeyService,
-		private readonly organizationService: OrganizationService
+		private readonly organizationService: OrganizationService,
 	) {}
 
 	// npm run console:dev InstallAPIKey <name> [expires]
 	// ex: npm run console:dev InstallAPIKey "Some Campaign Middleware" "2023-08-01"
 	@Command({
 		command: 'InstallAPIKey <name> [expires]',
-		description: 'Installs a new API Key.'
+		description: 'Installs a new API Key.',
 	})
 	public async installAPIKey(name: string, expires?: string) {
-		let organizationId: string;
-		let organization: Organization;
-		const orgs: Organization[] = await this.organizationService.find()
-			.catch(err => {
-				console.log(err);
+		let organization: Organization | null = null;
+		const orgs: Organization[] | null = await this.organizationService
+			.find()
+			.catch(() => {
 				return null;
 			});
 
-		if(!orgs?.length) {
+		if (!orgs?.length) {
 			throw Utils.formatMessage(
 				`Couldn't find any Organizations. Make sure at least one is installed.`,
-				ErrorLevel.Error
+				ErrorLevel.Error,
 			);
 		}
 
 		console.log(`Which Organization should this Key belong to?`.bold);
 		console.log('\tPlease make a selection:');
-		for(let i = 0; i < orgs.length; i++) {
+		for (let i = 0; i < orgs.length; i++) {
 			const o = orgs[i];
-			const idx = i === 0 ? ` ${i.toString().bgWhite.black.bold} ` : ` ${i.toString()} `;
+			const idx =
+				i === 0
+					? ` ${i.toString().bgWhite.black.bold} `
+					: ` ${i.toString()} `;
 			console.log(`\t\t ${idx} : Name: ${o.name}, Id: ${o.id}`);
 		}
 
-		const orgResponse = await Utils.getUserResponse('\tOrganization Number: ');
-		const idx = parseInt(orgResponse);
-		if(isNaN(idx) || idx < 0 || idx > orgs.length - 1) {
+		const orgResponse = await Utils.getUserResponse(
+			'\tOrganization Number: ',
+		);
+		const idx = parseInt(orgResponse, 10);
+		if (isNaN(idx) || idx < 0 || idx > orgs.length - 1) {
 			organization = orgs[0];
 		} else {
 			organization = orgs[idx];
 		}
-		organizationId = organization.id;
+		const organizationId = organization.id;
 
 		let expireDate;
-		if(new Date(expires).getTime()) {
-			expireDate = new Date(expires).toISOString();
+		if (new Date(expires ?? '').getTime()) {
+			expireDate = new Date(expires ?? '').toISOString();
 		}
 
 		const keyDecrypted = Crypt.randomBase64(KEY_SIZE_BYTES);
-		const keyEncrypted = Crypt
-			.encrypt(
-				keyDecrypted,
-				//Crypt.createSHA256Hash(process.env.PII_SIGNING_KEY, organizationId),
-				Crypt.createSHA256Hash(process.env.PII_SIGNING_KEY),
-				process.env.PII_SIGNING_OFFSET
-			);
+		const keyEncrypted = Crypt.encrypt(
+			keyDecrypted,
+			//Crypt.createSHA256Hash(process.env.PII_SIGNING_KEY, organizationId),
+			Crypt.createSHA256Hash(process.env.PII_SIGNING_KEY ?? ''),
+			process.env.PII_SIGNING_OFFSET ?? '',
+		);
 
-		let apiKey = await this.apiKeyService
+		await this.apiKeyService
 			.addOne({
 				name,
 				key: keyEncrypted,
 				expires: expireDate,
-				organizationId: organizationId
+				organizationId: organizationId,
 			})
-			.catch(err => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
-
-		console.log(apiKey);
 
 		return true;
 	}
@@ -88,39 +88,33 @@ export class ApiKeyConsole {
 	// npm run console:dev GetAPIKey <id>
 	@Command({
 		command: 'GetAPIKey <id>',
-		description: 'Gets an existing API Key.'
+		description: 'Gets an existing API Key.',
 	})
 	public async getAPIKey(id: string) {
 		const apiKey = await this.apiKeyService
 			.findOne({
 				where: {
-					id
-				}
+					id,
+				},
 			})
-			.catch(err => {
-				console.log(err);
+			.catch(() => {
 				return null;
 			});
 
-		if(!apiKey) {
+		if (!apiKey) {
 			console.error(`API Key not found with id "${id}".`);
 			return false;
 		}
 
-		const decrypted = Crypt
-			.decrypt(
-				apiKey.key,
-				Crypt.createSHA256Hash(process.env.PII_SIGNING_KEY),
-				process.env.PII_SIGNING_OFFSET
-			);
+		const decrypted = Crypt.decrypt(
+			apiKey.key,
+			Crypt.createSHA256Hash(process.env.PII_SIGNING_KEY ?? ''),
+			process.env.PII_SIGNING_OFFSET ?? '',
+		);
 
-		console.log(
-			`
-			Decrypted Key for id "${id}":
-			${decrypted}
-			
-			
-		`.replace(/\t/g, ''));
+		// Output decrypted key to stdout for CLI usage (intentional for dev tooling)
+		process.stdout.write(`Decrypted Key for id "${id}":\n`);
+		process.stdout.write(decrypted + '\n');
 
 		return true;
 	}

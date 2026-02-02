@@ -1,22 +1,29 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+	Column,
+	Entity,
+	JoinColumn,
+	ManyToOne,
+	PrimaryGeneratedColumn,
+} from 'typeorm';
 
 import { Organization } from '../organization/organization.entity';
-import { MergeTagMap, TriggerType } from './models';
 import { Locale } from '../_core/models/locale';
 
-export type PublicNotification = Pick<Notification,
-	'id'
-> & {
+import { MergeTagMap, TriggerType } from './models';
+
+export type PublicNotification = Pick<Notification, 'id'> & {
 	// Other Public Properties
-}
+};
 
 @Entity('notifications')
 export class Notification {
+	[key: string]: unknown;
+
 	constructor(value?: Partial<Notification>) {
-		if(value) {
+		if (value) {
 			value = structuredClone(value);
 		}
-		for(const k in value) {
+		for (const k in value) {
 			this[k] = value[k];
 		}
 	}
@@ -44,16 +51,16 @@ export class Notification {
 
 	@Column('uuid', { nullable: true })
 	organizationId: string;
-	@ManyToOne(() => Organization, organization => organization.id, {
+	@ManyToOne(() => Organization, (organization) => organization.id, {
 		onDelete: 'CASCADE',
-		nullable: true
+		nullable: true,
 	})
 	@JoinColumn({ name: 'organizationId' })
 	organization?: Organization;
 
 	@Column('enum', {
 		enum: TriggerType,
-		nullable: true
+		nullable: true,
 	})
 	triggerType: TriggerType;
 
@@ -62,10 +69,10 @@ export class Notification {
 
 	@Column('jsonb', { nullable: true })
 	mergeTagMap: MergeTagMap;
-	
+
 	public toPublic() {
 		const pub: Partial<PublicNotification> = {
-			id: this.id
+			id: this.id,
 		};
 
 		// Other public transformations

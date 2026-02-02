@@ -25,8 +25,10 @@ export function stringToSlug(str: string) {
  * Retrieves the query string from the page url
  * @param name
  */
-export function getQueryParamFromMalformedURL(name) {
-	const results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(decodeURIComponent(window.location.href));
+export function getQueryParamFromMalformedURL(name: string): string | number {
+	const results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(
+		decodeURIComponent(window.location.href),
+	);
 	if (!results) {
 		return 0;
 	}
@@ -42,7 +44,7 @@ export function capitalize(str: string) {
 }
 
 export const camelCaseToSentences = (string: string) => {
-  const result = string.replace(/([A-Z])/g, " $1");
-  const sentences = result.charAt(0).toUpperCase() + result.slice(1);
-  return sentences;
-}
+	const result = string.replace(/([A-Z])/g, ' $1');
+	const sentences = result.charAt(0).toUpperCase() + result.slice(1);
+	return sentences;
+};

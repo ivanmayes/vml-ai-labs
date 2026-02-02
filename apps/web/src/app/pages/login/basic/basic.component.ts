@@ -1,11 +1,15 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
+
 import { GlobalSettings } from '../../../state/global/global.model';
 import { GlobalQuery } from '../../../state/global/global.query';
 import { VerifyResponse } from '../../../state/session/session.model';
 import { SessionQuery } from '../../../state/session/session.query';
 import { SessionService } from '../../../state/session/session.service';
 import { fade } from '../../../_core/utils/animations.utils';
+import { PrimeNgModule } from '../../../shared/primeng.module';
 
 /**
  * Basic Auth Component
@@ -14,21 +18,21 @@ import { fade } from '../../../_core/utils/animations.utils';
  * Ideally, only devs would use this and everyone else would be using SSO
  */
 @Component({
-	standalone: false,
 	selector: 'app-auth-basic',
 	templateUrl: './basic.component.html',
 	styleUrls: ['./basic.component.scss'],
 	animations: [fade('fade', 400, '-50%')],
+	imports: [CommonModule, FormsModule, PrimeNgModule],
 })
 export class BasicAuthComponent {
-	@Input() email: string;
-	@Input() authConfig: VerifyResponse;
+	@Input() email!: string;
+	@Input() authConfig!: VerifyResponse;
 	@Output() loggedIn = new EventEmitter<boolean>();
 
-	public key: string;
+	public key!: string;
 	public resendComplete = false;
 	public error: any;
-	public siteSettings$: Observable<GlobalSettings>;
+	public siteSettings$: Observable<GlobalSettings | undefined>;
 	public loading$: Observable<boolean>;
 
 	constructor(

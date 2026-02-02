@@ -1,17 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { OrganizationAdminService } from '../../../../../shared/services/organization-admin.service';
 import { MessageService } from 'primeng/api';
 
+import { OrganizationAdminService } from '../../../../../shared/services/organization-admin.service';
+
 @Component({
-	standalone: false,
 	selector: 'app-promote-user-dialog',
 	templateUrl: './promote-user-dialog.component.html',
-	
 })
 export class PromoteUserDialogComponent implements OnInit {
-	form: FormGroup;
+	form!: FormGroup;
 	loading = false;
 	availableRoles: any[] = [];
 	user: any;
@@ -21,7 +20,7 @@ export class PromoteUserDialogComponent implements OnInit {
 		private readonly ref: DynamicDialogRef,
 		private readonly config: DynamicDialogConfig,
 		private readonly adminService: OrganizationAdminService,
-		private readonly messageService: MessageService
+		private readonly messageService: MessageService,
 	) {}
 
 	ngOnInit(): void {
@@ -32,7 +31,7 @@ export class PromoteUserDialogComponent implements OnInit {
 
 	initForm(): void {
 		this.form = this.fb.group({
-			role: [this.user?.role || '', Validators.required]
+			role: [this.user?.role || '', Validators.required],
 		});
 	}
 
@@ -42,7 +41,7 @@ export class PromoteUserDialogComponent implements OnInit {
 		// Only Admin and Super Admin roles
 		const allRoles = [
 			{ label: 'Admin', value: 'admin' },
-			{ label: 'Super Admin', value: 'super-admin' }
+			{ label: 'Super Admin', value: 'super-admin' },
 		];
 
 		// Filter based on current user's role
@@ -50,7 +49,7 @@ export class PromoteUserDialogComponent implements OnInit {
 			this.availableRoles = allRoles;
 		} else if (currentUserRole === 'admin') {
 			// Admins can only assign admin role
-			this.availableRoles = allRoles.filter(r => r.value === 'admin');
+			this.availableRoles = allRoles.filter((r) => r.value === 'admin');
 		} else {
 			this.availableRoles = [];
 		}
@@ -66,25 +65,29 @@ export class PromoteUserDialogComponent implements OnInit {
 		const formValue = this.form.value;
 		const organizationId = this.config.data?.organizationId;
 
-		this.adminService.promoteUser(organizationId, {
-			userId: this.user.id,
-			targetRole: formValue.role
-		}).subscribe({
-			next: () => {
-				this.loading = false;
-				this.ref.close(true);
-			},
-			error: (error) => {
-				console.error('Error updating user role:', error);
-				this.messageService.add({
-					severity: 'error',
-					summary: 'Error',
-					detail: error.error?.message || 'Failed to update user role',
-					life: 3000
-				});
-				this.loading = false;
-			}
-		});
+		this.adminService
+			.promoteUser(organizationId, {
+				userId: this.user.id,
+				targetRole: formValue.role,
+			})
+			.subscribe({
+				next: () => {
+					this.loading = false;
+					this.ref.close(true);
+				},
+				error: (error) => {
+					console.error('Error updating user role:', error);
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail:
+							error.error?.message ||
+							'Failed to update user role',
+						life: 3000,
+					});
+					this.loading = false;
+				},
+			});
 	}
 
 	onCancel(): void {

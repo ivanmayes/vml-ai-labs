@@ -15,26 +15,10 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtService } from '@nestjs/jwt';
-import { Any, ArrayContains, MoreThan, Raw } from 'typeorm';
+import { ArrayContains, MoreThan, Raw } from 'typeorm';
 import axios from 'axios';
-import { Response } from 'express';
 
-import { Roles } from './auth/roles.decorator';
-import { RolesGuard } from './auth/roles.guard';
 import { HasOrganizationAccessGuard } from '../organization/guards/has-organization-access.guard';
-
-import { UserService } from './user.service';
-import { User, ActivationStatus } from './user.entity';
-import { UserRole } from './user-role.enum';
-import { Utils } from './user.utils';
-
-import {
-	CodeRequestDto,
-	CodeLoginRequestDto,
-	LoginRequestDto,
-	OktaLoginRequestDto,
-} from './dtos';
-import { AuthService } from './auth/auth.service';
 import { NotificationService } from '../notification/notification.service';
 import {
 	RemoteStatus,
@@ -42,18 +26,10 @@ import {
 } from '../organization/organization.service';
 import { Organization } from '../organization/organization.entity';
 import {
-	AuthenticationStrategy,
 	AuthenticationStrategyType,
 	OktaConfig,
 } from '../authentication-strategy/authentication-strategy.entity';
 import { Crypt } from '../_core/crypt';
-import {
-	SAML2_0LoginRequestDto,
-	SAML2_0Response,
-} from './dtos/saml-login-request.dto';
-import { PermissionType } from './permission/models/permission.enum';
-import { Permissions } from './permission/permission.decorator';
-import { PermissionsGuard } from './permission/permission.guard';
 import { FraudPrevention } from '../_core/fraud-prevention/fraud-prevention';
 import { ResponseEnvelope, ResponseStatus } from '../_core/models';
 import { WPPOpen } from '../_core/third-party/wpp-open';
@@ -61,12 +37,32 @@ import {
 	WorkspaceHierarchy,
 	WPPOpenTokenResponse,
 } from '../_core/third-party/wpp-open/models';
-import { WPPOpenLoginRequestDto } from './dtos/wpp-open-login-request.dto';
 import { SpaceUserService } from '../space-user/space-user.service';
 import { SpaceService } from '../space/space.service';
 import { Space } from '../space/space.entity';
 import { SpaceRole } from '../space-user/space-role.enum';
 import { SpaceUser } from '../space-user/space-user.entity';
+
+import { WPPOpenLoginRequestDto } from './dtos/wpp-open-login-request.dto';
+import { PermissionsGuard } from './permission/permission.guard';
+import { Permissions } from './permission/permission.decorator';
+import { PermissionType } from './permission/models/permission.enum';
+import {
+	SAML2_0LoginRequestDto,
+	SAML2_0Response,
+} from './dtos/saml-login-request.dto';
+import { AuthService } from './auth/auth.service';
+import {
+	CodeRequestDto,
+	CodeLoginRequestDto,
+	OktaLoginRequestDto,
+} from './dtos';
+import { Utils } from './user.utils';
+import { UserRole } from './user-role.enum';
+import { User, ActivationStatus } from './user.entity';
+import { UserService } from './user.service';
+import { RolesGuard } from './auth/roles.guard';
+import { Roles } from './auth/roles.decorator';
 
 export const basePath = 'user';
 export const SAMLLoginPath = 'auth/saml/:orgSlug/login';
@@ -114,15 +110,25 @@ export class UserAuthController {
 		// Check the user's authentication strategy
 
 		// Get the org
-		const organization: Organization = await this.organizationService
+		const organization: Organization | null = await this.organizationService
 			.getOrganizationRaw(signInRequest.organizationId, true)
 			.catch((err) => {
 				console.log(err);
 				return null;
 			});
 
+		if (!organization) {
+			throw new HttpException(
+				new ResponseEnvelope(
+					ResponseStatus.Failure,
+					'Organization not found.',
+				),
+				HttpStatus.NOT_FOUND,
+			);
+		}
+
 		// check the user's auth strategy as defined in the CMS
-		let user: User = await this.userService
+		let user: User | null = await this.userService
 			.findOne({
 				where: {
 					emailNormalized:
@@ -159,12 +165,12 @@ export class UserAuthController {
 			);
 		}
 
-		const authStrategyType: AuthenticationStrategyType =
+		const authStrategyType: AuthenticationStrategyType | undefined =
 			user.authenticationStrategy?.type;
 
 		// act according to strategy
 		if (authStrategyType === AuthenticationStrategyType.Okta) {
-			const config: OktaConfig = user.authenticationStrategy
+			const config: OktaConfig = user.authenticationStrategy!
 				.config as OktaConfig;
 
 			// okta sign-in flow
@@ -184,10 +190,12 @@ export class UserAuthController {
 			// Basic sign-in flow
 
 			// Generate a single-use password
+			const singlePassResult = await this.authService
+				.generateSinglePass()
+				.catch((_err) => null);
+
 			const [singlePass, singlePassHash, singlePassExpire] =
-				await this.authService
-					.generateSinglePass()
-					.catch((err) => null);
+				singlePassResult ?? [null, null, null];
 
 			if (!singlePass || !singlePassExpire) {
 				throw new HttpException(
@@ -198,8 +206,8 @@ export class UserAuthController {
 					HttpStatus.INTERNAL_SERVER_ERROR,
 				);
 			} else {
-				user.singlePass = singlePassHash;
-				user.singlePassExpire = singlePassExpire;
+				user.singlePass = singlePassHash as string | null;
+				user.singlePassExpire = singlePassExpire as string | null;
 			}
 
 			// Save password
@@ -224,12 +232,12 @@ export class UserAuthController {
 			const emailResult = await this.notificationService
 				.sendTemplate(
 					'login-code',
-					user.organizationId,
-					{ to: user.email },
-					{ SINGLE_PASS: singlePass },
-					null,
-					null,
-					null,
+					user.organizationId ?? '',
+					{ to: user.email ?? '' },
+					{ SINGLE_PASS: (singlePass as string) ?? '' },
+					undefined,
+					undefined,
+					undefined,
 					organization?.name,
 				)
 				.catch((err) => {
@@ -257,7 +265,7 @@ export class UserAuthController {
 
 	@Post('/auth/okta/sign-in')
 	public async oktaSignIn(@Body() req: OktaLoginRequestDto): Promise<any> {
-		const organization: Organization = await this.organizationService
+		const organization: Organization | null = await this.organizationService
 			.getOrganizationRaw(req.organizationId, true)
 			.catch((err) => {
 				console.log(err);
@@ -432,7 +440,7 @@ export class UserAuthController {
 	@Post('/auth/wpp-open/sign-in')
 	public async wppOpenSignIn(@Body() loginReq: WPPOpenLoginRequestDto) {
 		let error;
-		const result: WPPOpenTokenResponse = await WPPOpen.validateToken(
+		const result: WPPOpenTokenResponse | null = await WPPOpen.validateToken(
 			loginReq.token,
 		).catch((err) => {
 			console.log(err);
@@ -443,7 +451,7 @@ export class UserAuthController {
 			throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
 		}
 
-		const organization: Organization = await this.organizationService
+		const organization: Organization | null = await this.organizationService
 			.findOne({
 				where: { id: loginReq.organizationId },
 			})
@@ -459,14 +467,15 @@ export class UserAuthController {
 			);
 		}
 
-		const scope: WorkspaceHierarchy = await WPPOpen.getWorkspaceAncestor(
-			loginReq.token,
-			loginReq.workspaceId,
-			loginReq.scopeId,
-		).catch((err) => {
-			console.log(err);
-			return null;
-		});
+		const scope: WorkspaceHierarchy | null =
+			await WPPOpen.getWorkspaceAncestor(
+				loginReq.token,
+				loginReq.workspaceId,
+				loginReq.scopeId ?? '',
+			).catch((err) => {
+				console.log(err);
+				return null;
+			});
 
 		if (!scope?.workspace) {
 			throw new HttpException(
@@ -493,7 +502,6 @@ export class UserAuthController {
 
 		// Use tenant ID if provided, otherwise fall back to workspace ID
 		const idToMatch = tenantIdToMatch || scope.workspace.id;
-		console.log('🎯 [WPP Open] Using ID for matching:', idToMatch);
 
 		const spaces: Space[] = await this.spaceService
 			.find({
@@ -527,14 +535,14 @@ export class UserAuthController {
 		}
 
 		// Check if we should redirect to a space
-		let redirectSpaceId: string = null;
+		let redirectSpaceId: string | null = null;
 		if (organization.redirectToSpace && spaces.length > 0) {
 			// Find space that matches the tenant/workspace ID
 			const matchingSpace = spaces.find((s) =>
 				s.approvedWPPOpenTenantIds?.includes(idToMatch),
 			);
 			if (matchingSpace) {
-				redirectSpaceId = matchingSpace.id;
+				redirectSpaceId = matchingSpace.id ?? null;
 				console.log(
 					'✅ [WPP Open] Redirect space ID set to:',
 					redirectSpaceId,
@@ -556,7 +564,7 @@ export class UserAuthController {
 		const email = FraudPrevention.Forms.Normalization.normalizeEmail(
 			result.email,
 		);
-		let user: User = await this.userService
+		let user: User | null = await this.userService
 			.findOne({
 				where: {
 					emailNormalized: email,
@@ -605,11 +613,15 @@ export class UserAuthController {
 			if (!space.isPublic) {
 				continue;
 			}
-			if (!user.userSpaces?.find((s) => s.spaceId === space.id)) {
+			if (
+				!user.userSpaces?.find(
+					(s) => (s as SpaceUser).spaceId === space.id,
+				)
+			) {
 				const newSpaceUser = new SpaceUser({
 					role: SpaceRole.SpaceUser,
-					userId: user.id,
-					spaceId: space.id,
+					userId: user.id ?? undefined,
+					spaceId: space.id ?? undefined,
 				});
 
 				if (!user.userSpaces) {
@@ -620,14 +632,14 @@ export class UserAuthController {
 			}
 		}
 
-		let responseData: {
+		const responseData: {
 			token?: string;
 			redirect?: string;
 			spaceId?: string;
 		} = {};
 
 		// Create a JWT
-		let token = this.jwtService.sign({
+		const token = this.jwtService.sign({
 			id: user.id,
 			email: user.email,
 			emailNormalized: user.emailNormalized,
@@ -672,7 +684,7 @@ export class UserAuthController {
 
 	@Post('/auth/basic/code-sign-in')
 	public async codeSignIn(@Body() req: CodeLoginRequestDto): Promise<any> {
-		const organization: Organization = await this.organizationService
+		const organization: Organization | null = await this.organizationService
 			.getOrganizationRaw(req.organizationId, true)
 			.catch((err) => {
 				console.log(err);
@@ -690,7 +702,7 @@ export class UserAuthController {
 		}
 
 		// Find a user with a valid, matching code
-		let user = await this.userService
+		let user: User | false | null = await this.userService
 			.findOne({
 				where: {
 					emailNormalized:
@@ -719,14 +731,14 @@ export class UserAuthController {
 		} else {
 			user = user as User;
 			// Purge stale tokens.
-			this.authService.cleanAuthTokens(user.id).catch((err) => {
+			this.authService.cleanAuthTokens(user.id ?? '').catch((err) => {
 				console.log(err);
 			});
 		}
 
 		// Validate singlePass against the saved hash.
 		const passOk = await this.authService
-			.validatePass(req.singlePass, user.singlePass)
+			.validatePass(req.singlePass, user.singlePass ?? '')
 			.catch((err) => {
 				console.log(err);
 				return false;
@@ -799,7 +811,7 @@ export class UserAuthController {
 
 	@Get('refresh')
 	@UseGuards(AuthGuard())
-	public async checkUser(@Request() req): Promise<any> {
+	public async checkUser(@Request() req: any): Promise<any> {
 		// Extract current JWT
 		const oldToken = req.headers.authorization.split(' ')[1];
 

@@ -7,15 +7,14 @@ import { DomSanitizer } from '@angular/platform-browser';
  * Commonly used for iframe content.
  */
 @Pipe({
-	standalone: false,
-    name: 'safeUrl',
-    
+	name: 'safeUrl',
 })
 export class SafeUrlPipe implements PipeTransform {
 	constructor(private sanitizer: DomSanitizer) {}
-	transform(url) {
+	transform(url: string): unknown {
 		// commented return throws error, both with URL and with RESOURCE_URL. idk why
 		// return this.sanitizer.sanitize(SecurityContext.URL, url);
-		return this.sanitizer.bypassSecurityTrustResourceUrl(this.sanitizer.sanitize(SecurityContext.URL, url));
+		const sanitized = this.sanitizer.sanitize(SecurityContext.URL, url);
+		return this.sanitizer.bypassSecurityTrustResourceUrl(sanitized ?? '');
 	}
 }

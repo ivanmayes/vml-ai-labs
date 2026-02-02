@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -e
+
+# Load nvm if available (for consistent Node.js version in git hooks)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Stage 1: lint-staged (ESLint, StyleLint, Prettier)
+echo "=== Running lint-staged ==="
+npx lint-staged
+
+# Stage 2: UBS Static Analysis
+echo ""
+echo "=== Running UBS Static Analysis ==="
+
+if command -v ubs &> /dev/null; then
+    if ! ubs --staged --only=js --format=text; then
+        echo ""
+        echo "[UBS] Issues found. Fix them or bypass with: git commit --no-verify"
+        exit 1
+    fi
+    echo "[UBS] Passed!"
+else
+    echo "[UBS] Not installed. Skipping. Install with: npm run setup:ubs"
+fi
+
+# Stage 3: Duplicate DTO Detection
+echo ""
+echo "=== Checking for duplicate DTOs ==="
+# Look for interface/type declarations ending in Dto (not re-exports)
+# Pattern: "interface SomethingDto" or "type SomethingDto =" (but not "export type { ... }")
+if grep -rE "^[[:space:]]*(export )?(interface|type)[[:space:]]+[A-Za-z]+Dto[[:space:]]*(\{|=)" apps/web/src/app/shared/models/ 2>/dev/null | grep -v "export type {"; then
+    echo ""
+    echo "[ERROR] Found DTO definitions in web. Import from @api/* instead."
+    echo "See AGENTS.md for guidance on API type imports."
+    exit 1
+fi
+echo "[OK] No duplicate DTOs found"
+
+# Stage 4: Tests
+echo ""
+echo "=== Running tests ==="
+npm run test:api
+npm run test:web

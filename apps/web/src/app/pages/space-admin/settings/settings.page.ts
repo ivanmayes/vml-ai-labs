@@ -2,21 +2,21 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
+
 import { SpaceService } from '../../../shared/services/space.service';
 import { Space } from '../../../shared/models/space.model';
 import { environment } from '../../../../environments/environment';
 
 @Component({
-	standalone: false,
 	selector: 'app-settings',
 	templateUrl: './settings.page.html',
 	styleUrls: ['./settings.page.scss'],
-	
-	providers: [MessageService]
+
+	providers: [MessageService],
 })
 export class SettingsPage implements OnInit {
 	settingsForm: FormGroup;
-	spaceId: string;
+	spaceId!: string;
 	organizationId: string = environment.organizationId;
 	loading = false;
 	saving = false;
@@ -27,23 +27,28 @@ export class SettingsPage implements OnInit {
 		private fb: FormBuilder,
 		private route: ActivatedRoute,
 		private spaceService: SpaceService,
-		private messageService: MessageService
+		private messageService: MessageService,
 	) {
 		this.settingsForm = this.fb.group({
 			name: ['', Validators.required],
 			isPublic: [true],
-			primaryColor: ['#000000', [Validators.pattern(/^#[0-9A-Fa-f]{6}$/)]]
+			primaryColor: [
+				'#000000',
+				[Validators.pattern(/^#[0-9A-Fa-f]{6}$/)],
+			],
 		});
 
 		// Listen to primaryColor changes to ensure # prefix
-		this.settingsForm.get('primaryColor')?.valueChanges.subscribe(value => {
-			if (value && !value.startsWith('#')) {
-				this.settingsForm.patchValue(
-					{ primaryColor: '#' + value },
-					{ emitEvent: false }
-				);
-			}
-		});
+		this.settingsForm
+			.get('primaryColor')
+			?.valueChanges.subscribe((value) => {
+				if (value && !value.startsWith('#')) {
+					this.settingsForm.patchValue(
+						{ primaryColor: '#' + value },
+						{ emitEvent: false },
+					);
+				}
+			});
 	}
 
 	onColorChange(color: string): void {
@@ -57,7 +62,7 @@ export class SettingsPage implements OnInit {
 	ngOnInit(): void {
 		// Get space ID from route params (need to go up to the module route level)
 		// Route hierarchy: /space/:id/admin → SpaceAdminPage (parent) → settings (this component)
-		this.route.parent?.parent?.params.subscribe(params => {
+		this.route.parent?.parent?.params.subscribe((params) => {
 			this.spaceId = params['id'];
 			if (this.spaceId) {
 				this.loadSpaceSettings();
@@ -77,17 +82,20 @@ export class SettingsPage implements OnInit {
 		// In production, you might want a dedicated getSpace(id) endpoint
 		this.spaceService.getSpaces(this.organizationId).subscribe({
 			next: (response) => {
-				console.log('Spaces response:', response);
-				console.log('Looking for spaceId:', this.spaceId);
-				const space = response.data?.find((s: Space) => s.id === this.spaceId);
-				console.log('Found space:', space);
+				const space = response.data?.find(
+					(s: Space) => s.id === this.spaceId,
+				);
 				if (space) {
 					this.settingsForm.patchValue({
 						name: space.name,
-						isPublic: space.isPublic !== undefined ? space.isPublic : true,
-						primaryColor: space.settings?.primaryColor || '#000000'
+						isPublic:
+							space.isPublic !== undefined
+								? space.isPublic
+								: true,
+						primaryColor: space.settings?.primaryColor || '#000000',
 					});
-					this.tenantIds = (space as any).approvedWPPOpenTenantIds || [];
+					this.tenantIds =
+						(space as any).approvedWPPOpenTenantIds || [];
 					// Mark form as pristine after loading initial values
 					this.settingsForm.markAsPristine();
 				} else {
@@ -96,7 +104,7 @@ export class SettingsPage implements OnInit {
 						severity: 'warn',
 						summary: 'Warning',
 						detail: 'Could not find space settings',
-						life: 3000
+						life: 3000,
 					});
 				}
 				this.loading = false;
@@ -107,10 +115,10 @@ export class SettingsPage implements OnInit {
 					severity: 'error',
 					summary: 'Error',
 					detail: 'Failed to load space settings',
-					life: 3000
+					life: 3000,
 				});
 				this.loading = false;
-			}
+			},
 		});
 	}
 
@@ -127,34 +135,36 @@ export class SettingsPage implements OnInit {
 			name: formValue.name,
 			isPublic: formValue.isPublic,
 			settings: {
-				primaryColor: formValue.primaryColor
+				primaryColor: formValue.primaryColor,
 			},
-			approvedWPPOpenTenantIds: this.tenantIds
+			approvedWPPOpenTenantIds: this.tenantIds,
 		};
 
-		this.spaceService.updateSettings(this.organizationId, this.spaceId, updateDto).subscribe({
-			next: () => {
-				this.messageService.add({
-					severity: 'success',
-					summary: 'Success',
-					detail: 'Space settings updated successfully',
-					life: 3000
-				});
-				this.saving = false;
-				// Mark form as pristine after successful save
-				this.settingsForm.markAsPristine();
-			},
-			error: (error) => {
-				console.error('Error updating space settings:', error);
-				this.messageService.add({
-					severity: 'error',
-					summary: 'Error',
-					detail: 'Failed to update space settings',
-					life: 3000
-				});
-				this.saving = false;
-			}
-		});
+		this.spaceService
+			.updateSettings(this.organizationId, this.spaceId, updateDto)
+			.subscribe({
+				next: () => {
+					this.messageService.add({
+						severity: 'success',
+						summary: 'Success',
+						detail: 'Space settings updated successfully',
+						life: 3000,
+					});
+					this.saving = false;
+					// Mark form as pristine after successful save
+					this.settingsForm.markAsPristine();
+				},
+				error: (error) => {
+					console.error('Error updating space settings:', error);
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Failed to update space settings',
+						life: 3000,
+					});
+					this.saving = false;
+				},
+			});
 	}
 
 	addTenantId(): void {

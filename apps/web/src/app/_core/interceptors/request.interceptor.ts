@@ -1,6 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
+import {
+	HttpEvent,
+	HttpHandler,
+	HttpInterceptor,
+	HttpRequest,
+} from '@angular/common/http';
 import { Observable } from 'rxjs';
+
 import { SessionQuery } from '../../state/session/session.query';
 
 @Injectable()
@@ -8,7 +14,7 @@ export class RequestInterceptor implements HttpInterceptor {
 	// Unsecured routes that shouldn't be subject to adding auth tokens go here
 	readonly UNSECURED_ROUTES = [
 		'/auth/basic/generate-sign-in-code',
-		'/auth/basic/code-sign-in'
+		'/auth/basic/code-sign-in',
 	];
 
 	constructor(private readonly sessionQuery: SessionQuery) {}
@@ -18,14 +24,19 @@ export class RequestInterceptor implements HttpInterceptor {
 	 * @param request
 	 * @param next
 	 */
-	intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+	intercept(
+		request: HttpRequest<any>,
+		next: HttpHandler,
+	): Observable<HttpEvent<any>> {
 		// Don't add an access token to unsecured routes
 		if (this.isUnsecuredRoute(request.url)) {
 			return next.handle(request);
 		}
 
 		// Anything that makes it to here gets a session token
-		return next.handle(this.setAccessToken(request, this.sessionQuery.getToken()));
+		return next.handle(
+			this.setAccessToken(request, this.sessionQuery.getToken()),
+		);
 	}
 
 	/**
@@ -33,12 +44,15 @@ export class RequestInterceptor implements HttpInterceptor {
 	 * @param request
 	 * @param accessToken
 	 */
-	private setAccessToken(request: HttpRequest<any>, accessToken: string | undefined) {
+	private setAccessToken(
+		request: HttpRequest<any>,
+		accessToken: string | undefined,
+	) {
 		// We clone the request, because the original request is immutable
 		return request.clone({
 			setHeaders: {
-				Authorization: `Bearer ${accessToken}`
-			}
+				Authorization: `Bearer ${accessToken}`,
+			},
 		});
 	}
 
@@ -48,7 +62,7 @@ export class RequestInterceptor implements HttpInterceptor {
 	 */
 	private isUnsecuredRoute(requestUrl: string): boolean {
 		let match = false;
-		this.UNSECURED_ROUTES.forEach(part => {
+		this.UNSECURED_ROUTES.forEach((part) => {
 			if (requestUrl.indexOf(part) > -1) {
 				match = true;
 			}

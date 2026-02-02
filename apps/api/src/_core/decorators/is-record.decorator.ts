@@ -2,7 +2,7 @@ import {
 	ClassConstructor,
 	Type,
 	TypeHelpOptions,
-	TypeOptions
+	TypeOptions,
 } from 'class-transformer';
 import {
 	registerDecorator,
@@ -16,18 +16,16 @@ import {
 // Ref: https://github.com/typestack/class-validator/issues/1011
 
 // taken from - import { applyDecorators } from '@nestjs/common';
-function applyDecorators(
-	...decorators: Array < PropertyDecorator >
-) {
-	return <TFunction extends Function, Y > (
+function applyDecorators(...decorators: PropertyDecorator[]) {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- Matches @nestjs/common signature
+	return <TFunction extends Function>(
 		target: TFunction | object,
-		propertyKey ? : string | symbol,
+		propertyKey?: string | symbol,
 	) => {
 		for (const decorator of decorators) {
-			decorator(
-				target,
-				propertyKey,
-			);
+			if (propertyKey !== undefined) {
+				decorator(target, propertyKey);
+			}
 		}
 	};
 }
@@ -35,8 +33,10 @@ function applyDecorators(
 const TYPESCRIPT_DECORATE_DESIGN_TYPE = 'design:type';
 
 class IsRecordConstraint implements ValidatorConstraintInterface {
-	public async validate(value: any): Promise < boolean > {
-		const validationResults = await Promise.all(Object.entries(value).map((entry) => validate(entry[1] as object)));
+	public async validate(value: any): Promise<boolean> {
+		const validationResults = await Promise.all(
+			Object.entries(value).map((entry) => validate(entry[1] as object)),
+		);
 		return validationResults.every((p) => p.length <= 0);
 	}
 
@@ -48,37 +48,44 @@ class IsRecordConstraint implements ValidatorConstraintInterface {
 const validator = new IsRecordConstraint();
 
 const IsRecordValidator =
-	(validationOptions ? : ValidationOptions): PropertyDecorator =>
+	(validationOptions?: ValidationOptions): PropertyDecorator =>
 	(object: object, propertyName: string | symbol) => {
 		registerDecorator({
 			target: object.constructor,
 			propertyName: propertyName as string,
 			options: validationOptions,
 			constraints: [],
-			validator
+			validator,
 		});
 	};
 
-export const IsRecord = <T extends object> (
-	type: ClassConstructor <T> ,
-	validationOptions ? : ValidationOptions,
-	typeOptions ? : TypeOptions
+export const IsRecord = <T extends object>(
+	type: ClassConstructor<T>,
+	validationOptions?: ValidationOptions,
+	typeOptions?: TypeOptions,
 ): PropertyDecorator =>
 	applyDecorators(
 		ValidateNested(),
 		IsRecordValidator(),
-		Type((options ? : TypeHelpOptions) => {
+		Type((options?: TypeHelpOptions) => {
 			class RecordClass {}
-			Object
-				.entries(options?.object?.[options?.property])
-				.forEach(([key]) => {
-					const decorators = [
-						ValidateNested(validationOptions),
-						Type(() => type, typeOptions),
-						Reflect.metadata(TYPESCRIPT_DECORATE_DESIGN_TYPE, Object)
-					];
-					Reflect.decorate(decorators, RecordClass.prototype, key, undefined);
-				});
+			const propertyValue = options?.object?.[options?.property ?? ''];
+			if (!propertyValue) {
+				return RecordClass;
+			}
+			Object.entries(propertyValue).forEach(([key]) => {
+				const decorators = [
+					ValidateNested(validationOptions),
+					Type(() => type, typeOptions),
+					Reflect.metadata(TYPESCRIPT_DECORATE_DESIGN_TYPE, Object),
+				];
+				Reflect.decorate(
+					decorators,
+					RecordClass.prototype,
+					key,
+					undefined,
+				);
+			});
 			return RecordClass;
-		})
-);
+		}),
+	);

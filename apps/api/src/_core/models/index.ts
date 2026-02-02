@@ -3,18 +3,18 @@ import { IsOptional, IsString, IsObject } from 'class-validator';
 export enum ResponseStatus {
 	Success = 'success',
 	Failure = 'failure',
-	Error = 'error'
+	Error = 'error',
 }
 
 export class RequestMeta {
 	@IsOptional()
 	@IsString()
 	public jobNumber?: string;
-	
+
 	@IsOptional()
 	@IsString()
 	public tenant?: string;
-	
+
 	@IsOptional()
 	@IsString()
 	public client?: string;
@@ -52,17 +52,17 @@ export class FindResponse<T> {
 }
 
 export class ResponseEnvelopeFind<T> extends ResponseEnvelope {
-	public data: FindResponse<T>;
+	declare public data: FindResponse<T>;
 }
 
 export enum SortStrategy {
 	ASC = 'ASC',
-	DESC = 'DESC'
+	DESC = 'DESC',
 }
 
 export class FindOptions<T> {
-	page: number;
-	perPage: number;
+	page!: number;
+	perPage!: number;
 	sortBy?: keyof T;
 	sortOrder?: SortStrategy;
 }

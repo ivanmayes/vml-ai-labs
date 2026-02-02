@@ -1,20 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { MessageService } from 'primeng/api';
+
 import { SpaceService } from '../../shared/services/space.service';
 import { Space } from '../../shared/models/space.model';
-import { MessageService } from 'primeng/api';
 import { environment } from '../../../environments/environment';
 
 @Component({
-	standalone: false,
 	selector: 'app-space',
 	templateUrl: './space.page.html',
 	styleUrls: ['./space.page.scss'],
-	
-	providers: [MessageService]
+
+	providers: [MessageService],
 })
 export class SpacePage implements OnInit {
-	spaceId: string;
+	spaceId!: string;
 	space: Space | null = null;
 	loading = true;
 	organizationId: string = environment.organizationId;
@@ -23,11 +23,11 @@ export class SpacePage implements OnInit {
 	constructor(
 		private route: ActivatedRoute,
 		private spaceService: SpaceService,
-		private messageService: MessageService
+		private messageService: MessageService,
 	) {}
 
 	ngOnInit(): void {
-		this.route.params.subscribe(params => {
+		this.route.params.subscribe((params) => {
 			this.spaceId = params['id'];
 			if (this.spaceId) {
 				this.loadSpace();
@@ -54,12 +54,12 @@ export class SpacePage implements OnInit {
 						severity: 'error',
 						summary: 'Error',
 						detail: error.error?.message || 'Failed to load space',
-						life: 3000
+						life: 3000,
 					});
 				}
 
 				this.loading = false;
-			}
+			},
 		});
 	}
 }

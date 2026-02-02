@@ -5,13 +5,14 @@ import {
 } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { GlobalStore } from './global.store';
-import { GlobalSettings, HeaderSettings } from './global.model';
-import { environment } from '../../../environments/environment';
 import { tap } from 'rxjs/operators';
 import { Title } from '@angular/platform-browser';
+
+import { environment } from '../../../environments/environment';
 import type { OrganizationSettings } from '../../../../../api/src/organization/organization.settings';
-import { UserRole } from '../../../../../api/src/user/user-role.enum';
+
+import { GlobalSettings, HeaderSettings } from './global.model';
+import { GlobalStore } from './global.store';
 
 /**
  * Global Service
@@ -90,12 +91,12 @@ export class GlobalService {
 				},
 			)
 			.pipe(
-				tap((settings) => {
+				tap((updatedSettings) => {
 					this.globalStore.update({
 						settings: {
 							...this.globalStore.getValue().settings,
-							settings,
-						},
+							settings: updatedSettings,
+						} as GlobalSettings,
 					});
 					this.globalStore.setLoading(false);
 				}),
@@ -107,7 +108,6 @@ export class GlobalService {
 	 * Search adminMode to find all of the places this applies.
 	 */
 	setAdminMode(state?: boolean) {
-		console.log('Setting Admin mode', state);
 		this.globalStore.update({
 			adminMode: state || !this.globalStore.getValue().adminMode,
 		});
@@ -147,9 +147,9 @@ export class GlobalService {
 	}
 
 	getOrganizationSettingsFormObject(
-		settings: OrganizationSettings,
-		controlOverrides: any = {},
-	) {
+		_settings: OrganizationSettings,
+		_controlOverrides: Record<string, unknown> = {},
+	): Record<string, unknown> {
 		return {
 			// Map settings here
 		};
@@ -158,16 +158,27 @@ export class GlobalService {
 	/**
 	 * Get the color fo a certain entity in a settings array.
 	 */
-	getColorFromSettingsEntity(key: string, id: string) {
+	getColorFromSettingsEntity(key: string, id: string): string | undefined {
 		switch (key) {
 			default: {
-				const entities = this.globalStore.getValue().settings[key];
+				const settings = this.globalStore.getValue().settings;
+				if (!settings) return undefined;
+				const entities = (
+					settings as unknown as Record<
+						string,
+						{ id: string; color?: string }[]
+					>
+				)[key];
 				if (entities) {
-					return entities.find((entity) => entity.id === id)?.color;
+					return entities.find(
+						(entity: { id: string; color?: string }) =>
+							entity.id === id,
+					)?.color;
 				}
 				break;
 			}
 		}
+		return undefined;
 	}
 
 	/**
@@ -210,7 +221,7 @@ export class GlobalService {
 	 * @param err The error response object
 	 * @param message Override with a custom message
 	 */
-	triggerErrorMessage(err: HttpErrorResponse, message?: string) {
+	triggerErrorMessage(err: HttpErrorResponse | undefined, message?: string) {
 		this.messageService.add({
 			severity: 'error',
 			summary: 'Error',
@@ -221,16 +232,5 @@ export class GlobalService {
 				'There was an error completing this task.',
 			life: 4000,
 		});
-	}
-
-	private userRolesArray(addAllOption?: boolean) {
-		const rolesArray = Object.values(UserRole).map((role) => ({
-			id: role as string,
-			name: role as string,
-		}));
-		if (addAllOption) {
-			rolesArray.unshift({ id: 'all', name: 'All' });
-		}
-		return rolesArray;
 	}
 }

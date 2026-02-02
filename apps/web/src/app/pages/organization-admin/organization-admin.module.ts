@@ -1,7 +1,9 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
 import { SharedModule } from '../../shared/shared.module';
 import { PrimeNgModule } from '../../shared/primeng.module';
+
 import { OrganizationAdminRoutingModule } from './organization-admin-routing.module';
 import { OrganizationAdminPage } from './organization-admin.page';
 
@@ -10,8 +12,8 @@ import { OrganizationAdminPage } from './organization-admin.page';
 		CommonModule,
 		SharedModule,
 		PrimeNgModule,
-		OrganizationAdminRoutingModule
+		OrganizationAdminRoutingModule,
 	],
-	declarations: [OrganizationAdminPage]
+	declarations: [OrganizationAdminPage],
 })
 export class OrganizationAdminModule {}

@@ -1,5 +1,6 @@
 // Handle environment file
 import fs from 'fs';
+
 import dotenv from 'dotenv';
 if(fs.existsSync('.env')) {
 	dotenv.config();
@@ -16,6 +17,7 @@ if(fs.existsSync('.env')) {
 delete process.env.DATABASE_SYNCHRONIZE;
 
 import { BootstrapConsole } from 'nestjs-console';
+
 import { AppModule } from './app.module';
 
 const bootstrap = new BootstrapConsole({

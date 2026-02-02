@@ -1,7 +1,24 @@
-import { ApiProperty, ApiPropertyOptional, getSchemaPath } from '@nestjs/swagger';
+import {
+	ApiProperty,
+	ApiPropertyOptional,
+	getSchemaPath,
+} from '@nestjs/swagger';
 import { Type, DiscriminatorDescriptor } from 'class-transformer';
-import { IsString, IsOptional, IsBoolean, Equals, IsNumber, IsArray, IsEnum, IsNotEmpty, ValidateNested, IsInt, Min } from 'class-validator';
+import {
+	IsString,
+	IsOptional,
+	IsBoolean,
+	Equals,
+	IsNumber,
+	IsArray,
+	IsEnum,
+	ValidateNested,
+	IsInt,
+	Min,
+} from 'class-validator';
+
 import { ValidationError } from '../modules/validation/form-validation.module';
+
 import { FieldType } from './field-type.enum';
 
 export { FieldType } from './field-type.enum';
@@ -118,7 +135,7 @@ export const EmailSuspiciousDomains: string[] = [
 	'warpmail.net',
 	'xsmail.com',
 	'yepmail.net',
-	'your-mail.com'
+	'your-mail.com',
 ];
 
 export class SelectOption {
@@ -129,7 +146,7 @@ export class SelectOption {
 
 	@IsString()
 	@ApiProperty()
-	value: string;
+	value!: string;
 }
 
 export class StringValidationOptions {
@@ -194,7 +211,7 @@ export class EmailValidationOptions {
 	restrictions: string[];
 
 	constructor(restrictions?: string[]) {
-		this.restrictions = restrictions;
+		this.restrictions = restrictions ?? [];
 	}
 }
 
@@ -204,7 +221,7 @@ export class PhoneValidationOptions {
 	requirements: string[];
 
 	constructor(requirements?: string[]) {
-		this.requirements = requirements;
+		this.requirements = requirements ?? [];
 	}
 }
 
@@ -245,8 +262,8 @@ export class ReCaptchaValidationOptions {
 	secret: string;
 
 	constructor(siteKey?: string, secret?: string) {
-		this.siteKey = siteKey;
-		this.secret = secret;
+		this.siteKey = siteKey ?? '';
+		this.secret = secret ?? '';
 	}
 }
 
@@ -262,8 +279,8 @@ export class Validators {
 	// Additional options can be passed for min and max length.
 	@IsOptional()
 	@ValidateNested()
-	@Type(({ object }) => {
-		if(typeof object?.string === 'object') {
+	@Type((options) => {
+		if (typeof options?.object?.string === 'object') {
 			return StringValidationOptions;
 		}
 		return Boolean;
@@ -271,8 +288,8 @@ export class Validators {
 	@ApiPropertyOptional({
 		oneOf: [
 			{ type: 'boolean' },
-			{ $ref: getSchemaPath(StringValidationOptions) }
-		]
+			{ $ref: getSchemaPath(StringValidationOptions) },
+		],
 	})
 	string?: true | StringValidationOptions;
 
@@ -287,8 +304,8 @@ export class Validators {
 	// Additional options can be passed for min and max values.
 	@IsOptional()
 	@ValidateNested()
-	@Type(({ object }) => {
-		if(typeof object?.number === 'object') {
+	@Type((options) => {
+		if (typeof options?.object?.number === 'object') {
 			return NumberValidationOptions;
 		}
 		return Boolean;
@@ -296,15 +313,15 @@ export class Validators {
 	@ApiPropertyOptional({
 		oneOf: [
 			{ type: 'boolean' },
-			{ $ref: getSchemaPath(NumberValidationOptions) }
-		]
+			{ $ref: getSchemaPath(NumberValidationOptions) },
+		],
 	})
 	number?: true | NumberValidationOptions;
 
 	@IsOptional()
 	@ValidateNested()
-	@Type(({ object }) => {
-		if(typeof object?.array === 'object') {
+	@Type((options) => {
+		if (typeof options?.object?.array === 'object') {
 			return ArrayValidationOptions;
 		}
 		return Boolean;
@@ -312,8 +329,8 @@ export class Validators {
 	@ApiPropertyOptional({
 		oneOf: [
 			{ type: 'boolean' },
-			{ $ref: getSchemaPath(ArrayValidationOptions) }
-		]
+			{ $ref: getSchemaPath(ArrayValidationOptions) },
+		],
 	})
 	array?: true | ArrayValidationOptions;
 
@@ -327,7 +344,7 @@ export class Validators {
 	// TODO: Maybe this should be RegEx-based?
 	@IsOptional()
 	@IsArray()
-	@ApiPropertyOptional({ isArray: true})
+	@ApiPropertyOptional({ isArray: true })
 	values?: string[] | number[];
 
 	// Requires all fields in a group to be validated.
@@ -363,13 +380,13 @@ export class Validators {
 }
 
 export class ValidationResult {
-	valid: boolean;
+	valid!: boolean;
 	errors?: ValidationError[];
 }
 
 export class FieldResult {
 	@ApiProperty()
-	slug: string;
+	slug!: string;
 
 	@ApiProperty({
 		oneOf: [
@@ -379,27 +396,36 @@ export class FieldResult {
 			{ type: 'array', items: { type: 'number' } },
 			{ type: 'boolean' },
 			{ type: 'array', items: { type: 'boolean' } },
-			{ items: { $ref: getSchemaPath(FieldResult) } }
-		]
+			{ items: { $ref: getSchemaPath(FieldResult) } },
+		],
 	})
-	value: string | string[] | number | number[] | boolean | boolean[] | Express.Multer.File | Array<Express.Multer.File> | FieldResult[];
+	value!:
+		| string
+		| string[]
+		| number
+		| number[]
+		| boolean
+		| boolean[]
+		| Express.Multer.File
+		| Express.Multer.File[]
+		| FieldResult[];
 }
 
 export class Field {
 	// Internal field name.
 	@IsString()
 	@ApiProperty()
-	slug: string;
+	slug!: string;
 
 	// User-visible field name.
 	@IsString()
 	@ApiProperty()
-	displayName: string;
+	displayName!: string;
 
 	// Defines how the field should be rendered on the front end.
 	@IsEnum(FieldType)
 	@ApiProperty({ enum: FieldType })
-	type: FieldType;
+	type!: FieldType;
 
 	// User-visible field description.
 	@IsOptional()
@@ -451,26 +477,26 @@ export class FieldSelect extends Field {
 	@IsEnum(FieldType)
 	@Equals(FieldType.Select)
 	@ApiProperty({ enum: FieldType, default: FieldType.Select })
-	type: FieldType.Select;
+	override type!: FieldType.Select;
 
 	@ValidateNested({ each: true })
 	@Type(() => SelectOption)
 	@ApiProperty({ type: SelectOption, isArray: true })
-	options: SelectOption[];
+	options!: SelectOption[];
 }
 
 export class FieldReCaptcha extends Field {
 	@IsEnum(FieldType)
 	@Equals(FieldType.ReCaptcha)
 	@ApiProperty({ enum: FieldType, default: FieldType.ReCaptcha })
-	type: FieldType.ReCaptcha;
+	override type!: FieldType.ReCaptcha;
 }
 
 export class FieldFile extends Field {
 	@IsEnum(FieldType)
 	@Equals(FieldType.File)
 	@ApiProperty({ enum: FieldType, default: FieldType.File })
-	type: FieldType.File;
+	override type!: FieldType.File;
 
 	// originalName: string;
 	// encoding: string;
@@ -483,32 +509,29 @@ export class FieldGroup extends Field {
 	@IsEnum(FieldType)
 	@Equals(FieldType.Group)
 	@ApiProperty({ enum: FieldType, default: FieldType.Group })
-	type: FieldType.Group;
+	override type!: FieldType.Group;
 
 	@ValidateNested({ each: true })
-	@Type(
-		() => Field,
-		{
-			discriminator: {
-				property: 'type',
-				subTypes: [
-					{ value: Field, name: FieldType.Text },
-					{ value: Field, name: FieldType.Checkbox },
-					{ value: Field, name: FieldType.Hidden },
-					{ value: Field, name: FieldType.Email },
-					{ value: Field, name: FieldType.Phone },
-					{ value: Field, name: FieldType.State },
-					{ value: Field, name: FieldType.Date },
-					{ value: FieldGroup, name: FieldType.Group },
-					{ value: FieldSelect, name: FieldType.Select },
-					{ value: FieldReCaptcha, name: FieldType.ReCaptcha },
-					{ value: FieldFile, name: FieldType.File }
-				]
-			},
-			keepDiscriminatorProperty: true
-		}
-	)
-	fields: Array<Field | FieldGroup | FieldSelect | FieldReCaptcha>;
+	@Type(() => Field, {
+		discriminator: {
+			property: 'type',
+			subTypes: [
+				{ value: Field, name: FieldType.Text },
+				{ value: Field, name: FieldType.Checkbox },
+				{ value: Field, name: FieldType.Hidden },
+				{ value: Field, name: FieldType.Email },
+				{ value: Field, name: FieldType.Phone },
+				{ value: Field, name: FieldType.State },
+				{ value: Field, name: FieldType.Date },
+				{ value: FieldGroup, name: FieldType.Group },
+				{ value: FieldSelect, name: FieldType.Select },
+				{ value: FieldReCaptcha, name: FieldType.ReCaptcha },
+				{ value: FieldFile, name: FieldType.File },
+			],
+		},
+		keepDiscriminatorProperty: true,
+	})
+	fields!: (Field | FieldGroup | FieldSelect | FieldReCaptcha)[];
 }
 
 // For use in DTOS
@@ -525,8 +548,14 @@ export const FieldDiscriminator: DiscriminatorDescriptor = {
 		{ value: FieldGroup, name: FieldType.Group },
 		{ value: FieldSelect, name: FieldType.Select },
 		{ value: FieldReCaptcha, name: FieldType.ReCaptcha },
-		{ value: FieldFile, name: FieldType.File }
-	]
+		{ value: FieldFile, name: FieldType.File },
+	],
 };
 
-export type Form = Array<Field | FieldGroup | FieldSelect | FieldReCaptcha | FieldFile>;
+export type Form = (
+	| Field
+	| FieldGroup
+	| FieldSelect
+	| FieldReCaptcha
+	| FieldFile
+)[];

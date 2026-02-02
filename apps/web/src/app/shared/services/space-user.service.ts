@@ -1,11 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+
 import { environment } from '../../../environments/environment';
-import { SpaceUser, InviteSpaceUserDto, UpdateSpaceUserRoleDto } from '../models/space-user.model';
+import {
+	InviteSpaceUserDto,
+	UpdateSpaceUserRoleDto,
+} from '../models/space-user.model';
 
 @Injectable({
-	providedIn: 'root'
+	providedIn: 'root',
 })
 export class SpaceUserService {
 	private apiUrl = environment.apiUrl;
@@ -18,7 +22,7 @@ export class SpaceUserService {
 		sortBy?: string,
 		order?: string,
 		page?: number,
-		limit?: number
+		limit?: number,
 	): Observable<any> {
 		let params = new HttpParams();
 
@@ -38,29 +42,32 @@ export class SpaceUserService {
 			params = params.set('limit', limit.toString());
 		}
 
-		return this.http.get<any>(
-			`${this.apiUrl}/space/${spaceId}/users`,
-			{ params }
-		);
+		return this.http.get<any>(`${this.apiUrl}/space/${spaceId}/users`, {
+			params,
+		});
 	}
 
 	inviteUser(spaceId: string, dto: InviteSpaceUserDto): Observable<any> {
 		return this.http.post<any>(
 			`${this.apiUrl}/space/${spaceId}/users`,
-			dto
+			dto,
 		);
 	}
 
-	updateUserRole(spaceId: string, userId: string, dto: UpdateSpaceUserRoleDto): Observable<any> {
+	updateUserRole(
+		spaceId: string,
+		userId: string,
+		dto: UpdateSpaceUserRoleDto,
+	): Observable<any> {
 		return this.http.patch<any>(
 			`${this.apiUrl}/space/${spaceId}/users/${userId}`,
-			dto
+			dto,
 		);
 	}
 
 	removeUser(spaceId: string, userId: string): Observable<any> {
 		return this.http.delete<any>(
-			`${this.apiUrl}/space/${spaceId}/users/${userId}`
+			`${this.apiUrl}/space/${spaceId}/users/${userId}`,
 		);
 	}
 }

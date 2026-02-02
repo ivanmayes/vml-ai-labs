@@ -1,7 +1,8 @@
 export enum OrganizationSelect {
-	AuthenticationStrategies = 'authenticationStrategies'
+	AuthenticationStrategies = 'authenticationStrategies',
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type -- Placeholder for future query options
 export interface QueryOptions {
 	//includeHiddenFundingSources?: boolean;
 }
@@ -11,7 +12,7 @@ export class Query {
 
 	public static getSelects(
 		alias: string = this.ORGANIZATION_QUERY_ALIAS,
-		targets: OrganizationSelect[] = Object.values(OrganizationSelect)
+		targets: OrganizationSelect[] = Object.values(OrganizationSelect),
 	) {
 		const selects: string[] = [];
 
@@ -24,7 +25,7 @@ export class Query {
 
 		if (targets.includes(OrganizationSelect.AuthenticationStrategies)) {
 			selects.push(
-				`${alias}_authenticationstrategies."authenticationStrategyArr" AS "authenticationStrategies"`
+				`${alias}_authenticationstrategies."authenticationStrategyArr" AS "authenticationStrategies"`,
 			);
 		}
 
@@ -34,7 +35,7 @@ export class Query {
 	public static getSubqueries(
 		alias: string = this.ORGANIZATION_QUERY_ALIAS,
 		targets: OrganizationSelect[] = Object.values(OrganizationSelect),
-		options?: QueryOptions
+		_options?: QueryOptions,
 	) {
 		const subQueries: string[] = [];
 

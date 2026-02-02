@@ -1,50 +1,78 @@
 // Awaiting issue: https://github.com/Pop-Code/nestjs-console/pull/533
 
 import 'colors';
-import { Console, Command } from 'nestjs-console';
 import fs from 'fs';
 import path from 'path';
+
+import { Console, Command } from 'nestjs-console';
 
 import { ErrorLevel, Utils } from '../_core/utils/utils.console';
 
 @Console()
 export class CLIConsole {
+	// eslint-disable-next-line @typescript-eslint/no-empty-function -- Required for NestJS console
 	constructor() {}
 
 	// npm run console:dev AddEntity EntityName
 	@Command({
 		command: 'AddEntity <EntityName>',
-		description: 'Scaffolds a new entity with controller and service.'
+		description: 'Scaffolds a new entity with controller and service.',
 	})
-	public async AddEntity(
-		name: string
-	) {
-		if(!name) {
-			console.log(Utils.formatMessage(`EntityName is required.`, ErrorLevel.Error));
+	public async AddEntity(entityName: string) {
+		if (!entityName) {
+			console.log(
+				Utils.formatMessage(
+					`EntityName is required.`,
+					ErrorLevel.Error,
+				),
+			);
 			return;
 		}
 
-		name = name.trim().replace(/\s/g, '');
-		let slug = (name.match(/[A-Z]/g).length > 1) ? name.replace(/(^.*)([A-Z])/, '$1-$2').toLowerCase() : name.toLowerCase();
-		let lower = `${name.slice(0, 1).toLowerCase()}${name.slice(1)}`;
-		let plural = `${lower}s`.replace(/ys$/, 'ies');
+		const name = entityName.trim().replace(/\s/g, '');
+		const matches = name.match(/[A-Z]/g);
+		const slug =
+			matches && matches.length > 1
+				? name.replace(/(^.*)([A-Z])/, '$1-$2').toLowerCase()
+				: name.toLowerCase();
+		const lower = `${name.slice(0, 1).toLowerCase()}${name.slice(1)}`;
+		const plural = `${lower}s`.replace(/ys$/, 'ies');
 
-		let outDir = __dirname + `/../${slug}`;
+		const outDir = __dirname + `/../${slug}`;
 
-		if(fs.existsSync(path.resolve(outDir))) {
-			console.log(Utils.formatMessage(`Folder already exists.`, ErrorLevel.Error));
+		if (fs.existsSync(path.resolve(outDir))) {
+			console.log(
+				Utils.formatMessage(`Folder already exists.`, ErrorLevel.Error),
+			);
 			return;
 		}
 
 		fs.mkdirSync(path.resolve(outDir));
 		fs.mkdirSync(path.resolve(outDir + '/dtos'));
 
-		let entity = fs.readFileSync(path.resolve(__dirname + '/partials/entity.partial'), 'utf8');
-		let controller = fs.readFileSync(path.resolve(__dirname + '/partials/controller.partial'), 'utf8');
-		let service = fs.readFileSync(path.resolve(__dirname + '/partials/service.partial'), 'utf8');
-		let dtos = fs.readFileSync(path.resolve(__dirname + '/partials/dtos/index.partial'), 'utf8');
+		let entity = fs.readFileSync(
+			path.resolve(__dirname + '/partials/entity.partial'),
+			'utf8',
+		);
+		let controller = fs.readFileSync(
+			path.resolve(__dirname + '/partials/controller.partial'),
+			'utf8',
+		);
+		let service = fs.readFileSync(
+			path.resolve(__dirname + '/partials/service.partial'),
+			'utf8',
+		);
+		let dtos = fs.readFileSync(
+			path.resolve(__dirname + '/partials/dtos/index.partial'),
+			'utf8',
+		);
 
-		[entity, controller, service, dtos] = [entity, controller, service, dtos].map((file) => {
+		[entity, controller, service, dtos] = [
+			entity,
+			controller,
+			service,
+			dtos,
+		].map((file) => {
 			return file
 				.replace(/ENTITY_NAME_UPPER/g, name)
 				.replace(/ENTITY_NAME_PLURAL/g, plural)
@@ -52,33 +80,68 @@ export class CLIConsole {
 				.replace(/ENTITY_NAME_LOWER/g, lower);
 		});
 
-		fs.writeFileSync(path.resolve(outDir + `/${slug}.entity.ts`), entity, 'utf8');
-		fs.writeFileSync(path.resolve(outDir + `/${slug}.controller.ts`), controller, 'utf8');
-		fs.writeFileSync(path.resolve(outDir + `/${slug}.service.ts`), service, 'utf8');
+		fs.writeFileSync(
+			path.resolve(outDir + `/${slug}.entity.ts`),
+			entity,
+			'utf8',
+		);
+		fs.writeFileSync(
+			path.resolve(outDir + `/${slug}.controller.ts`),
+			controller,
+			'utf8',
+		);
+		fs.writeFileSync(
+			path.resolve(outDir + `/${slug}.service.ts`),
+			service,
+			'utf8',
+		);
 		fs.writeFileSync(path.resolve(outDir + `/dtos/index.ts`), dtos, 'utf8');
 
-		let appModulePath = path.resolve(__dirname + '/../app.module.ts');
+		const appModulePath = path.resolve(__dirname + '/../app.module.ts');
 		let appModule = fs.readFileSync(appModulePath, 'utf8');
 		appModule = appModule
-			.replace(/\/\/ CLI_CONTROLLERS_IMPORT/, `import { ${name}Controller } from './${slug}/${slug}.controller';\n// CLI_CONTROLLERS_IMPORT`)
-			.replace(/\/\/ CLI_CONTROLLERS_REF/, `${name}Controller,\n		// CLI_CONTROLLERS_REF`);
+			.replace(
+				/\/\/ CLI_CONTROLLERS_IMPORT/,
+				`import { ${name}Controller } from './${slug}/${slug}.controller';\n// CLI_CONTROLLERS_IMPORT`,
+			)
+			.replace(
+				/\/\/ CLI_CONTROLLERS_REF/,
+				`${name}Controller,\n		// CLI_CONTROLLERS_REF`,
+			);
 		fs.writeFileSync(appModulePath, appModule, 'utf8');
 
-		let commonModulePath = path.resolve(__dirname + '/../common.module.ts');
+		const commonModulePath = path.resolve(
+			__dirname + '/../common.module.ts',
+		);
 		let commonModule = fs.readFileSync(commonModulePath, 'utf8');
 		commonModule = commonModule
-			.replace(/\/\/ CLI_SERVICES_IMPORT/, `import { ${name}Service } from './${slug}/${slug}.service';\n// CLI_SERVICES_IMPORT`)
-			.replace(/\/\/ CLI_SERVICES_REF/, `${name}Service,\n	// CLI_SERVICES_REF`);
+			.replace(
+				/\/\/ CLI_SERVICES_IMPORT/,
+				`import { ${name}Service } from './${slug}/${slug}.service';\n// CLI_SERVICES_IMPORT`,
+			)
+			.replace(
+				/\/\/ CLI_SERVICES_REF/,
+				`${name}Service,\n	// CLI_SERVICES_REF`,
+			);
 		fs.writeFileSync(commonModulePath, commonModule, 'utf8');
 
-		let databaseModulePath = path.resolve(__dirname + '/../database.module.ts');
+		const databaseModulePath = path.resolve(
+			__dirname + '/../database.module.ts',
+		);
 		let databaseModule = fs.readFileSync(databaseModulePath, 'utf8');
 		databaseModule = databaseModule
-			.replace(/\/\/ CLI_ENTITIES_IMPORT/, `import { ${name} } from './${slug}/${slug}.entity';\n// CLI_ENTITIES_IMPORT`)
+			.replace(
+				/\/\/ CLI_ENTITIES_IMPORT/,
+				`import { ${name} } from './${slug}/${slug}.entity';\n// CLI_ENTITIES_IMPORT`,
+			)
 			.replace(/\/\/ CLI_ENTITIES_REF/, `${name},\n				// CLI_ENTITIES_REF`);
 		fs.writeFileSync(databaseModulePath, databaseModule, 'utf8');
 
-
-		console.log(Utils.formatMessage(`Files writen to ${path.resolve(outDir)}`, ErrorLevel.Info));
+		console.log(
+			Utils.formatMessage(
+				`Files writen to ${path.resolve(outDir)}`,
+				ErrorLevel.Info,
+			),
+		);
 	}
 }

@@ -1,20 +1,26 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
+import {
+	CanActivate,
+	ActivatedRouteSnapshot,
+	RouterStateSnapshot,
+	Router,
+} from '@angular/router';
 import { Observable } from 'rxjs';
+
 import { SessionQuery } from '../../state/session/session.query';
 
 @Injectable({
-	providedIn: 'root'
+	providedIn: 'root',
 })
 export class SpaceAdminGuard implements CanActivate {
 	constructor(
 		private sessionQuery: SessionQuery,
-		private router: Router
+		private router: Router,
 	) {}
 
 	canActivate(
-		route: ActivatedRouteSnapshot,
-		state: RouterStateSnapshot
+		_route: ActivatedRouteSnapshot,
+		_state: RouterStateSnapshot,
 	): Observable<boolean> | Promise<boolean> | boolean {
 		const user = this.sessionQuery.getValue().user;
 

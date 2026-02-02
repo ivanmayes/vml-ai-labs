@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+
 import { OrganizationAdminPage } from './organization-admin.page';
 
 const routes: Routes = [
@@ -9,27 +10,36 @@ const routes: Routes = [
 		children: [
 			{
 				path: 'users',
-				loadChildren: () => import('./users/users.module').then(m => m.UsersPageModule)
+				loadChildren: () =>
+					import('./users/users.module').then(
+						(m) => m.UsersPageModule,
+					),
 			},
 			{
 				path: 'spaces',
-				loadChildren: () => import('./spaces/spaces.module').then(m => m.SpacesPageModule)
+				loadChildren: () =>
+					import('./spaces/spaces.module').then(
+						(m) => m.SpacesPageModule,
+					),
 			},
 			{
 				path: 'settings',
-				loadChildren: () => import('./settings/settings.module').then(m => m.SettingsPageModule)
+				loadChildren: () =>
+					import('./settings/settings.module').then(
+						(m) => m.SettingsPageModule,
+					),
 			},
 			{
 				path: '',
 				redirectTo: 'users',
-				pathMatch: 'full'
-			}
-		]
-	}
+				pathMatch: 'full',
+			},
+		],
+	},
 ];
 
 @NgModule({
 	imports: [RouterModule.forChild(routes)],
-	exports: [RouterModule]
+	exports: [RouterModule],
 })
 export class OrganizationAdminRoutingModule {}

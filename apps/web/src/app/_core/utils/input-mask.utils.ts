@@ -3,6 +3,12 @@
  * https://www.npmjs.com/package/angular-imask
  */
 
+// Type declaration for IMask when the module is not installed
+interface IMaskMaskedDynamic {
+	value: string;
+	compiledMasks: unknown[];
+}
+
 export const percentMask = {
 	mask: 'num%',
 	lazy: false,
@@ -11,9 +17,9 @@ export const percentMask = {
 			mask: Number,
 			scale: 3,
 			radix: '.',
-			mapToRadix: [',']
-		}
-	}
+			mapToRadix: [','],
+		},
+	},
 };
 
 export const numberMask = {
@@ -25,9 +31,9 @@ export const numberMask = {
 			mask: Number,
 			scale: 3,
 			thousandsSeparator: ',',
-			radix: '.'
-		}
-	}
+			radix: '.',
+		},
+	},
 };
 
 export const currencyMask = {
@@ -39,9 +45,9 @@ export const currencyMask = {
 			mask: Number,
 			scale: 3,
 			thousandsSeparator: ',',
-			radix: '.'
-		}
-	}
+			radix: '.',
+		},
+	},
 };
 
 export const currencyMaskWithDecimal = {
@@ -54,9 +60,9 @@ export const currencyMaskWithDecimal = {
 			thousandsSeparator: ',',
 			padFractionalZeros: true, // if true, then pads zeros at end to the length of scale
 			normalizeZeros: false,
-			radix: '.'
-		}
-	}
+			radix: '.',
+		},
+	},
 };
 
 // Version 1: $-123.00
@@ -86,33 +92,41 @@ export const maskProps = {
 	signed: true, // allow negative
 	normalizeZeros: false,
 	radix: '.',
-	padFractionalZeros: true // if true, then pads zeros at end to the length of scale
+	padFractionalZeros: true, // if true, then pads zeros at end to the length of scale
 };
 
 export const currencyMaskWithDecimalWithNegatives = {
 	mask: [
 		{
-			mask: ''
+			mask: '',
 		},
 		{
 			mask: '$num',
 			blocks: {
-				num: maskProps
-			}
+				num: maskProps,
+			},
 		},
 		{
 			mask: '-$num',
 			blocks: {
-				num: maskProps
-			}
-		}
+				num: maskProps,
+			},
+		},
 	],
-	dispatch: (appended: string, dynamicMasked: IMask.MaskedDynamic, flags: any) => {
+	dispatch: (
+		appended: string,
+		dynamicMasked: IMaskMaskedDynamic,
+		flags: unknown,
+	) => {
 		let index = /[-]/i.test(dynamicMasked.value) ? 2 : 1;
 
 		if (appended === '-' && !dynamicMasked.value) {
 			index = 2;
-		} else if (appended !== '-' && flags?.input && !/[-]/i.test(dynamicMasked.value)) {
+		} else if (
+			appended !== '-' &&
+			flags?.input &&
+			!/[-]/i.test(dynamicMasked.value)
+		) {
 			index = 1;
 		}
 
@@ -121,5 +135,5 @@ export const currencyMaskWithDecimalWithNegatives = {
 			index = 0;
 		}
 		return dynamicMasked.compiledMasks[index];
-	}
+	},
 };

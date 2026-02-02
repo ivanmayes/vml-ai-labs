@@ -1,4 +1,5 @@
 import path from 'path';
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -16,7 +17,7 @@ import { SpaceUser } from './space-user/space-user.entity';
 	imports: [
 		TypeOrmModule.forRoot({
 			name: 'default',
-			type: <any>process.env.DATABASE_TYPE || 'postgres',
+			type: process.env.DATABASE_TYPE as any || 'postgres',
 			url: process.env.DATABASE_URL,
 			extra: {
 				ssl: process.env.DATABASE_SSL
@@ -25,7 +26,7 @@ import { SpaceUser } from './space-user/space-user.entity';
 			},
 			entities: [__dirname + '/**/*.entity{.ts,.js}'],
 			synchronize: process.env.DATABASE_SYNCHRONIZE === 'true' || false,
-			logging: <any>process.env.LOGGING || false,
+			logging: process.env.LOGGING as any || false,
 			autoLoadEntities: true,
 			migrations: [path.resolve(__dirname + '/../migrations-js') + '/*.js'],
 			migrationsRun: process.env.DATABASE_MIGRATE_ON_STARTUP === 'true' || false

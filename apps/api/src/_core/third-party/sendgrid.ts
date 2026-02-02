@@ -5,15 +5,15 @@ import sgMail from '@sendgrid/mail';
 
 export class Email {
 	name?: string;
-	address: string;
+	address!: string;
 }
 
 export class SendGridConfig {
-	apiKey: string | 'SYSTEM';
+	apiKey!: string | 'SYSTEM';
 }
 export class SendGrid {
 	private static config = {
-		apiKey: process.env.SENDGRID_API_KEY
+		apiKey: process.env.SENDGRID_API_KEY,
 	};
 
 	public static async send(
@@ -25,25 +25,25 @@ export class SendGrid {
 		messageHtml?: string,
 		messageText?: string,
 		bcc?: string | Email[],
-		configOverride?: SendGridConfig
+		configOverride?: SendGridConfig,
 	) {
-		if(configOverride?.apiKey === 'SYSTEM') {
-			configOverride.apiKey = process.env.SENDGRID_API_KEY;
+		if (configOverride?.apiKey === 'SYSTEM') {
+			configOverride.apiKey = process.env.SENDGRID_API_KEY ?? '';
 		}
-		let config = { ...this.config, ...(configOverride || {}) };
+		const config = { ...this.config, ...(configOverride || {}) };
 		if (!config.apiKey) {
 			throw 'Sendgrid is not properly configured.';
 		} else {
 			sgMail.setApiKey(config.apiKey);
 		}
 
-		let email: any = {
+		const email: any = {
 			from: from,
-			dynamicTemplateData: mergeTags
+			dynamicTemplateData: mergeTags,
 		};
 
 		if (Array.isArray(to)) {
-			email.to = to.map(t => t.address);
+			email.to = to.map((t) => t.address);
 		} else {
 			email.to = to;
 		}
@@ -65,7 +65,7 @@ export class SendGrid {
 		}
 
 		if (Array.isArray(bcc)) {
-			email.bcc = bcc.map(t => t.address);
+			email.bcc = bcc.map((t) => t.address);
 		} else if (bcc) {
 			email.bcc = bcc;
 		}

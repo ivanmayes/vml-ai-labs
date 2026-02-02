@@ -97,11 +97,22 @@
 
 					<p-divider />
 
+					<!-- Admin Button (shown only for admins) -->
+					<button
+						*ngIf="isAdmin$ | async"
+						class="menu-item-button"
+						(click)="navigateToAdmin(); userOverlay.hide()"
+						aria-label="Go to Organization Admin"
+					>
+						<i class="pi pi-cog"></i>
+						<span>Organization Admin</span>
+					</button>
+
 					<!-- Logout Button -->
 					<button
 						class="menu-item-button"
 						(click)="logout(); userOverlay.hide()"
-						[attr.aria-label]="'Logout'"
+						aria-label="Logout"
 					>
 						<i class="pi pi-sign-out"></i>
 						<span>Logout</span>

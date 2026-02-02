@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
-import { DynamicDialogModule } from 'primeng/dynamicdialog';
+import { DialogService, DynamicDialogModule } from 'primeng/dynamicdialog';
 import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -59,7 +59,6 @@ import { ColorPickerModule } from 'primeng/colorpicker';
 import { SkeletonModule } from 'primeng/skeleton';
 
 // Services
-import { DialogService } from 'primeng/dynamicdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 
 const primeNgModules = [
@@ -114,12 +113,12 @@ const primeNgModules = [
 	ImageModule,
 	TagModule,
 	ColorPickerModule,
-	SkeletonModule
+	SkeletonModule,
 ];
 
 @NgModule({
 	imports: [CommonModule, ...primeNgModules],
 	exports: [...primeNgModules],
-	providers: [DialogService, MessageService, ConfirmationService]
+	providers: [DialogService, MessageService, ConfirmationService],
 })
 export class PrimeNgModule {}

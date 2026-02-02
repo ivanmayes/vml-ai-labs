@@ -1,7 +1,6 @@
 import { IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-import { ExampleSettings } from '../examples/example.settings';
 export class EntitySettings {
 	// Example settings definition.
 	// Should be customized based on system entities.

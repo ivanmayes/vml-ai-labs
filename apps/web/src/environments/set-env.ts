@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
+
 // Configure Angular `environment.ts` file path
 const targetPath = './src/environments/environment.ts';
 // Load node modules
@@ -20,25 +21,29 @@ console.log(
 	),
 );
 console.log(colors.grey(envConfigFile));
-fs.writeFile(targetPath, envConfigFile, function (err) {
-	if (err) {
-		throw console.error(err);
-	} else {
-		console.log(
-			colors.magenta(
-				`Angular environment.ts file generated correctly at ${targetPath} \n`,
-			),
-		);
-		process.exit();
-	}
-});
+fs.writeFile(
+	targetPath,
+	envConfigFile,
+	function (err: NodeJS.ErrnoException | null) {
+		if (err) {
+			throw new Error('Failed to write environment file');
+		} else {
+			console.log(
+				colors.magenta(
+					`Angular environment.ts file generated correctly at ${targetPath} \n`,
+				),
+			);
+			process.exit();
+		}
+	},
+);
 
 // Unwraps and installs API_SETTINGS.
 function getAPISettingsVars() {
 	let vars = '';
 
 	try {
-		const map = JSON.parse(process.env.API_SETTINGS);
+		const map = JSON.parse(process.env.API_SETTINGS || '{}');
 
 		if (map['localhost']) {
 			vars += `exclusive: ${map['localhost'].length === 1 ? true : false},\n`;
@@ -74,8 +79,7 @@ function getAPISettingsVars() {
 		} else {
 			throw new Error('Bad settings map.');
 		}
-	} catch (err) {
-		console.log(err);
+	} catch {
 		return `
 			exclusive: window['exclusive'],
 			apiSettings: window['organizations'],

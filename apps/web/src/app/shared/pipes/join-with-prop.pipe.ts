@@ -1,4 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
+
 import { joinWithProp } from '../../_core/utils/array.utils';
 
 /**
@@ -6,9 +7,7 @@ import { joinWithProp } from '../../_core/utils/array.utils';
  * Takes an array and joins it into a string with a custom separator
  */
 @Pipe({
-	standalone: false,
-    name: 'joinWithProp',
-    
+	name: 'joinWithProp',
 })
 export class JoinWithPropPipe implements PipeTransform {
 	public transform = joinWithProp;

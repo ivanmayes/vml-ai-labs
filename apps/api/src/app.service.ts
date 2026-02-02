@@ -1,14 +1,13 @@
-import { Injectable} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { AxiosResponse } from 'axios';
 
 @Injectable()
 export class AppService {
-	private readonly isDebug = process.env.DEBUG || false;
+	// @ts-expect-error reserved for future use
+	private readonly _isDebug = process.env.DEBUG || false;
 
-	constructor(
-		private readonly http: HttpService
-	) {}
+	// @ts-expect-error HttpService injected but not yet used
+	constructor(private readonly _http: HttpService) {}
 
 	public getHello(): string {
 		return 'Hello There!';

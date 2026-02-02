@@ -1,27 +1,27 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { SessionQuery } from '../../../state/session/session.query';
-import { SpaceService } from '../../../shared/services/space.service';
-import { Space } from '../../../shared/models/space.model';
-import { SpaceFormDialogComponent } from './components/space-form-dialog/space-form-dialog.component';
-import { environment } from '../../../../environments/environment';
+import { DialogService } from 'primeng/dynamicdialog';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
+import { SpaceService } from '../../../shared/services/space.service';
+import { Space } from '../../../shared/models/space.model';
+import { environment } from '../../../../environments/environment';
+
+import { SpaceFormDialogComponent } from './components/space-form-dialog/space-form-dialog.component';
+
 @Component({
-	standalone: false,
 	selector: 'app-spaces',
 	templateUrl: './spaces.page.html',
 	styleUrls: ['./spaces.page.scss'],
-	
-	providers: [ConfirmationService]
+
+	providers: [ConfirmationService],
 })
 export class SpacesPage implements OnInit, OnDestroy {
 	spaces: Space[] = [];
 	loading = false;
-	organizationId: string;
+	organizationId!: string;
 	currentSortField = 'created';
 	currentSortOrder = 'desc';
 	currentSearchQuery = '';
@@ -30,20 +30,18 @@ export class SpacesPage implements OnInit, OnDestroy {
 
 	constructor(
 		private readonly spaceService: SpaceService,
-		private readonly sessionQuery: SessionQuery,
 		private readonly messageService: MessageService,
 		private readonly dialogService: DialogService,
 		private readonly confirmationService: ConfirmationService,
-		private readonly router: Router
+		private readonly router: Router,
 	) {
 		// Debounce search input by 400ms
-		this.searchSubject.pipe(
-			debounceTime(400),
-			distinctUntilChanged()
-		).subscribe(query => {
-			this.currentSearchQuery = query;
-			this.loadSpaces(query);
-		});
+		this.searchSubject
+			.pipe(debounceTime(400), distinctUntilChanged())
+			.subscribe((query) => {
+				this.currentSearchQuery = query;
+				this.loadSpaces(query);
+			});
 	}
 
 	ngOnInit(): void {
@@ -54,15 +52,21 @@ export class SpacesPage implements OnInit, OnDestroy {
 		}
 	}
 
-	loadSpaces(searchQuery?: string, sortField?: string, sortOrder?: string): void {
+	loadSpaces(
+		searchQuery?: string,
+		sortField?: string,
+		sortOrder?: string,
+	): void {
 		this.loading = true;
 
 		// Use provided values or fall back to current state
-		const query = searchQuery !== undefined ? searchQuery : this.currentSearchQuery;
+		const query =
+			searchQuery !== undefined ? searchQuery : this.currentSearchQuery;
 		const field = sortField || this.currentSortField;
 		const order = sortOrder || this.currentSortOrder;
 
-		this.spaceService.getSpaces(this.organizationId, query, field, order)
+		this.spaceService
+			.getSpaces(this.organizationId, query, field, order)
 			.subscribe({
 				next: (response) => {
 					this.spaces = response.data || [];
@@ -74,10 +78,10 @@ export class SpacesPage implements OnInit, OnDestroy {
 						severity: 'error',
 						summary: 'Error',
 						detail: 'Failed to load spaces',
-						life: 3000
+						life: 3000,
 					});
 					this.loading = false;
-				}
+				},
 			});
 	}
 
@@ -93,51 +97,55 @@ export class SpacesPage implements OnInit, OnDestroy {
 	onSort(event: any): void {
 		this.currentSortField = event.field;
 		this.currentSortOrder = event.order === 1 ? 'asc' : 'desc';
-		this.loadSpaces(this.currentSearchQuery, this.currentSortField, this.currentSortOrder);
+		this.loadSpaces(
+			this.currentSearchQuery,
+			this.currentSortField,
+			this.currentSortOrder,
+		);
 	}
 
 	openCreateDialog(): void {
-		const ref: DynamicDialogRef = this.dialogService.open(SpaceFormDialogComponent, {
+		const ref = this.dialogService.open(SpaceFormDialogComponent, {
 			header: 'Create Space',
 			width: '500px',
 			data: {
 				mode: 'create',
-				organizationId: this.organizationId
-			}
+				organizationId: this.organizationId,
+			},
 		});
 
-		ref.onClose.subscribe((result) => {
+		ref?.onClose.subscribe((result) => {
 			if (result) {
 				this.loadSpaces();
 				this.messageService.add({
 					severity: 'success',
 					summary: 'Success',
 					detail: 'Space created successfully',
-					life: 3000
+					life: 3000,
 				});
 			}
 		});
 	}
 
 	openEditDialog(space: Space): void {
-		const ref: DynamicDialogRef = this.dialogService.open(SpaceFormDialogComponent, {
+		const ref = this.dialogService.open(SpaceFormDialogComponent, {
 			header: 'Edit Space',
 			width: '500px',
 			data: {
 				mode: 'edit',
 				space,
-				organizationId: this.organizationId
-			}
+				organizationId: this.organizationId,
+			},
 		});
 
-		ref.onClose.subscribe((result) => {
+		ref?.onClose.subscribe((result) => {
 			if (result) {
 				this.loadSpaces();
 				this.messageService.add({
 					severity: 'success',
 					summary: 'Success',
 					detail: 'Space updated successfully',
-					life: 3000
+					life: 3000,
 				});
 			}
 		});
@@ -149,7 +157,8 @@ export class SpacesPage implements OnInit, OnDestroy {
 			header: 'Confirm Delete',
 			icon: 'pi pi-exclamation-triangle',
 			accept: () => {
-				this.spaceService.deleteSpace(this.organizationId, space.id)
+				this.spaceService
+					.deleteSpace(this.organizationId, space.id)
 					.subscribe({
 						next: () => {
 							this.loadSpaces();
@@ -157,7 +166,7 @@ export class SpacesPage implements OnInit, OnDestroy {
 								severity: 'success',
 								summary: 'Success',
 								detail: 'Space deleted successfully',
-								life: 3000
+								life: 3000,
 							});
 						},
 						error: (error) => {
@@ -166,11 +175,11 @@ export class SpacesPage implements OnInit, OnDestroy {
 								severity: 'error',
 								summary: 'Error',
 								detail: 'Failed to delete space',
-								life: 3000
+								life: 3000,
 							});
-						}
+						},
 					});
-			}
+			},
 		});
 	}
 
