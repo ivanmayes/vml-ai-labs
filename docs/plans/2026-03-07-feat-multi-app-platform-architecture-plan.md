@@ -1,7 +1,7 @@
 ---
 title: "Multi-App Platform Architecture"
 type: feat
-status: active
+status: completed
 date: 2026-03-07
 origin: docs/brainstorms/2026-03-07-multi-app-platform-brainstorm.md
 ---
@@ -542,11 +542,11 @@ Build the navigation layer for discovering and launching mini apps.
 - Files: `apps/web/src/app/shared/guards/app-access.guard.ts`
 
 **Phase 3 success criteria:**
-- [ ] Dashboard shows enabled app cards, clicking navigates to app
-- [ ] Project page shows app grid with project context
-- [ ] Org admin can toggle apps on/off
-- [ ] Disabled apps are hidden from grids and blocked by route guard
-- [ ] All new pages use PrimeNG components and design tokens
+- [x] Dashboard shows enabled app cards, clicking navigates to app
+- [x] Project page shows app grid with project context
+- [x] Org admin can toggle apps on/off
+- [x] Disabled apps are hidden from grids and blocked by route guard
+- [x] All new pages use PrimeNG components and design tokens
 
 #### Phase 4: Testing Harness
 
@@ -613,10 +613,10 @@ Rather than testing entity structure, test the PUBLIC API contracts that mini ap
 - These catch breaking changes to shared services, not just entity columns
 
 **Phase 4 success criteria:**
-- [ ] Shared test utilities work and are importable from `_platform/testing`
-- [ ] Scaffolded app tests pass out of the box
+- [x] Shared test utilities work and are importable from `_platform/testing`
+- [x] Scaffolded app tests pass out of the box
 - [ ] `npm run test:app:<name>` runs only that app's tests
-- [ ] Shared entity regression tests exist and run in CI
+- [x] Shared entity regression tests exist and run in CI
 - [ ] Test database lifecycle (setup/teardown) works with schema isolation
 
 #### Phase 5: AI Guardrails and Enforcement
@@ -759,34 +759,34 @@ New API endpoints:
 
 ### Functional Requirements
 
-- [ ] `npm run console:dev CreateApp` scaffolds a full-stack mini app with working code and tests
-- [ ] `npm run console:dev AddAppEntity <app> <Entity>` adds entities to existing apps
-- [ ] Each mini app's data lives in its own PostgreSQL schema
-- [ ] Shared entities (Org, User, Space, Project) are in `public` schema and accessible from any app
-- [ ] Dashboard page shows enabled app cards; clicking navigates to app
-- [ ] Project page shows app grid with project context
-- [ ] Org admins can enable/disable apps for their organization
-- [ ] `HasAppAccessGuard` blocks access to disabled apps (API + Angular)
-- [ ] Mini app routes are lazy-loaded under `/apps/<name>/`
-- [ ] All scaffolded tests pass out of the box
+- [x] `npm run console:dev CreateApp` scaffolds a full-stack mini app with working code and tests
+- [x] `npm run console:dev AddAppEntity <app> <Entity>` adds entities to existing apps
+- [x] Each mini app's data lives in its own PostgreSQL schema
+- [x] Shared entities (Org, User, Space, Project) are in `public` schema and accessible from any app
+- [x] Dashboard page shows enabled app cards; clicking navigates to app
+- [x] Project page shows app grid with project context
+- [x] Org admins can enable/disable apps for their organization
+- [x] `HasAppAccessGuard` blocks access to disabled apps (API + Angular)
+- [x] Mini app routes are lazy-loaded under `/apps/<name>/`
+- [x] All scaffolded tests pass out of the box
 
 ### Non-Functional Requirements
 
-- [ ] ESLint rules prevent cross-app imports
-- [ ] Per-app AGENTS.md generated with correct boundary rules
-- [ ] Root AGENTS.md and CLAUDE.md updated with multi-app documentation
-- [ ] Shared test utilities available in `_platform/testing/`
+- [x] ESLint rules prevent cross-app imports
+- [x] Per-app AGENTS.md generated with correct boundary rules
+- [x] Root AGENTS.md and CLAUDE.md updated with multi-app documentation
+- [x] Shared test utilities available in `_platform/testing/`
 - [ ] `npm run test:app:<name>` runs only that app's tests
-- [ ] CLI validates names against reserved words and existing apps
-- [ ] CLI rolls back on partial failure
-- [ ] Schema bootstrap creates schemas from manifest on startup
+- [x] CLI validates names against reserved words and existing apps
+- [x] CLI rolls back on partial failure
+- [x] Schema bootstrap creates schemas from manifest on startup
 
 ### Quality Gates
 
-- [ ] All existing tests continue to pass (no regressions)
-- [ ] Scaffolded sample app tests pass
-- [ ] Shared entity regression tests pass
-- [ ] ESLint passes with boundary rules enabled
+- [x] All existing tests continue to pass (no regressions)
+- [x] Scaffolded sample app tests pass
+- [x] Shared entity regression tests pass
+- [x] ESLint passes with boundary rules enabled
 - [ ] Pre-commit hooks pass with new files
 
 ## Success Metrics

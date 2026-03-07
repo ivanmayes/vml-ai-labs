@@ -12,6 +12,7 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { FindOptionsWhere } from 'typeorm';
 
 import {
 	ResponseEnvelope,
@@ -73,7 +74,7 @@ export class ProjectController {
 		let error;
 		const [queryResult, count]: [Project[], number] =
 			await this.projectService
-				.findPaginated(options, filter)
+				.findPaginated(options, filter as FindOptionsWhere<Project>)
 				.catch((err) => {
 					console.log(err);
 					error = err;
