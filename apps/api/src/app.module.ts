@@ -12,6 +12,7 @@ import { ThrottlerBehindProxyGuard } from './_core/guards/throttler-behind-proxy
 import { Time } from './_core/utils/utils.time';
 import { CommonModule } from './common.module';
 import { PlatformModule } from './_platform/platform.module';
+import { HasAppAccessGuard } from './_platform/guards/has-app-access.guard';
 import { MiniAppsModule } from './mini-apps/mini-apps.module';
 
 // Controllers
@@ -64,6 +65,10 @@ Global();
 		{
 			provide: APP_GUARD,
 			useClass: ThrottlerBehindProxyGuard,
+		},
+		{
+			provide: APP_GUARD,
+			useClass: HasAppAccessGuard,
 		},
 	],
 	exports: [],

@@ -20,9 +20,8 @@ import {
 	ResponseStatus,
 	SortStrategy,
 	FindOptions,
-} from '../../_core/models';
-import { RequiresApp } from '../../_platform/decorators';
-import { CurrentOrg } from '../../_platform/decorators';
+} from '../../_platform/models';
+import { RequiresApp, CurrentOrg } from '../../_platform/decorators';
 
 import { ENTITY_NAME_UPPERService } from './ENTITY_NAME_SLUG.service';
 

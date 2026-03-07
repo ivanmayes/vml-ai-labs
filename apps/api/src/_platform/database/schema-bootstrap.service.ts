@@ -27,6 +27,14 @@ export class SchemaBootstrapService implements OnApplicationBootstrap {
 
 		for (const app of manifest.apps) {
 			const schemaName = app.key.replace(/-/g, '_');
+
+			if (!/^[a-z][a-z0-9_]*$/.test(schemaName)) {
+				this.logger.error(
+					`Invalid schema name "${schemaName}" for app "${app.key}", skipping`,
+				);
+				continue;
+			}
+
 			await this.dataSource.query(
 				`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`,
 			);

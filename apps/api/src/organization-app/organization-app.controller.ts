@@ -116,7 +116,8 @@ export class OrganizationAppController {
 	}
 
 	@Get()
-	@UseGuards(AuthGuard())
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@UseGuards(AuthGuard(), RolesGuard)
 	public async find(
 		@Req() req: Request & { user: User },
 		@Query() queryDto: FindOrganizationAppDto,
