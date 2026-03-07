@@ -73,6 +73,13 @@ export const routes: Routes = [
 		path: 'apps',
 		canActivateChild: [appAccessGuard],
 		children: [
+			{
+				path: 'document-converter',
+				loadChildren: () =>
+					import('./mini-apps/document-converter/document-converter.routes').then(
+						(m) => m.routes,
+					),
+			},
 			// MINIAPP_ROUTES_REF
 		],
 	},

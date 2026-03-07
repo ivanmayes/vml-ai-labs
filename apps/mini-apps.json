@@ -1,3 +1,13 @@
 {
-  "apps": []
+  "apps": [
+    {
+      "key": "document-converter",
+      "displayName": "Document Converter",
+      "description": "Upload documents and convert them to Markdown",
+      "icon": "pi pi-file-edit",
+      "defaultEnabled": true,
+      "route": "/apps/document-converter",
+      "apiPrefix": "apps/document-converter"
+    }
+  ]
 }

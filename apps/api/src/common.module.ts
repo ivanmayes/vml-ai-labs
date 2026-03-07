@@ -25,6 +25,7 @@ import { ApiKeyConsole } from './api-key/api-key.console';
 import { UserConsole } from './user/user.console';
 import { ProjectService } from './project/project.service';
 import { OrganizationAppService } from './organization-app/organization-app.service';
+import { AwsS3Service } from './_core/third-party/aws/aws.s3.service';
 // CLI_SERVICES_IMPORT
 
 const providerList = [
@@ -42,6 +43,7 @@ const providerList = [
 	NotificationService,
 	ProjectService,
 	OrganizationAppService,
+	AwsS3Service,
 	// CLI_SERVICES_REF
 	// CRON services
 	// CLI commands
