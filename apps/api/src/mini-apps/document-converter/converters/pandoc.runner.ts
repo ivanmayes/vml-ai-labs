@@ -120,6 +120,7 @@ export class PandocRunner {
 				outputPath,
 				options.inputFormat,
 				options.outputFormat ?? 'gfm',
+				tmpDir,
 			);
 
 			this.logger.debug(`Running Pandoc: ${args.join(' ')}`);
@@ -161,6 +162,7 @@ export class PandocRunner {
 		outputPath: string,
 		inputFormat: string,
 		outputFormat: string,
+		tempDir: string,
 	): string[] {
 		return [
 			inputPath,
@@ -172,7 +174,7 @@ export class PandocRunner {
 			'-t',
 			outputFormat,
 			'--wrap=none', // Don't wrap lines
-			'--extract-media=/dev/null', // Discard extracted media
+			`--extract-media=${tempDir}`, // Extract media to temp dir (cleaned up after)
 		];
 	}
 

@@ -12,7 +12,6 @@ import {
 	Param,
 	Query,
 	Req,
-	Res,
 	UseGuards,
 	UseInterceptors,
 	UploadedFile,
@@ -20,12 +19,10 @@ import {
 	HttpCode,
 	HttpStatus,
 	Logger,
-	UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
 import { RequiresApp, CurrentOrg } from '../../_platform/decorators';
@@ -35,20 +32,30 @@ import { AwsS3Service } from '../../_platform/aws';
 
 import { ConversionService } from './services/conversion.service';
 import { FileValidationService } from './services/file-validation.service';
-import { ConversionSseService } from './services/conversion-sse.service';
 import { JobStatus } from './types/job-status.enum';
 
 /**
  * In-memory SSE token store.
  * Maps token -> { userId, organizationId, createdAt }
+ * Exported for use by the SSE events controller.
  */
-const sseTokenStore = new Map<
+export const sseTokenStore = new Map<
 	string,
 	{ userId: string; organizationId: string; createdAt: Date }
 >();
 
 /** SSE token expiry: 5 minutes */
-const SSE_TOKEN_TTL_MS = 5 * 60 * 1000;
+export const SSE_TOKEN_TTL_MS = 5 * 60 * 1000;
+
+// Periodic cleanup of expired tokens (every 60 seconds)
+setInterval(() => {
+	const now = Date.now();
+	for (const [token, data] of sseTokenStore) {
+		if (now - data.createdAt.getTime() > SSE_TOKEN_TTL_MS) {
+			sseTokenStore.delete(token);
+		}
+	}
+}, 60_000).unref();
 
 /**
  * Request type with authenticated user
@@ -69,7 +76,6 @@ export class DocumentConverterController {
 	constructor(
 		private readonly conversionService: ConversionService,
 		private readonly fileValidationService: FileValidationService,
-		private readonly sseService: ConversionSseService,
 		private readonly s3Service: AwsS3Service,
 		private readonly pgBossService: PgBossService,
 	) {}
@@ -339,53 +345,5 @@ export class DocumentConverterController {
 			expiresAt,
 			expiresIn: SSE_TOKEN_TTL_MS / 1000,
 		});
-	}
-
-	/**
-	 * SSE endpoint for real-time job status updates.
-	 *
-	 * Uses token-based authentication instead of JWT because the browser's
-	 * EventSource API doesn't support custom headers.
-	 *
-	 * This endpoint is public (no AuthGuard) - authentication is via
-	 * the token query parameter obtained from POST /sse-token.
-	 */
-	@Get('events')
-	async events(
-		@Query('token') token: string,
-		@Res() res: Response,
-	): Promise<void> {
-		if (!token) {
-			throw new UnauthorizedException('SSE token is required');
-		}
-
-		// Validate and consume the token (one-time use)
-		const tokenData = sseTokenStore.get(token);
-
-		if (!tokenData) {
-			throw new UnauthorizedException('Invalid or expired SSE token');
-		}
-
-		// Check expiry
-		const age = Date.now() - tokenData.createdAt.getTime();
-		if (age > SSE_TOKEN_TTL_MS) {
-			sseTokenStore.delete(token);
-			throw new UnauthorizedException('SSE token has expired');
-		}
-
-		// Consume the token (single use)
-		sseTokenStore.delete(token);
-
-		const { userId, organizationId } = tokenData;
-		this.logger.debug(`SSE connection from user ${userId}`);
-
-		// Register the SSE connection
-		const connectionId = this.sseService.addConnection(
-			res,
-			userId,
-			organizationId,
-		);
-
-		this.logger.log(`SSE connection established: ${connectionId}`);
 	}
 }

@@ -28,7 +28,7 @@ import { BaseConverter, ConversionContext } from './base.converter';
  */
 export class PptxConverter extends BaseConverter {
 	readonly engineName = 'pptx-parser';
-	readonly supportedExtensions = ['.pptx', '.ppt'];
+	readonly supportedExtensions = ['.pptx'];
 
 	/**
 	 * Convert PPTX buffer to Markdown.

@@ -14,21 +14,8 @@ import {
 import { User } from '../../../user/user.entity';
 import { Organization } from '../../../organization/organization.entity';
 import { JobStatus, canTransition } from '../types/job-status.enum';
-import {
-	ConversionError,
-	isConversionError,
-} from '../types/conversion-error.types';
-
-/**
- * Custom error for invalid status transitions.
- * Thrown when attempting to transition to an invalid state.
- */
-export class InvalidStatusTransitionError extends Error {
-	constructor(message: string) {
-		super(message);
-		this.name = 'InvalidStatusTransitionError';
-	}
-}
+import { ConversionError } from '../types/conversion-error.types';
+import { InvalidStatusTransitionError } from '../errors/domain.errors';
 
 /**
  * ConversionJob entity representing a document conversion request.
@@ -78,24 +65,8 @@ export class ConversionJob {
 	@Column({ type: 'varchar', length: 50, nullable: true })
 	engine: string; // mammoth, pandoc, pdf-parse, xlsx, pptx-parser
 
-	@Column({ type: 'jsonb', nullable: true })
-	private _error: unknown;
-
-	/**
-	 * Type-safe error getter.
-	 * Validates the JSONB structure matches ConversionError interface.
-	 */
-	get error(): ConversionError | null {
-		if (!this._error) return null;
-		if (!isConversionError(this._error)) {
-			throw new Error('Invalid error structure in database');
-		}
-		return this._error;
-	}
-
-	set error(value: ConversionError | null) {
-		this._error = value;
-	}
+	@Column({ type: 'jsonb', name: 'error', nullable: true })
+	error: ConversionError | null;
 
 	@Column({ type: 'varchar', length: 100 })
 	mimeType: string;

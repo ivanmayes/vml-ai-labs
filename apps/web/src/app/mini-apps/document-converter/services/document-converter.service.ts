@@ -57,9 +57,9 @@ export class DocumentConverterService {
 	): Observable<{ status: string; data: JobListResponse }> {
 		const params: Record<string, string> = {};
 		if (status) params['status'] = status;
-		return this.http.post<{ status: string; data: JobListResponse }>(
-			`${this.baseUrl}/find`,
-			params,
+		return this.http.get<{ status: string; data: JobListResponse }>(
+			`${this.baseUrl}/jobs`,
+			{ params },
 		);
 	}
 
@@ -77,16 +77,22 @@ export class DocumentConverterService {
 		);
 	}
 
-	cancelJob(id: string): Observable<{ status: string; data: any }> {
-		return this.http.delete<{ status: string; data: any }>(
-			`${this.baseUrl}/jobs/${id}`,
-		);
+	cancelJob(
+		id: string,
+	): Observable<{ status: string; data: { id: string; status: string } }> {
+		return this.http.delete<{
+			status: string;
+			data: { id: string; status: string };
+		}>(`${this.baseUrl}/jobs/${id}`);
 	}
 
-	retryJob(id: string): Observable<{ status: string; data: any }> {
-		return this.http.post<{ status: string; data: any }>(
-			`${this.baseUrl}/jobs/${id}/retry`,
-			{},
-		);
+	retryJob(id: string): Observable<{
+		status: string;
+		data: { id: string; status: string; retryCount: number };
+	}> {
+		return this.http.post<{
+			status: string;
+			data: { id: string; status: string; retryCount: number };
+		}>(`${this.baseUrl}/jobs/${id}/retry`, {});
 	}
 }

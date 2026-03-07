@@ -327,7 +327,7 @@ export class ConversionService {
 				.set({
 					status: job.status,
 					engine: job.engine,
-					_error: job.error,
+					error: job.error,
 					s3OutputKey: job.s3OutputKey,
 					outputSize: job.outputSize,
 					processingTimeMs: job.processingTimeMs,

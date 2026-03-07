@@ -39,7 +39,7 @@ interface SheetData {
  */
 export class XlsxConverter extends BaseConverter {
 	readonly engineName = 'xlsx';
-	readonly supportedExtensions = ['.xlsx', '.xls'];
+	readonly supportedExtensions = ['.xlsx'];
 
 	/** Maximum rows per sheet to prevent memory issues */
 	private readonly maxRowsPerSheet = 10000;

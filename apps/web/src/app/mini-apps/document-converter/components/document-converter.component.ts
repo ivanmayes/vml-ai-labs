@@ -1,6 +1,5 @@
 import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
 import { FileUploadModule } from 'primeng/fileupload';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -19,7 +18,6 @@ import {
 	standalone: true,
 	imports: [
 		CommonModule,
-		HttpClientModule,
 		FileUploadModule,
 		TableModule,
 		TagModule,
@@ -43,7 +41,6 @@ import {
 				[multiple]="false"
 				accept=".docx,.pdf,.xlsx,.pptx"
 				[maxFileSize]="52428800"
-				(onSelect)="onFileSelect($event)"
 				[auto]="false"
 				chooseLabel="Choose File"
 				uploadLabel="Convert"
@@ -196,11 +193,7 @@ export class DocumentConverterComponent implements OnInit, OnDestroy {
 		});
 	}
 
-	onFileSelect(_event: any): void {
-		// File selected, ready for upload
-	}
-
-	onUpload(event: any): void {
+	onUpload(event: { files: File[] }): void {
 		const file = event.files?.[0];
 		if (!file) return;
 
@@ -281,7 +274,10 @@ export class DocumentConverterComponent implements OnInit, OnDestroy {
 	getStatusSeverity(
 		status: string,
 	): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
-		const map: Record<string, any> = {
+		const map: Record<
+			string,
+			'success' | 'info' | 'warn' | 'danger' | 'secondary'
+		> = {
 			completed: 'success',
 			processing: 'info',
 			pending: 'warn',

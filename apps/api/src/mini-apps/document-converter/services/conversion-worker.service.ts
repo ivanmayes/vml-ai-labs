@@ -128,10 +128,8 @@ export class ConversionWorkerService implements OnModuleInit, OnModuleDestroy {
 	 * @param jobs - Array of pg-boss jobs with ConversionJobData payload
 	 */
 	async processJob(jobs: PgBoss.Job<ConversionJobData>[]): Promise<void> {
-		// Process each job in the batch
-		for (const job of jobs) {
-			await this.processSingleJob(job);
-		}
+		// Process jobs concurrently within the batch
+		await Promise.allSettled(jobs.map((job) => this.processSingleJob(job)));
 	}
 
 	/**
