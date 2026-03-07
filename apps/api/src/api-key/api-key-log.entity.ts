@@ -14,7 +14,7 @@ export type PublicApiKeyLog = Pick<ApiKeyLog, 'id'> & {
 	// Other Public Properties
 };
 
-@Entity('apiKeyLogs')
+@Entity({ name: 'apiKeyLogs', schema: 'public' })
 export class ApiKeyLog {
 	[key: string]: unknown;
 

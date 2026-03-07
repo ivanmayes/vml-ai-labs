@@ -20,7 +20,6 @@ import { OktaOauthToken } from './dtos/okta-login-request.dto';
 import { Permission, PublicPermission } from './permission/permission.entity';
 import { UserRole } from './user-role.enum';
 
-
 // import { ExamplePermission } from '../examples/example-permission.entity';
 
 export enum ActivationStatus {
@@ -28,7 +27,9 @@ export enum ActivationStatus {
 	Activated = 'activated',
 }
 
-export const UserRoleMap = Object.entries(UserRole).reduce<Record<string, number>>((acc, cur, idx) => {
+export const UserRoleMap = Object.entries(UserRole).reduce<
+	Record<string, number>
+>((acc, cur, idx) => {
 	acc[cur[1]] = idx;
 	return acc;
 }, {});
@@ -67,7 +68,7 @@ export type PublicUserWithPermissions = PublicUser & {
 	permissions: PublicPermission[];
 };
 
-@Entity('users')
+@Entity({ name: 'users', schema: 'public' })
 @Unique(['emailNormalized', 'organization'])
 export class User {
 	[key: string]: unknown;

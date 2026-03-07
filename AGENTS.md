@@ -588,6 +588,104 @@ import type { YourDto } from '@api/module/dtos';
 | Entities              | `@api/[module]/[module].entity`  |
 | Enums                 | `@api/[module]/[enum-name].enum` |
 
+## Multi-App Architecture
+
+This repository is a multi-app umbrella platform. Multiple developers independently build "mini apps" that share auth, org/space/project infrastructure, and services like AI.
+
+### Directory Structure
+
+```
+apps/api/src/mini-apps/<app-name>/     # API backend for each mini app
+apps/web/src/app/mini-apps/<app-name>/ # Angular frontend for each mini app
+apps/mini-apps.json                    # App registry manifest
+```
+
+Full API-side structure:
+
+```
+apps/
+  api/src/
+    mini-apps/
+      <app-name>/          # API-side mini app
+        <app-name>.module.ts
+        <app-name>.controller.ts
+        <app-name>.service.ts
+        entities/
+        dtos/
+    _platform/             # Shared services & utilities
+      platform.module.ts
+  web/src/app/
+    mini-apps/
+      <app-name>/          # Web-side mini app
+        <app-name>.module.ts
+        <app-name>.routes.ts
+        pages/
+        components/
+    _platform/             # Shared web utilities
+```
+
+### Creating a New App
+
+```bash
+npm run console:dev CreateApp
+```
+
+Follow the interactive prompts. This generates the full directory structure, module registration, routing, and database schema.
+
+### Adding Entities to an App
+
+```bash
+npm run console:dev AddAppEntity <app-name> <EntityName>
+```
+
+This creates the entity class, DTO files, service, and controller within the app's directory, pre-configured with the correct schema.
+
+### Boundary Rules
+
+- Each mini app is self-contained in its `mini-apps/<app-name>/` directory
+- NEVER import from another mini app's directory
+- Import shared services from `_platform/` (NOT from `_core/` directly)
+- All entities must use `@Entity({ schema: '<app-name>' })`
+- All controllers must use `@RequiresApp('<app-name>')` decorator
+- All API entities need `organizationId` FK to Organization
+
+### Database
+
+- Each app's data lives in its own PostgreSQL schema (named after the app)
+- Shared entities (Organization, User, Space, Project) live in the `public` schema
+- Schema is auto-created on startup from mini-apps.json manifest
+
+### Testing
+
+```bash
+npm run test:app:<app-name>  # Run tests for a specific app
+npm test                      # Run all tests
+```
+
+Use shared test utilities from `_platform/testing/` for consistent test setup (mock users, organizations, database seeding).
+
+### Available Shared Services (via PlatformModule)
+
+- OrganizationService, UserService, SpaceService, ProjectService
+- AiService, NotificationService, S3Service, CryptService
+
+Import shared services from the platform module:
+
+```typescript
+import { PlatformModule } from '../_platform/platform.module';
+```
+
+| Service               | Purpose                              |
+| --------------------- | ------------------------------------ |
+| OrganizationService   | Organization CRUD & membership       |
+| UserService           | User management & lookup             |
+| SpaceService          | Workspace/space management           |
+| ProjectService        | Project management within spaces     |
+| AiService             | LLM/AI integration (see PRD_DEFAULTS)|
+| NotificationService   | In-app & email notifications         |
+| S3Service             | File upload & storage                |
+| CryptService          | Encryption & hashing utilities       |
+
 ## Additional Resources
 
 - See `tools/lint-plugins/PRIMENG_GUIDELINES.md` for detailed styling guidelines

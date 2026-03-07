@@ -50,7 +50,7 @@ export type PublicAuthenticationStrategy = Pick<
 	'id' | 'name' | 'type'
 > & {};
 
-@Entity('authenticationStrategies')
+@Entity({ name: 'authenticationStrategies', schema: 'public' })
 export class AuthenticationStrategy {
 	[key: string]: unknown;
 

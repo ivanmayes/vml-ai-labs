@@ -17,7 +17,6 @@ import { RequestInterceptor } from './_core/interceptors/request.interceptor';
 import { PrimeNgModule } from './shared/primeng.module';
 import { SharedModule } from './shared/shared.module';
 import { AppComponent } from './app.component';
-import { AppRoutingModule } from './app-routing.module';
 
 // Define WPP Open theme based on Lara
 const WppOpenPreset = definePreset(Lara, {
@@ -110,7 +109,6 @@ const WppOpenPreset = definePreset(Lara, {
 @NgModule({
 	imports: [
 		BrowserModule,
-		AppRoutingModule,
 		BrowserAnimationsModule,
 		AkitaNgRouterStoreModule,
 		PrimeNgModule,

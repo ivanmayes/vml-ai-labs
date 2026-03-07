@@ -129,5 +129,17 @@ export default tseslint.config(
       "sonarjs/no-duplicate-string": "off",
       "sonarjs/cognitive-complexity": "off",
     },
+  },
+  {
+    // Mini-app boundary enforcement: prevent cross-app imports
+    files: ["src/app/mini-apps/**/*.ts"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/mini-apps/**"],
+          message: "Mini apps cannot import from other mini apps. Use shared services."
+        }]
+      }]
+    }
   }
 );

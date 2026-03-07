@@ -14,7 +14,7 @@ export type PublicPermission = Pick<Permission, 'id' | 'type' | 'userId'> & {
 	user?: PublicUser;
 };
 
-@Entity('permissions')
+@Entity({ name: 'permissions', schema: 'public' })
 export class Permission {
 	[key: string]: unknown;
 

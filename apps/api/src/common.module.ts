@@ -6,6 +6,8 @@ import { HttpModule } from '@nestjs/axios';
 import { DatabaseModule } from './database.module';
 import { AIModule } from './ai/ai.module';
 import { CLIConsole } from './console/cli.console';
+import { CreateAppConsole } from './console/create-app.console';
+import { AddAppEntityConsole } from './console/add-app-entity.console';
 import { JwtStrategy } from './user/auth/jwt.strategy';
 import { BearerStrategy } from './api-key/auth/bearer.strategy';
 import { AppService } from './app.service';
@@ -21,6 +23,8 @@ import { AuthenticationStrategyConsole } from './authentication-strategy/authent
 import { OrganizationConsole } from './organization/organization.console';
 import { ApiKeyConsole } from './api-key/api-key.console';
 import { UserConsole } from './user/user.console';
+import { ProjectService } from './project/project.service';
+import { OrganizationAppService } from './organization-app/organization-app.service';
 // CLI_SERVICES_IMPORT
 
 const providerList = [
@@ -36,10 +40,14 @@ const providerList = [
 	SpaceService,
 	SpaceUserService,
 	NotificationService,
+	ProjectService,
+	OrganizationAppService,
 	// CLI_SERVICES_REF
 	// CRON services
 	// CLI commands
 	CLIConsole,
+	CreateAppConsole,
+	AddAppEntityConsole,
 	AuthenticationStrategyConsole,
 	OrganizationConsole,
 	ApiKeyConsole,

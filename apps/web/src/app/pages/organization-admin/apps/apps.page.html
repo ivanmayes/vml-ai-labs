@@ -1,0 +1,83 @@
+<div class="apps-page">
+	<p-toast></p-toast>
+
+	<h1 class="mb-2">Apps</h1>
+	<p class="text-color-secondary mb-4">
+		Manage which mini-apps are available to users in your organization.
+	</p>
+
+	@if (!loading()) {
+	<div class="apps-list">
+		@for (row of appRows(); track row.manifest.key) {
+		<div class="app-item">
+			<div class="app-item-info">
+				<div class="app-item-icon">
+					<i [class]="row.manifest.icon"></i>
+				</div>
+				<div class="app-item-details">
+					<h3 class="app-item-name">
+						{{ row.manifest.displayName }}
+					</h3>
+					<p class="app-item-description text-color-secondary">
+						{{ row.manifest.description }}
+					</p>
+					<span class="app-item-key text-color-secondary">
+						{{ row.manifest.key }}
+					</span>
+				</div>
+			</div>
+			<div class="app-item-toggle">
+				@if (row.saving) {
+				<p-progressSpinner
+					[style]="{ width: '24px', height: '24px' }"
+					strokeWidth="4"
+				></p-progressSpinner>
+				} @else {
+				<p-toggleSwitch
+					[ngModel]="row.enabled"
+					(ngModelChange)="onToggleApp(row.manifest.key, $event)"
+				></p-toggleSwitch>
+				}
+			</div>
+		</div>
+		} @empty {
+		<div class="empty-state">
+			<i class="pi pi-box empty-state-icon"></i>
+			<h3>No apps registered</h3>
+			<p class="text-color-secondary">
+				No mini-apps have been registered in the manifest yet. Use the
+				CLI to create a new app.
+			</p>
+		</div>
+		}
+	</div>
+	} @else {
+	<!-- Skeleton Loading State -->
+	<div class="apps-list">
+		@for (item of [1, 2, 3]; track item) {
+		<div class="app-item">
+			<div class="app-item-info">
+				<p-skeleton
+					width="2.5rem"
+					height="2.5rem"
+					borderRadius="8px"
+				></p-skeleton>
+				<div class="app-item-details">
+					<p-skeleton width="10rem" height="1.25rem"></p-skeleton>
+					<p-skeleton
+						width="20rem"
+						height="0.875rem"
+						styleClass="mt-2"
+					></p-skeleton>
+				</div>
+			</div>
+			<p-skeleton
+				width="3rem"
+				height="1.5rem"
+				borderRadius="16px"
+			></p-skeleton>
+		</div>
+		}
+	</div>
+	}
+</div>

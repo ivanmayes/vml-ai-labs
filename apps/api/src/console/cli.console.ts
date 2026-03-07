@@ -30,11 +30,10 @@ export class CLIConsole {
 		}
 
 		const name = entityName.trim().replace(/\s/g, '');
-		const matches = name.match(/[A-Z]/g);
-		const slug =
-			matches && matches.length > 1
-				? name.replace(/(^.*)([A-Z])/, '$1-$2').toLowerCase()
-				: name.toLowerCase();
+		const slug = name
+			.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+			.replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
+			.toLowerCase();
 		const lower = `${name.slice(0, 1).toLowerCase()}${name.slice(1)}`;
 		const plural = `${lower}s`.replace(/ys$/, 'ies');
 

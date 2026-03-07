@@ -1,0 +1,18 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { ENTITY_NAME_UPPERController } from './ENTITY_NAME_SLUG.controller';
+import { ENTITY_NAME_UPPERService } from './ENTITY_NAME_SLUG.service';
+// MINIAPP_ENTITY_IMPORT
+
+@Module({
+	imports: [
+		TypeOrmModule.forFeature([
+			// MINIAPP_ENTITY_REF
+		]),
+	],
+	controllers: [ENTITY_NAME_UPPERController],
+	providers: [ENTITY_NAME_UPPERService],
+	exports: [ENTITY_NAME_UPPERService],
+})
+export class ENTITY_NAME_UPPERModule {}

@@ -1,0 +1,22 @@
+import { IsOptional, IsString, IsUUID } from 'class-validator';
+
+export class ENTITY_NAME_UPPERFindDto {
+	@IsOptional()
+	@IsUUID('4')
+	id?: string;
+
+	@IsOptional()
+	@IsString()
+	name?: string;
+}
+
+export class CreateENTITY_NAME_UPPERDto {
+	@IsString()
+	name!: string;
+}
+
+export class UpdateENTITY_NAME_UPPERDto {
+	@IsOptional()
+	@IsString()
+	name?: string;
+}
