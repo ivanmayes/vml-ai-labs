@@ -11,7 +11,7 @@ import { Organization } from '../organization/organization.entity';
 
 export const KEY_SIZE_BYTES = 128;
 
-@Entity('apiKeys')
+@Entity({ name: 'apiKeys', schema: 'public' })
 @Index(['key'], { unique: true })
 export class ApiKey {
 	[key: string]: unknown;

@@ -28,7 +28,7 @@ export type PublicOrganization = Pick<
 	authenticationStrategies?: PublicAuthenticationStrategy[];
 };
 
-@Entity('organizations')
+@Entity({ name: 'organizations', schema: 'public' })
 @Index(['slug'], { unique: true })
 export class Organization {
 	[key: string]: unknown;

@@ -19,7 +19,7 @@ export type PublicSpaceUser = Pick<
 	'id' | 'spaceId' | 'userId' | 'role' | 'createdAt' | 'updatedAt'
 >;
 
-@Entity('space_users')
+@Entity({ name: 'space_users', schema: 'public' })
 @Index(['spaceId'])
 @Index(['userId'])
 @Index(['spaceId', 'userId'], { unique: true })

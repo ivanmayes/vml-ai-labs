@@ -11,6 +11,9 @@ import { ConsoleModule } from 'nestjs-console';
 import { ThrottlerBehindProxyGuard } from './_core/guards/throttler-behind-proxy.guard';
 import { Time } from './_core/utils/utils.time';
 import { CommonModule } from './common.module';
+import { PlatformModule } from './_platform/platform.module';
+import { HasAppAccessGuard } from './_platform/guards/has-app-access.guard';
+import { MiniAppsModule } from './mini-apps/mini-apps.module';
 
 // Controllers
 import { AppController } from './app.controller';
@@ -24,6 +27,8 @@ import {
 	SpacePublicController,
 } from './space/space.controller';
 import { SpaceUserController } from './space-user/space-user.controller';
+import { ProjectController } from './project/project.controller';
+import { OrganizationAppController } from './organization-app/organization-app.controller';
 // CLI_CONTROLLERS_IMPORT
 
 Global();
@@ -38,6 +43,8 @@ Global();
 		]),
 		CommonModule,
 		ConsoleModule,
+		PlatformModule,
+		MiniAppsModule,
 	],
 	controllers: [
 		// Controllers
@@ -50,12 +57,18 @@ Global();
 		SpaceController,
 		SpacePublicController,
 		SpaceUserController,
+		ProjectController,
+		OrganizationAppController,
 		// CLI_CONTROLLERS_REF
 	],
 	providers: [
 		{
 			provide: APP_GUARD,
 			useClass: ThrottlerBehindProxyGuard,
+		},
+		{
+			provide: APP_GUARD,
+			useClass: HasAppAccessGuard,
 		},
 	],
 	exports: [],

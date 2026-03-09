@@ -1,0 +1,25 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { FindManyOptions, FindOptionsWhere, Repository } from 'typeorm';
+
+import { FindOptions } from '../../_core/models';
+
+@Injectable()
+export class ENTITY_NAME_UPPERService {
+	constructor() {}
+
+	public async add(data: Record<string, any>) {
+		return data;
+	}
+
+	public async update(data: Record<string, any>) {
+		return data;
+	}
+
+	public async findPaginated(
+		options: FindOptions<any>,
+		filter: Record<string, any> = {},
+	): Promise<[any[], number]> {
+		return [[], 0];
+	}
+}

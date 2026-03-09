@@ -26,6 +26,11 @@ export class OrganizationAdminPage {
 			routerLink: '/organization/admin/spaces',
 		},
 		{
+			label: 'Apps',
+			icon: 'pi pi-box',
+			routerLink: '/organization/admin/apps',
+		},
+		{
 			label: 'Settings',
 			icon: 'pi pi-cog',
 			routerLink: '/organization/admin/settings',

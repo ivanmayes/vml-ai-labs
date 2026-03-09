@@ -588,6 +588,209 @@ import type { YourDto } from '@api/module/dtos';
 | Entities              | `@api/[module]/[module].entity`  |
 | Enums                 | `@api/[module]/[enum-name].enum` |
 
+## Multi-App Architecture
+
+This repository is a multi-app umbrella platform. Multiple developers independently build "mini apps" that share auth, org/space/project infrastructure, and services like AI. Each app is fully isolated in its own directory and database schema.
+
+### How to Create a New Mini App (Step-by-Step)
+
+**1. Run the interactive scaffolding CLI:**
+
+```bash
+cd apps/api && npm run console:dev CreateApp
+```
+
+**2. Answer the prompts:**
+
+| Prompt | Example | Notes |
+|--------|---------|-------|
+| App name (kebab-case) | `todo-list` | Lowercase, hyphens only, max 30 chars |
+| Display name | `Todo List` | Human-readable name shown in UI |
+| Description | `A simple task manager` | Brief description |
+| Include sample entity? | `y` | Creates a working example entity to reference |
+
+**3. What gets generated:**
+
+The CLI creates a complete full-stack app with the following files:
+
+```
+apps/
+  api/src/mini-apps/todo-list/           # API backend
+    todo-list.module.ts                  # NestJS module (auto-registered)
+    todo-list.controller.ts              # REST controller with CRUD endpoints
+    todo-list.service.ts                 # Business logic service
+    AGENTS.md                            # AI agent rules for this app
+    entities/                            # TypeORM entities (if sample included)
+      todo-list-item.entity.ts
+    dto/                                 # Data transfer objects
+      todo-list-item.dto.ts
+
+  web/src/app/mini-apps/todo-list/       # Angular frontend
+    todo-list.routes.ts                  # Route definitions (auto-registered)
+    pages/todo-list-home/                # Landing page component
+      todo-list-home.component.ts
+    services/
+      todo-list.service.ts               # HTTP service for API calls
+    components/                          # App-specific components
+    AGENTS.md                            # AI agent rules for frontend
+```
+
+**4. What gets auto-wired (you don't need to touch these):**
+
+- `apps/mini-apps.json` — app registered in manifest
+- `apps/api/src/mini-apps/mini-apps.module.ts` — module imported
+- `apps/web/src/app/app.routes.ts` — route added with lazy loading
+- PostgreSQL schema — created automatically on next server start
+
+**5. Start developing:**
+
+```bash
+# Start both servers from root
+npm start
+
+# Navigate to your app
+# Web: http://localhost:4200/apps/todo-list
+# API: http://localhost:8001/apps/todo-list
+```
+
+**6. The CLI has built-in safety:**
+
+- Validates name format (kebab-case, no reserved names)
+- Checks for duplicate app names in manifest and filesystem
+- Full rollback on any error — no partial state left behind
+
+### How to Add Entities to an Existing App
+
+```bash
+cd apps/api && npm run console:dev AddAppEntity <app-name> <EntityName>
+```
+
+**Example:**
+
+```bash
+npm run console:dev AddAppEntity todo-list TodoCategory
+```
+
+**This creates:**
+- `entities/todo-category.entity.ts` — TypeORM entity with correct schema, organization FK
+- `dto/todo-category.dto.ts` — Create/Update DTOs with validation
+- Updates the app module to register the entity in `TypeOrmModule.forFeature()`
+
+**Entity naming:** Pass the entity name in PascalCase. The CLI handles conversion:
+- `TodoCategory` → file: `todo-category.entity.ts`, table: `todo_categories`, schema: `todo_list`
+
+### Directory Structure Overview
+
+```
+apps/
+  mini-apps.json                         # App registry (source of truth)
+  api/src/
+    _core/                               # Internal framework (DO NOT import in mini apps)
+    _platform/                           # Shared services & utilities for mini apps
+      platform.module.ts                 # @Global module — services available everywhere
+      models/                            # Re-exported types from _core
+      decorators/                        # @RequiresApp, @CurrentOrg, @CurrentUser, @CurrentSpace
+      guards/                            # HasAppAccessGuard (global)
+      testing/                           # Shared test helpers
+    mini-apps/
+      mini-apps.module.ts                # Aggregates all mini app modules
+      <app-name>/                        # One directory per mini app
+        AGENTS.md                        # AI agent rules for this app
+  web/src/app/
+    mini-apps/
+      <app-name>/                        # One directory per mini app
+        AGENTS.md                        # AI agent rules for frontend
+```
+
+### Boundary Rules (CRITICAL)
+
+These rules ensure apps stay isolated and don't break each other:
+
+| Rule | Why |
+|------|-----|
+| ONLY modify files in your app's `mini-apps/<app-name>/` directory | Prevents cross-app breakage |
+| NEVER import from another mini app | No `../other-app/...` imports |
+| NEVER import from `_core/` directly | Use `_platform/models` and `_platform/decorators` instead |
+| All entities MUST use `@Entity({ schema: '<app_name>' })` | Database isolation via PostgreSQL schemas |
+| All controllers MUST use `@RequiresApp('<app-name>')` | Enforced by global guard — org must have app enabled |
+| All endpoints MUST use `@UseGuards(AuthGuard())` | Authentication required |
+| All entities MUST have `organizationId` FK to Organization | Multi-tenant data isolation |
+
+### Database Architecture
+
+- Each app's data lives in its own PostgreSQL schema (e.g., `todo_list`)
+- Shared entities (Organization, User, Space, Project) live in the `public` schema
+- Cross-schema foreign keys link app data to shared entities
+- Schemas are auto-created on server startup from `mini-apps.json`
+- FK constraint naming convention: `FK_<app_name>_<table>_<column>`
+
+### Available Shared Services (via PlatformModule)
+
+These services are globally available — just inject them in your constructor:
+
+```typescript
+// No import needed for the module — PlatformModule is @Global
+// Just import the service class for TypeScript types
+constructor(
+  private readonly organizationService: OrganizationService,
+  private readonly aiService: AiService,
+) {}
+```
+
+| Service | Purpose |
+|---------|---------|
+| OrganizationService | Organization CRUD & membership |
+| UserService | User management & lookup |
+| SpaceService | Workspace/space management |
+| ProjectService | Project management within spaces |
+| AiService | LLM/AI integration (see PRD_DEFAULTS) |
+| NotificationService | In-app & email notifications |
+| S3Service | File upload & storage |
+| CryptService | Encryption & hashing utilities |
+
+**Available decorators** (import from `_platform/decorators`):
+
+| Decorator | Returns | Usage |
+|-----------|---------|-------|
+| `@CurrentOrg()` | `string` (org ID) | Parameter decorator for organization-scoped endpoints |
+| `@CurrentUser()` | `User` entity | Parameter decorator for the authenticated user |
+| `@CurrentSpace()` | `string` (space ID) | Parameter decorator for space-scoped endpoints |
+| `@RequiresApp('key')` | — | Class/method decorator to enforce app access |
+
+### Testing
+
+```bash
+npm run test:app:<app-name>  # Run tests for a specific app
+npm test                      # Run all tests (API + Web)
+npm run test:api              # API tests only
+npm run test:web              # Web tests only
+```
+
+Use shared test utilities from `_platform/testing/` for consistent test setup:
+
+```typescript
+import { createTestModule, mockUser, mockOrganization } from '../../_platform/testing';
+```
+
+### Quick Reference: Creating Your First App
+
+```bash
+# 1. Create the app
+cd apps/api && npm run console:dev CreateApp
+# Answer: name=my-app, display=My App, description=..., sample entity=y
+
+# 2. Add more entities as needed
+npm run console:dev AddAppEntity my-app Task
+npm run console:dev AddAppEntity my-app TaskComment
+
+# 3. Start developing
+cd ../.. && npm start
+# Visit http://localhost:4200/apps/my-app
+
+# 4. Run your tests
+npm run test:app:my-app
+```
+
 ## Additional Resources
 
 - See `tools/lint-plugins/PRIMENG_GUIDELINES.md` for detailed styling guidelines

@@ -21,7 +21,7 @@ export type PublicSpace = Pick<
 
 export type MinimalSpace = Pick<Space, 'id' | 'name' | 'created' | 'isPublic'>;
 
-@Entity('spaces')
+@Entity({ name: 'spaces', schema: 'public' })
 @Index(['organizationId'])
 export class Space {
 	[key: string]: unknown;

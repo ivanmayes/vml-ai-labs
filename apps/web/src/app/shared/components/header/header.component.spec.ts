@@ -1,7 +1,8 @@
-import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { of } from 'rxjs';
 import { RouterQuery } from '@datorama/akita-ng-router-store';
 
@@ -16,10 +17,11 @@ describe('HeaderComponent', () => {
 	let component: HeaderComponent;
 	let fixture: ComponentFixture<HeaderComponent>;
 
-	beforeEach(waitForAsync(() => {
-		TestBed.configureTestingModule({
+	beforeEach(async () => {
+		await TestBed.configureTestingModule({
 			imports: [HeaderComponent],
 			providers: [
+				provideZonelessChangeDetection(),
 				provideRouter([]),
 				provideHttpClient(),
 				provideHttpClientTesting(),
@@ -29,11 +31,19 @@ describe('HeaderComponent', () => {
 				},
 				{
 					provide: GlobalQuery,
-					useValue: { select: () => of({}) },
+					useValue: {
+						select: () => of({}),
+						header: signal({}),
+						settings: signal({}),
+					},
 				},
 				{
 					provide: SessionQuery,
-					useValue: { select: () => of({}) },
+					useValue: {
+						select: () => of({}),
+						user: signal(null),
+						isAdmin: signal(false),
+					},
 				},
 				{
 					provide: SessionService,
@@ -49,9 +59,7 @@ describe('HeaderComponent', () => {
 				},
 			],
 		}).compileComponents();
-	}));
 
-	beforeEach(() => {
 		fixture = TestBed.createComponent(HeaderComponent);
 		component = fixture.componentInstance;
 		fixture.detectChanges();

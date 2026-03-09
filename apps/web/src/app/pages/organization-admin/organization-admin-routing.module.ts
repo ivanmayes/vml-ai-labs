@@ -30,6 +30,11 @@ const routes: Routes = [
 					),
 			},
 			{
+				path: 'apps',
+				loadChildren: () =>
+					import('./apps/apps.module').then((m) => m.AppsPageModule),
+			},
+			{
 				path: '',
 				redirectTo: 'users',
 				pathMatch: 'full',

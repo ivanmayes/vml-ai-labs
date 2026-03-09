@@ -1,0 +1,11 @@
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+	{
+		path: '',
+		loadComponent: () =>
+			import('./pages/ENTITY_NAME_SLUG-home/ENTITY_NAME_SLUG-home.component').then(
+				(m) => m.ENTITY_NAME_UPPERHomeComponent,
+			),
+	},
+];

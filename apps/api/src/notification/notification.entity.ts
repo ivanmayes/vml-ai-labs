@@ -15,7 +15,7 @@ export type PublicNotification = Pick<Notification, 'id'> & {
 	// Other Public Properties
 };
 
-@Entity('notifications')
+@Entity({ name: 'notifications', schema: 'public' })
 export class Notification {
 	[key: string]: unknown;
 

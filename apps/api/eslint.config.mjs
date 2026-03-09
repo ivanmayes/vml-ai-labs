@@ -102,5 +102,35 @@ export default tseslint.config(
 		rules: {
 			'@darraghor/nestjs-typed/param-decorator-name-matches-route-param': 'off',
 		},
+	},
+	{
+		// Mini-app boundary enforcement: prevent cross-app imports
+		files: ['src/mini-apps/**/*.ts'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [{
+					group: ['**/mini-apps/**'],
+					message: 'Mini apps cannot import from other mini apps. Use _platform/ for shared services.'
+				}]
+			}]
+		}
+	},
+	{
+		// Prevent mini-apps from importing _core/ directly
+		files: ['src/mini-apps/**/*.ts'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [
+					{
+						group: ['**/_core/**'],
+						message: 'Mini apps should import from _platform/, not _core/ directly.'
+					},
+					{
+						group: ['**/mini-apps/**'],
+						message: 'Mini apps cannot import from other mini apps. Use _platform/ for shared services.'
+					}
+				]
+			}]
+		}
 	}
 );

@@ -1,0 +1,16 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+import { CardModule } from 'primeng/card';
+
+@Component({
+	selector: 'app-ENTITY_NAME_SLUG-home',
+	standalone: true,
+	imports: [CommonModule, CardModule],
+	template: `
+		<p-card header="ENTITY_NAME_UPPER">
+			<p>Welcome to the ENTITY_NAME_UPPER app.</p>
+		</p-card>
+	`,
+})
+export class ENTITY_NAME_UPPERHomeComponent {}

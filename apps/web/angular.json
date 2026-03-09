@@ -25,7 +25,12 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {
+                "glob": "mini-apps.json",
+                "input": "../",
+                "output": "/assets/"
+              }
             ],
             "styles": [
               "node_modules/primeicons/primeicons.css",
@@ -62,6 +67,9 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "port": 4255
+          },
           "configurations": {
             "production": {
               "buildTarget": "web:build:production"
@@ -88,7 +96,12 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {
+                "glob": "mini-apps.json",
+                "input": "../",
+                "output": "/assets/"
+              }
             ],
             "styles": [
               "node_modules/primeicons/primeicons.css",
