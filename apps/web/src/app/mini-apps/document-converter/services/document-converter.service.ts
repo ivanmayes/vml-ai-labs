@@ -2,11 +2,26 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export type JobStatus =
+	| 'pending'
+	| 'processing'
+	| 'completed'
+	| 'failed'
+	| 'cancelled';
+
+export interface ConversionError {
+	code: string;
+	message: string;
+	retryable: boolean;
+	timestamp: string;
+	context?: Record<string, unknown>;
+}
+
 export interface ConversionJob {
 	id: string;
 	fileName: string;
 	fileSize: number;
-	status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+	status: JobStatus;
 	engine?: string;
 	createdAt: string;
 	startedAt?: string;
@@ -14,7 +29,7 @@ export interface ConversionJob {
 	processingTimeMs?: number;
 	outputSize?: number;
 	queuePosition?: number;
-	error?: { code: string; message: string; retryable: boolean };
+	error?: ConversionError;
 }
 
 export interface JobListResponse {

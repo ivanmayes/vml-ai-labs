@@ -49,9 +49,7 @@ export class CreateDocumentConverterSchema1709836800000
 		`);
 
 		// Create indexes
-		await queryRunner.query(
-			`CREATE INDEX "idx_dc_jobs_id" ON "document_converter"."conversion_jobs" ("id")`,
-		);
+		// Note: No index on "id" -- the PRIMARY KEY constraint already creates one.
 		await queryRunner.query(
 			`CREATE INDEX "idx_dc_jobs_status" ON "document_converter"."conversion_jobs" ("status")`,
 		);

@@ -1,18 +1,26 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { filter, map, switchMap, take } from 'rxjs';
 
-import { OrganizationAppService } from '../services/organization-app.service';
+import {
+	OrganizationApp,
+	OrganizationAppService,
+} from '../services/organization-app.service';
 import { SessionQuery } from '../../state/session/session.query';
+
+function checkAccess(
+	apps: OrganizationApp[],
+	appKey: string,
+	router: Router,
+): true | UrlTree {
+	const isEnabled = apps.some((app) => app.appKey === appKey && app.enabled);
+	return isEnabled ? true : router.createUrlTree(['/home']);
+}
 
 export const appAccessGuard: CanActivateFn = (route) => {
 	const orgAppService = inject(OrganizationAppService);
 	const sessionQuery = inject(SessionQuery);
 	const router = inject(Router);
-
-	// Capture observable in injection context (toObservable requires it)
-	const enabledApps$ = toObservable(orgAppService.enabledApps);
 
 	const appKey = route.url[0]?.path;
 	if (!appKey) {
@@ -20,30 +28,20 @@ export const appAccessGuard: CanActivateFn = (route) => {
 		return true;
 	}
 
+	// Fast path: apps already loaded — check synchronously
 	const enabledApps = orgAppService.enabledApps();
 	if (enabledApps !== undefined) {
-		const isEnabled = enabledApps.some(
-			(app) => app.appKey === appKey && app.enabled,
-		);
-		return isEnabled ? true : router.createUrlTree(['/home']);
+		return checkAccess(enabledApps, appKey, router);
 	}
 
-	// Wait for session to be valid before loading apps (avoids token rotation race)
+	// Slow path: wait for session to be valid, then load apps from the API.
+	// Uses the observable returned by loadEnabledApps() instead of
+	// toObservable() to avoid leaking an effect on every guard invocation.
 	return sessionQuery.isLoggedIn$.pipe(
 		filter((loggedIn) => loggedIn === true),
 		take(1),
-		switchMap(() => {
-			orgAppService.loadEnabledApps();
-			return enabledApps$.pipe(
-				filter((apps) => apps !== undefined),
-				take(1),
-				map((apps) => {
-					const isEnabled = apps!.some(
-						(app) => app.appKey === appKey && app.enabled,
-					);
-					return isEnabled ? true : router.createUrlTree(['/home']);
-				}),
-			);
-		}),
+		switchMap(() => orgAppService.loadEnabledApps()),
+		take(1),
+		map((apps) => checkAccess(apps, appKey, router)),
 	);
 };

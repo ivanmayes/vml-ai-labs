@@ -1,6 +1,15 @@
-import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
+import {
+	Component,
+	signal,
+	inject,
+	OnInit,
+	OnDestroy,
+	DestroyRef,
+	viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FileUploadModule } from 'primeng/fileupload';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FileUploadModule, FileUpload } from 'primeng/fileupload';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
@@ -36,6 +45,7 @@ import {
 			</p>
 
 			<p-fileUpload
+				#fileUploader
 				mode="advanced"
 				name="file"
 				[multiple]="false"
@@ -116,6 +126,7 @@ import {
 											icon="pi pi-download"
 											[text]="true"
 											size="small"
+											ariaLabel="Download converted file"
 											(onClick)="downloadJob(job)"
 										/>
 									}
@@ -128,6 +139,7 @@ import {
 											[text]="true"
 											severity="danger"
 											size="small"
+											ariaLabel="Cancel conversion job"
 											(onClick)="cancelJob(job)"
 										/>
 									}
@@ -137,6 +149,7 @@ import {
 											[text]="true"
 											severity="warn"
 											size="small"
+											ariaLabel="Retry failed conversion"
 											(onClick)="retryJob(job)"
 										/>
 									}
@@ -163,7 +176,10 @@ import {
 export class DocumentConverterComponent implements OnInit, OnDestroy {
 	private readonly converterService = inject(DocumentConverterService);
 	private readonly messageService = inject(MessageService);
+	private readonly destroyRef = inject(DestroyRef);
 	private refreshInterval: ReturnType<typeof setInterval> | null = null;
+
+	readonly fileUpload = viewChild<FileUpload>('fileUploader');
 
 	jobs = signal<ConversionJob[]>([]);
 	loading = signal(false);
@@ -171,7 +187,7 @@ export class DocumentConverterComponent implements OnInit, OnDestroy {
 	ngOnInit(): void {
 		this.loadJobs();
 		// Auto-refresh every 10 seconds
-		this.refreshInterval = setInterval(() => this.loadJobs(), 10000);
+		this.refreshInterval = setInterval(() => this.refreshJobs(), 10000);
 	}
 
 	ngOnDestroy(): void {
@@ -182,93 +198,121 @@ export class DocumentConverterComponent implements OnInit, OnDestroy {
 
 	loadJobs(): void {
 		this.loading.set(true);
-		this.converterService.listJobs().subscribe({
-			next: (res) => {
-				this.jobs.set(res.data?.data || []);
-				this.loading.set(false);
-			},
-			error: () => {
-				this.loading.set(false);
-			},
-		});
+		this.converterService
+			.listJobs()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (res) => {
+					this.jobs.set(res.data?.data || []);
+					this.loading.set(false);
+				},
+				error: () => {
+					this.loading.set(false);
+				},
+			});
+	}
+
+	/** Silent refresh that does not show loading spinner (prevents table flicker). */
+	private refreshJobs(): void {
+		this.converterService
+			.listJobs()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (res) => {
+					this.jobs.set(res.data?.data || []);
+				},
+			});
 	}
 
 	onUpload(event: { files: File[] }): void {
 		const file = event.files?.[0];
 		if (!file) return;
 
-		this.converterService.uploadFile(file).subscribe({
-			next: () => {
-				this.messageService.add({
-					severity: 'success',
-					summary: 'Uploaded',
-					detail: `${file.name} queued for conversion`,
-				});
-				this.loadJobs();
-			},
-			error: (err) => {
-				this.messageService.add({
-					severity: 'error',
-					summary: 'Upload Failed',
-					detail: err.error?.data || 'Failed to upload file',
-				});
-			},
-		});
+		this.converterService
+			.uploadFile(file)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: () => {
+					this.messageService.add({
+						severity: 'success',
+						summary: 'Uploaded',
+						detail: `${file.name} queued for conversion`,
+					});
+					this.fileUpload()?.clear();
+					this.loadJobs();
+				},
+				error: (err: { error?: { data?: string } }) => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Upload Failed',
+						detail: err.error?.data || 'Failed to upload file',
+					});
+				},
+			});
 	}
 
 	downloadJob(job: ConversionJob): void {
-		this.converterService.getDownloadUrl(job.id).subscribe({
-			next: (res) => {
-				window.open(res.data.downloadUrl, '_blank');
-			},
-			error: () => {
-				this.messageService.add({
-					severity: 'error',
-					summary: 'Download Failed',
-					detail: 'Could not generate download link',
-				});
-			},
-		});
+		this.converterService
+			.getDownloadUrl(job.id)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (res) => {
+					window.open(res.data.downloadUrl, '_blank');
+				},
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Download Failed',
+						detail: 'Could not generate download link',
+					});
+				},
+			});
 	}
 
 	cancelJob(job: ConversionJob): void {
-		this.converterService.cancelJob(job.id).subscribe({
-			next: () => {
-				this.messageService.add({
-					severity: 'info',
-					summary: 'Cancelled',
-					detail: `Job cancelled`,
-				});
-				this.loadJobs();
-			},
-			error: () => {
-				this.messageService.add({
-					severity: 'error',
-					summary: 'Error',
-					detail: 'Could not cancel job',
-				});
-			},
-		});
+		this.converterService
+			.cancelJob(job.id)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: () => {
+					this.messageService.add({
+						severity: 'info',
+						summary: 'Cancelled',
+						detail: `Job cancelled`,
+					});
+					this.loadJobs();
+				},
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Could not cancel job',
+					});
+				},
+			});
 	}
 
 	retryJob(job: ConversionJob): void {
-		this.converterService.retryJob(job.id).subscribe({
-			next: () => {
-				this.messageService.add({
-					severity: 'info',
-					summary: 'Retrying',
-					detail: `Job requeued for processing`,
-				});
-				this.loadJobs();
-			},
-			error: () => {
-				this.messageService.add({
-					severity: 'error',
-					summary: 'Error',
-					detail: 'Could not retry job',
-				});
-			},
-		});
+		this.converterService
+			.retryJob(job.id)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: () => {
+					this.messageService.add({
+						severity: 'info',
+						summary: 'Retrying',
+						detail: `Job requeued for processing`,
+					});
+					this.loadJobs();
+				},
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Could not retry job',
+					});
+				},
+			});
 	}
 
 	getStatusSeverity(
