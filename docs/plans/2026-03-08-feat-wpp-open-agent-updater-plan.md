@@ -476,14 +476,14 @@ export class TaskRunFile {
 
 **6a. Angular service:**
 
-- [ ] Create `apps/web/src/app/mini-apps/wpp-open-agent-updater/services/wpp-open-agent-updater.service.ts`
+- [x] Create `apps/web/src/app/mini-apps/wpp-open-agent-updater/services/wpp-open-agent-updater.service.ts`
   - `@Injectable({ providedIn: 'root' })`
   - Methods mapping to all controller endpoints
   - Types imported from `@api/mini-apps/wpp-open-agent-updater/types/`
 
 **6b. Routes:**
 
-- [ ] Create `apps/web/src/app/mini-apps/wpp-open-agent-updater/wpp-open-agent-updater.routes.ts`
+- [x] Create `apps/web/src/app/mini-apps/wpp-open-agent-updater/wpp-open-agent-updater.routes.ts`
   ```typescript
   export const routes: Routes = [
     { path: '', loadComponent: () => import('./components/task-list.component').then(m => m.TaskListComponent) },
@@ -496,14 +496,14 @@ export class TaskRunFile {
 
 **6c. Components (all standalone, PrimeNG exclusively):**
 
-- [ ] `task-list.component.ts` — **Main page**
+- [x] `task-list.component.ts` — **Main page**
   - `p-table` showing all tasks with columns: Name, Box Folder, Agent, Status, Last Run, Actions
   - "New Task" button → navigates to form
   - "Run" button per task (triggers run via API)
   - "View" link → task detail
   - Status shown via `p-tag` with severity colors
 
-- [ ] `task-form.component.ts` — **Create/Edit task**
+- [x] `task-form.component.ts` — **Create/Edit task**
   - `pInputText` for task name
   - `pInputText` for Box folder ID + "Validate" button
     - On validate: call API, show folder name + file count preview
@@ -511,13 +511,13 @@ export class TaskRunFile {
   - Save/Cancel buttons (`p-button`)
   - Form validation with Angular reactive forms
 
-- [ ] `task-detail.component.ts` — **Task detail + run history**
+- [x] `task-detail.component.ts` — **Task detail + run history**
   - Task info header (name, folder, agent, status)
   - "Run Now" button
   - `p-table` of past runs: Date, Status, Files Found/Processed/Failed, Duration
   - Click run → navigates to run detail
 
-- [ ] `run-detail.component.ts` — **Run detail with per-file results**
+- [x] `run-detail.component.ts` — **Run detail with per-file results**
   - Run summary header (status, timing, file counts)
   - `p-table` of files: Name, Size, Status, Error (if any)
   - Status badges via `p-tag`
@@ -540,7 +540,7 @@ export class TaskRunFile {
 
 **Tasks:**
 
-- [ ] Update `apps/api/src/mini-apps/wpp-open-agent-updater/wpp-open-agent-updater.module.ts`:
+- [x] Update `apps/api/src/mini-apps/wpp-open-agent-updater/wpp-open-agent-updater.module.ts`:
   ```typescript
   @Module({
     imports: [TypeOrmModule.forFeature([UpdaterTask, TaskRun, TaskRunFile])],
@@ -555,8 +555,8 @@ export class TaskRunFile {
   export class WppOpenAgentUpdaterModule {}
   ```
 
-- [ ] Verify `mini-apps.module.ts` imports `WppOpenAgentUpdaterModule`
-- [ ] Verify `app.routes.ts` has lazy-loaded route for `wpp-open-agent-updater`
+- [x] Verify `mini-apps.module.ts` imports `WppOpenAgentUpdaterModule`
+- [x] Verify `app.routes.ts` has lazy-loaded route for `wpp-open-agent-updater`
 - [ ] Run migration: `npm run typeorm migration:run`
 - [ ] Test end-to-end flow:
   1. Create a task with valid Box folder ID and WPP Open agent
