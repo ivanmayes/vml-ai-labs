@@ -106,6 +106,7 @@
 		"@types/nodemailer": "^7.0.1",
 		"@types/passport-http-bearer": "^1.0.42",
 		"@types/passport-jwt": "^4.0.1",
+		"@types/pg": "^8.18.0",
 		"@types/serve-static": "^1.15.8",
 		"@types/supertest": "^6.0.3",
 		"@types/turndown": "^5.0.6",
