@@ -1,6 +1,9 @@
 {
 	"name": "vml-starter-angular",
 	"version": "0.0.0",
+	"engines": {
+		"node": "24.x"
+	},
 	"scripts": {
 		"ng": "ng",
 		"config": "ts-node src/environments/set-env.ts",

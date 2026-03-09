@@ -4,6 +4,9 @@
 	"description": "Starter API",
 	"author": "Michael May",
 	"license": "MIT",
+	"engines": {
+		"node": "24.x"
+	},
 	"scripts": {
 		"prebuild": "node ./tools/clear-dist.js",
 		"build": "nest build",

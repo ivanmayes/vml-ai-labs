@@ -1,0 +1,42 @@
+name: Deploy Web to Heroku Prod
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/web.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Build web
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          API_SETTINGS: ${{ secrets.API_SETTINGS }}
+        run: |
+          export NODE_OPTIONS="--max_old_space_size=4096"
+          cd apps/api
+          npm i --ignore-scripts --legacy-peer-deps
+          cd ../web
+          cp .npmrc.example .npmrc
+          npm i --ignore-scripts --legacy-peer-deps
+          npm run build
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config http.postBuffer 524288000
+          git add -f dist
+          git commit -m "Built latest;"
+          cd ..
+      - name: Add web remote origin
+        run: git remote add heroku-prod https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/vml-ai-labs-web.git
+      - name: Deploy web to Heroku
+        run: git push heroku-prod `git subtree split --prefix=apps/web main`:refs/heads/master --force
