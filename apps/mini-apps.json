@@ -8,6 +8,15 @@
       "defaultEnabled": true,
       "route": "/apps/document-converter",
       "apiPrefix": "apps/document-converter"
+    },
+    {
+      "key": "wpp-open-agent-updater",
+      "displayName": "WPP Open Agent Updater",
+      "description": "Automatically sync Box folder documents into WPP Open agent knowledge bases",
+      "icon": "pi pi-sync",
+      "defaultEnabled": true,
+      "route": "/apps/wpp-open-agent-updater",
+      "apiPrefix": "apps/wpp-open-agent-updater"
     }
   ]
 }

@@ -102,16 +102,16 @@ Queue-based processing via pg-boss handles large folders without HTTP timeouts a
 **Tasks:**
 
 **1a. Scaffold the mini-app:**
-- [ ] Run `cd apps/api && npm run console:dev CreateApp` with key `wpp-open-agent-updater`
+- [x] Run `cd apps/api && npm run console:dev CreateApp` with key `wpp-open-agent-updater`
   - Display name: "WPP Open Agent Updater"
   - Description: "Sync Box folder documents into WPP Open agent knowledge bases"
   - Icon: `pi pi-sync`
   - Skip sample entity (we'll create custom ones)
-- [ ] Verify `apps/mini-apps.json` updated, `mini-apps.module.ts` wired, `app.routes.ts` route added
+- [x] Verify `apps/mini-apps.json` updated, `mini-apps.module.ts` wired, `app.routes.ts` route added
 
 **1b. Create entities:**
 
-- [ ] `apps/api/src/mini-apps/wpp-open-agent-updater/entities/updater-task.entity.ts`
+- [x] `apps/api/src/mini-apps/wpp-open-agent-updater/entities/updater-task.entity.ts`
 
 ```typescript
 @Entity({ name: 'updater_tasks', schema: 'wpp_open_agent_updater' })
@@ -165,7 +165,7 @@ export class UpdaterTask {
 }
 ```
 
-- [ ] `apps/api/src/mini-apps/wpp-open-agent-updater/entities/task-run.entity.ts`
+- [x] `apps/api/src/mini-apps/wpp-open-agent-updater/entities/task-run.entity.ts`
 
 ```typescript
 @Entity({ name: 'task_runs', schema: 'wpp_open_agent_updater' })
@@ -218,7 +218,7 @@ export class TaskRun {
 }
 ```
 
-- [ ] `apps/api/src/mini-apps/wpp-open-agent-updater/entities/task-run-file.entity.ts`
+- [x] `apps/api/src/mini-apps/wpp-open-agent-updater/entities/task-run-file.entity.ts`
 
 ```typescript
 @Entity({ name: 'task_run_files', schema: 'wpp_open_agent_updater' })
@@ -258,7 +258,7 @@ export class TaskRunFile {
 
 **1c. Create migration:**
 
-- [ ] `apps/api/migrations/<timestamp>-CreateWppOpenAgentUpdaterSchema.ts`
+- [x] `apps/api/migrations/<timestamp>-CreateWppOpenAgentUpdaterSchema.ts`
   - Create schema `wpp_open_agent_updater`
   - Create enum types for task status, run status, file status
   - Create `updater_tasks` table with all columns, indexes, FKs
@@ -269,11 +269,11 @@ export class TaskRunFile {
 
 **1d. Extend pg-boss for new queue:**
 
-- [ ] Add queue constants to `apps/api/src/_platform/queue/pg-boss.config.ts`:
+- [x] Add queue constants to `apps/api/src/_platform/queue/pg-boss.config.ts`:
   ```typescript
   export const AGENT_UPDATER_QUEUE = 'agent-updater-run';
   ```
-- [ ] Add job data type to `apps/api/src/_platform/queue/pg-boss.types.ts`:
+- [x] Add job data type to `apps/api/src/_platform/queue/pg-boss.types.ts`:
   ```typescript
   export interface AgentUpdaterJobData {
     taskRunId: string;
@@ -287,8 +287,8 @@ export class TaskRunFile {
     wppOpenToken: string; // User's session token for this run
   }
   ```
-- [ ] Add generic `sendJob()` and `workQueue()` methods to `PgBossService` (or add specific `sendAgentUpdaterJob()` / `workAgentUpdaterQueue()` methods following the existing conversion pattern)
-- [ ] Register the new queue in `ensureQueuesExist()`
+- [x] Add generic `sendJob()` and `workQueue()` methods to `PgBossService` (or add specific `sendAgentUpdaterJob()` / `workAgentUpdaterQueue()` methods following the existing conversion pattern)
+- [x] Register the new queue in `ensureQueuesExist()`
 
 **Success criteria:** App scaffolded, entities created, migration runs successfully, new pg-boss queue registered.
 

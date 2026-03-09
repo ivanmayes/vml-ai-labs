@@ -95,6 +95,7 @@ export function getJobConfig(fileExtension: string): JobConfig {
  */
 export const CONVERSION_QUEUE = 'document-conversion';
 export const DEAD_LETTER_QUEUE = 'document-conversion-dlq';
+export const AGENT_UPDATER_QUEUE = 'agent-updater-run';
 
 /**
  * Worker configuration constants.

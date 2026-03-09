@@ -80,6 +80,13 @@ export const routes: Routes = [
 						(m) => m.routes,
 					),
 			},
+			{
+				path: 'wpp-open-agent-updater',
+				loadChildren: () =>
+					import('./mini-apps/wpp-open-agent-updater/wpp-open-agent-updater.routes').then(
+						(m) => m.routes,
+					),
+			},
 			// MINIAPP_ROUTES_REF
 		],
 	},

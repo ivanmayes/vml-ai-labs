@@ -39,6 +39,30 @@ export interface ConversionJobData {
 }
 
 /**
+ * Job data interface for agent updater runs.
+ */
+export interface AgentUpdaterJobData {
+	/** Database task run ID (UUID) */
+	taskRunId: string;
+	/** Task configuration ID */
+	taskId: string;
+	/** Box folder to scan */
+	boxFolderId: string;
+	/** WPP Open agent to update */
+	wppOpenAgentId: string;
+	/** WPP Open project context */
+	wppOpenProjectId: string;
+	/** User who triggered the run */
+	userId: string;
+	/** Organization context */
+	organizationId: string;
+	/** Timestamp of last successful run (ISO string) */
+	lastRunAt: string | null;
+	/** User's WPP Open session token */
+	wppOpenToken: string;
+}
+
+/**
  * Dead letter queue data interface.
  */
 export interface DeadLetterData {

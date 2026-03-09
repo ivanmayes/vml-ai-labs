@@ -10,9 +10,14 @@ import {
 	PG_BOSS_CONFIG,
 	CONVERSION_QUEUE,
 	DEAD_LETTER_QUEUE,
+	AGENT_UPDATER_QUEUE,
 	getJobConfig,
 } from './pg-boss.config';
-import { ConversionJobData, DeadLetterData } from './pg-boss.types';
+import {
+	ConversionJobData,
+	DeadLetterData,
+	AgentUpdaterJobData,
+} from './pg-boss.types';
 
 /**
  * PgBossService
@@ -105,6 +110,25 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
 				);
 			}
 		}
+
+		try {
+			await this.boss.createQueue(AGENT_UPDATER_QUEUE);
+			this.logger.log(`Queue created: ${AGENT_UPDATER_QUEUE}`);
+		} catch (error: unknown) {
+			if (
+				error instanceof Error &&
+				error.message.includes('already exists')
+			) {
+				this.logger.debug(
+					`Queue already exists: ${AGENT_UPDATER_QUEUE}`,
+				);
+			} else {
+				this.logger.warn(
+					`Could not create queue ${AGENT_UPDATER_QUEUE}:`,
+					error,
+				);
+			}
+		}
 	}
 
 	/**
@@ -184,6 +208,57 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
 		return this.boss.work<DeadLetterData>(
 			DEAD_LETTER_QUEUE,
 			{ batchSize: 1 },
+			handler,
+		);
+	}
+
+	/**
+	 * Send an agent updater run job to the queue.
+	 */
+	async sendAgentUpdaterJob(
+		data: AgentUpdaterJobData,
+	): Promise<string | null> {
+		this.logger.log(
+			`Sending agent updater job to queue: run=${data.taskRunId}`,
+		);
+
+		try {
+			const pgBossJobId = await this.boss.send(
+				AGENT_UPDATER_QUEUE,
+				data,
+				{
+					retryLimit: 2,
+					expireInSeconds: 900, // 15 minutes
+					retryDelay: 30,
+					retryBackoff: true,
+				},
+			);
+
+			if (pgBossJobId) {
+				this.logger.log(
+					`Agent updater job queued with pg-boss ID: ${pgBossJobId}`,
+				);
+			}
+			return pgBossJobId;
+		} catch (error) {
+			this.logger.error(
+				`Failed to send agent updater job: ${data.taskRunId}`,
+				error,
+			);
+			throw error;
+		}
+	}
+
+	/**
+	 * Register a worker for the agent updater queue.
+	 */
+	async workAgentUpdaterQueue(
+		handler: (jobs: PgBoss.Job<AgentUpdaterJobData>[]) => Promise<void>,
+		options?: PgBoss.WorkOptions,
+	): Promise<string> {
+		return this.boss.work<AgentUpdaterJobData>(
+			AGENT_UPDATER_QUEUE,
+			options || { batchSize: 1 },
 			handler,
 		);
 	}
