@@ -81,14 +81,14 @@ function getAPISettingsVars() {
 		}
 	} catch {
 		return `
-			exclusive: window['exclusive'],
-			apiSettings: window['organizations'],
-			apiUrl: window['apiUrl'],
-			organizationId: window['organizationId'],
-			production: window['production'],
-			locale: window['locale'],
-			wppOpenParentOrigin: window['wppOpenParentOrigin'],
-			wppOpenDebug: window['wppOpenDebug']
+			exclusive: (window as any)['exclusive'],
+			apiSettings: (window as any)['organizations'],
+			apiUrl: (window as any)['apiUrl'],
+			organizationId: (window as any)['organizationId'],
+			production: (window as any)['production'],
+			locale: (window as any)['locale'],
+			wppOpenParentOrigin: (window as any)['wppOpenParentOrigin'],
+			wppOpenDebug: (window as any)['wppOpenDebug']
 		`;
 	}
 }
