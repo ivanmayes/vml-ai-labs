@@ -55,15 +55,30 @@ export class WppOpenAgentService {
 		const url = `${CS_API_BASE}${path}`;
 		const headers: Record<string, string> = {
 			Authorization: this.buildCSAuthHeader(token, osContext),
-			'Content-Type': 'application/json',
 			...CF_HEADERS,
 		};
 
-		const response = await fetch(url, {
-			method,
-			headers,
-			body: body ? JSON.stringify(body) : undefined,
-		});
+		// Only set Content-Type for methods that include a body
+		if (body) {
+			headers['Content-Type'] = 'application/json';
+		}
+
+		let response: Response;
+		try {
+			response = await fetch(url, {
+				method,
+				headers,
+				body: body ? JSON.stringify(body) : undefined,
+			});
+		} catch (error) {
+			this.logger.error(
+				`CS API network error: ${method} ${path}: ${error instanceof Error ? error.message : String(error)}`,
+			);
+			throw new HttpException(
+				'WPP Open API is unreachable',
+				HttpStatus.BAD_GATEWAY,
+			);
+		}
 
 		if (!response.ok) {
 			const errorText = await response
@@ -80,7 +95,16 @@ export class WppOpenAgentService {
 			);
 		}
 
-		return response.json() as Promise<T>;
+		const json = await response.json();
+
+		if (json === null || json === undefined) {
+			throw new HttpException(
+				'WPP Open API returned empty response',
+				HttpStatus.BAD_GATEWAY,
+			);
+		}
+
+		return json as T;
 	}
 
 	/**
@@ -93,6 +117,13 @@ export class WppOpenAgentService {
 		const result = await this.csRequest<{
 			data: { id: string };
 		}>('PUT', '/v1/project/external/open', token, osContext, osContext);
+
+		if (!result?.data?.id) {
+			throw new HttpException(
+				'WPP Open API: failed to resolve project ID',
+				HttpStatus.BAD_GATEWAY,
+			);
+		}
 
 		return result.data.id;
 	}
@@ -141,6 +172,13 @@ export class WppOpenAgentService {
 			osContext,
 		);
 
+		if (!result?.data) {
+			throw new HttpException(
+				`WPP Open API: agent config not found for ${agentId}`,
+				HttpStatus.BAD_GATEWAY,
+			);
+		}
+
 		return result.data;
 	}
 
@@ -164,6 +202,13 @@ export class WppOpenAgentService {
 			osContext,
 			config,
 		);
+
+		if (!result?.data) {
+			throw new HttpException(
+				`WPP Open API: failed to update agent config for ${agentId}`,
+				HttpStatus.BAD_GATEWAY,
+			);
+		}
 
 		return result.data;
 	}

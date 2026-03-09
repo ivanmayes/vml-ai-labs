@@ -131,17 +131,17 @@ export class UpdaterTaskService {
 			);
 		}
 
-		// Check for active runs
+		// Check for active runs (both pending and processing)
 		const activeRun = await this.runRepo.findOne({
-			where: {
-				taskId,
-				status: TaskRunStatus.PROCESSING,
-			},
+			where: [
+				{ taskId, status: TaskRunStatus.PENDING },
+				{ taskId, status: TaskRunStatus.PROCESSING },
+			],
 		});
 
 		if (activeRun) {
 			throw new ConflictException(
-				`Task already has an active run: ${activeRun.id}`,
+				`Task already has an active run: ${activeRun.id} (${activeRun.status})`,
 			);
 		}
 

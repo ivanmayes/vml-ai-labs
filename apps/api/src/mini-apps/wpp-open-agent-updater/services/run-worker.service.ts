@@ -81,10 +81,19 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					`Run worker error for ${job.data.taskRunId}:`,
 					error,
 				);
-				await this.failRun(
-					job.data.taskRunId,
-					error instanceof Error ? error.message : 'Unknown error',
-				);
+				try {
+					await this.failRun(
+						job.data.taskRunId,
+						error instanceof Error
+							? error.message
+							: 'Unknown error',
+					);
+				} catch (failError) {
+					this.logger.error(
+						`Failed to mark run ${job.data.taskRunId} as failed:`,
+						failError,
+					);
+				}
 			}
 		}
 	}
@@ -144,7 +153,6 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		// 4. Process files with concurrency limit
 		let processed = 0;
 		let failed = 0;
-		let skipped = 0;
 		const knowledgeDocs: WppOpenKnowledgeItem[] = [];
 
 		for (let i = 0; i < runFiles.length; i += FILE_CONCURRENCY) {
@@ -165,10 +173,11 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			);
 
 			for (const result of results) {
-				if (result.status === 'fulfilled') {
-					if (result.value === 'completed') processed++;
-					else if (result.value === 'skipped') skipped++;
-					else failed++;
+				if (
+					result.status === 'fulfilled' &&
+					result.value === 'completed'
+				) {
+					processed++;
 				} else {
 					failed++;
 				}
@@ -176,6 +185,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		}
 
 		// 5. Upsert knowledge into WPP Open agent (batch all docs at once)
+		let upsertError: string | null = null;
 		if (knowledgeDocs.length > 0) {
 			try {
 				await this.wppOpenAgentService.upsertKnowledge(
@@ -188,6 +198,8 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					`Upserted ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId}`,
 				);
 			} catch (error) {
+				upsertError =
+					error instanceof Error ? error.message : 'Unknown error';
 				this.logger.error(
 					`Failed to upsert knowledge for run ${taskRunId}:`,
 					error,
@@ -195,6 +207,20 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				// Mark all as failed if the final upsert fails
 				failed += processed;
 				processed = 0;
+
+				// Update individual file records to reflect the upsert failure
+				await this.runFileRepo
+					.createQueryBuilder()
+					.update(TaskRunFile)
+					.set({
+						status: TaskRunFileStatus.FAILED,
+						errorMessage: `Knowledge upsert failed: ${upsertError}`,
+					})
+					.where('taskRunId = :taskRunId', { taskRunId })
+					.andWhere('status = :status', {
+						status: TaskRunFileStatus.COMPLETED,
+					})
+					.execute();
 			}
 		}
 
@@ -207,10 +233,11 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			completedAt: new Date(),
 			filesProcessed: processed,
 			filesFailed: failed,
-			filesSkipped: skipped,
 			errorMessage:
 				finalStatus === TaskRunStatus.FAILED
-					? 'No files were successfully processed'
+					? upsertError
+						? `Knowledge upsert failed: ${upsertError}`
+						: 'No files were successfully processed'
 					: null,
 		});
 
@@ -218,29 +245,29 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		await this.taskRepo.update(taskId, { lastRunAt: new Date() });
 
 		this.logger.log(
-			`Run ${taskRunId} completed: ${processed} processed, ${failed} failed, ${skipped} skipped`,
+			`Run ${taskRunId} completed: ${processed} processed, ${failed} failed`,
 		);
 	}
 
 	/**
 	 * Process a single file: download, convert, collect for knowledge upsert.
-	 * Returns 'completed', 'skipped', or 'failed'.
+	 * Returns 'completed' or 'failed'.
 	 */
 	private async processFile(
 		runFile: TaskRunFile,
 		fileInfo: { id: string; name: string; size: number; extension: string },
 		_wppOpenToken: string,
 		knowledgeDocs: WppOpenKnowledgeItem[],
-	): Promise<'completed' | 'skipped' | 'failed'> {
+	): Promise<'completed' | 'failed'> {
 		try {
 			// Size check
 			if (fileInfo.size > MAX_FILE_SIZE) {
 				await this.runFileRepo.update(runFile.id, {
 					status: TaskRunFileStatus.FAILED,
-					errorMessage: 'File too large (>50MB)',
+					errorMessage: `File too large (${Math.round(fileInfo.size / 1024 / 1024)}MB exceeds 50MB limit)`,
 					processedAt: new Date(),
 				});
-				return 'skipped';
+				return 'failed';
 			}
 
 			// Download

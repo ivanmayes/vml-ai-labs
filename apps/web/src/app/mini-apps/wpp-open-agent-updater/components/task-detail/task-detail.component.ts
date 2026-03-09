@@ -182,6 +182,13 @@ export class TaskDetailComponent implements OnInit {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (task) => this.task.set(task),
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Failed to load task',
+					});
+				},
 			});
 	}
 

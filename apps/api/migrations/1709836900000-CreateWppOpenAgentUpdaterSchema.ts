@@ -70,7 +70,7 @@ export class CreateWppOpenAgentUpdaterSchema1709836900000
 				"taskRunId" uuid NOT NULL,
 				"boxFileId" character varying(255) NOT NULL,
 				"fileName" character varying(500) NOT NULL,
-				"fileSize" bigint NOT NULL DEFAULT 0,
+				"fileSize" integer NOT NULL DEFAULT 0,
 				"status" "wpp_open_agent_updater"."task_run_files_status_enum" NOT NULL DEFAULT 'pending',
 				"errorMessage" text,
 				"processedAt" TIMESTAMP WITH TIME ZONE,

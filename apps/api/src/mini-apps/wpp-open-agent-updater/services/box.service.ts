@@ -205,7 +205,16 @@ export class BoxService {
 	): Promise<void> {
 		for (let i = 0; i < items.length; i += concurrency) {
 			const batch = items.slice(i, i + concurrency);
-			await Promise.allSettled(batch.map(processor));
+			const results = await Promise.allSettled(batch.map(processor));
+
+			// Log any failures (don't throw - continue with remaining items)
+			for (const result of results) {
+				if (result.status === 'rejected') {
+					this.logger.warn(
+						`Batch item failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
+					);
+				}
+			}
 
 			// Small delay between batches to respect rate limits
 			if (i + concurrency < items.length) {

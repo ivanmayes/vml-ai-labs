@@ -210,6 +210,13 @@ export class TaskFormComponent implements OnInit {
 						wppOpenAgentId: task.wppOpenAgentId,
 					});
 				},
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Failed to load task',
+					});
+				},
 			});
 	}
 

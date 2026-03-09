@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -7,16 +8,13 @@ import {
 	Post,
 	Put,
 	Query,
+	Req,
 	UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 import { ResponseEnvelope, ResponseStatus } from '../../_platform/models';
-import {
-	RequiresApp,
-	CurrentOrg,
-	CurrentUser,
-} from '../../_platform/decorators';
+import { RequiresApp, CurrentOrg } from '../../_platform/decorators';
 
 import { UpdaterTaskService } from './services/updater-task.service';
 import { BoxService } from './services/box.service';
@@ -24,6 +22,17 @@ import { WppOpenAgentService } from './services/wpp-open-agent.service';
 import { CreateTaskDto } from './dtos/create-task.dto';
 import { UpdateTaskDto } from './dtos/update-task.dto';
 import { TriggerRunDto } from './dtos/trigger-run.dto';
+
+/**
+ * Request type with authenticated user
+ */
+interface AuthenticatedRequest extends Request {
+	user: {
+		id: string;
+		organizationId: string;
+		[key: string]: unknown;
+	};
+}
 
 @RequiresApp('wpp-open-agent-updater')
 @Controller('apps/wpp-open-agent-updater')
@@ -40,10 +49,10 @@ export class WppOpenAgentUpdaterController {
 	@Post('tasks')
 	async createTask(
 		@CurrentOrg() orgId: string,
-		@CurrentUser() userId: string,
+		@Req() req: AuthenticatedRequest,
 		@Body() dto: CreateTaskDto,
 	) {
-		const task = await this.taskService.createTask(dto, userId, orgId);
+		const task = await this.taskService.createTask(dto, req.user.id, orgId);
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, task);
 	}
 
@@ -81,12 +90,12 @@ export class WppOpenAgentUpdaterController {
 	async triggerRun(
 		@Param('id') id: string,
 		@CurrentOrg() orgId: string,
-		@CurrentUser() userId: string,
+		@Req() req: AuthenticatedRequest,
 		@Body() dto: TriggerRunDto,
 	) {
 		const run = await this.taskService.triggerRun(
 			id,
-			userId,
+			req.user.id,
 			orgId,
 			dto.wppOpenToken,
 		);
@@ -118,6 +127,11 @@ export class WppOpenAgentUpdaterController {
 		@Query('projectId') projectId: string,
 		@Query('token') token: string,
 	) {
+		if (!projectId || !token) {
+			throw new BadRequestException(
+				'Both projectId and token query parameters are required',
+			);
+		}
 		const agents = await this.wppOpenAgentService.listAgents(
 			token,
 			projectId,

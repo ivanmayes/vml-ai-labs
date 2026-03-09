@@ -42,7 +42,7 @@ export class TaskRunFile {
 	@Column({ type: 'varchar', length: 500 })
 	fileName: string;
 
-	@Column({ type: 'bigint', default: 0 })
+	@Column({ type: 'int', default: 0 })
 	fileSize: number;
 
 	@Column({

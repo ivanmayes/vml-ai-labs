@@ -9,7 +9,6 @@ import {
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -25,7 +24,6 @@ import {
 	standalone: true,
 	imports: [
 		CommonModule,
-		TableModule,
 		TagModule,
 		ButtonModule,
 		CardModule,
@@ -174,6 +172,9 @@ export class RunDetailComponent implements OnInit, OnDestroy {
 						this.stopPolling();
 					}
 				},
+				error: () => {
+					this.stopPolling();
+				},
 			});
 	}
 
@@ -189,11 +190,8 @@ export class RunDetailComponent implements OnInit, OnDestroy {
 
 	goBack(): void {
 		const r = this.run();
-		if (r) {
-			this.router.navigate([
-				'apps/wpp-open-agent-updater',
-				(r as any).taskId || (r as any).task?.id,
-			]);
+		if (r?.taskId) {
+			this.router.navigate(['apps/wpp-open-agent-updater', r.taskId]);
 		} else {
 			this.router.navigate(['apps/wpp-open-agent-updater']);
 		}
