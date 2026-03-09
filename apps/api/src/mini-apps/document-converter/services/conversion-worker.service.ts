@@ -29,7 +29,7 @@ import {
 	ConversionJobData,
 	WORKER_CONFIG,
 } from '../../../_platform/queue';
-import { ConverterFactory } from '../converters';
+import { ConverterFactory } from '../../../_platform/converters';
 import { AwsS3Service } from '../../../_platform/aws';
 import { ConversionError } from '../types/conversion-error.types';
 import { SSEEventType } from '../types/sse-events.types';

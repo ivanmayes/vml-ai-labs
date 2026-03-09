@@ -12,7 +12,7 @@ import {
 	MaxRetriesExceededError,
 	DownloadExpiredError,
 	ConcurrentUpdateError,
-} from '../errors/domain.errors';
+} from '../../../_platform/errors/domain.errors';
 
 /**
  * Input for creating a new conversion job

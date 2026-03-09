@@ -8,7 +8,6 @@ import { ConversionService } from './services/conversion.service';
 import { FileValidationService } from './services/file-validation.service';
 import { ConversionSseService } from './services/conversion-sse.service';
 import { ConversionWorkerService } from './services/conversion-worker.service';
-import { ConverterFactory } from './converters/converter.factory';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([ConversionJob])],
@@ -16,7 +15,6 @@ import { ConverterFactory } from './converters/converter.factory';
 	providers: [
 		ConversionService,
 		FileValidationService,
-		ConverterFactory,
 		ConversionSseService,
 		ConversionWorkerService,
 	],

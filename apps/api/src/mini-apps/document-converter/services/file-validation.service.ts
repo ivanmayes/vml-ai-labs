@@ -23,7 +23,7 @@ import {
 	MaliciousFileError,
 	InvalidFilenameError,
 	FileCorruptedError,
-} from '../errors/domain.errors';
+} from '../../../_platform/errors/domain.errors';
 
 // Configuration constants
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB

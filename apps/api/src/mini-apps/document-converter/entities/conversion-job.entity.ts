@@ -15,7 +15,7 @@ import { User } from '../../../user/user.entity';
 import { Organization } from '../../../organization/organization.entity';
 import { JobStatus, canTransition } from '../types/job-status.enum';
 import { ConversionError } from '../types/conversion-error.types';
-import { InvalidStatusTransitionError } from '../errors/domain.errors';
+import { InvalidStatusTransitionError } from '../../../_platform/errors/domain.errors';
 
 /**
  * ConversionJob entity representing a document conversion request.
