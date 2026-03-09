@@ -300,12 +300,12 @@ export class TaskRunFile {
 
 **Tasks:**
 
-- [ ] Install `box-typescript-sdk-gen` package:
+- [x] Install `box-typescript-sdk-gen` package:
   ```bash
   npm install box-typescript-sdk-gen
   ```
 
-- [ ] Create `apps/api/src/mini-apps/wpp-open-agent-updater/services/box.service.ts`
+- [x] Create `apps/api/src/mini-apps/wpp-open-agent-updater/services/box.service.ts`
   - JWT/Enterprise authentication using env vars:
     - `BOX_ENTERPRISE_ID`
     - `BOX_PUBLIC_KEY_ID`
@@ -320,9 +320,9 @@ export class TaskRunFile {
   - Rate limiting: Max 8 concurrent API calls using a semaphore/pool pattern
   - Reference implementation: Copy patterns from `/Users/ivan.mayes/Documents/GitHub/vyc-modular-video-builder/apps/api/src/integrations/box/`
 
-- [ ] Add `.env.example` entries for Box env vars
+- [x] Add `.env.example` entries for Box env vars
 
-- [ ] Create `apps/api/src/mini-apps/wpp-open-agent-updater/types/box.types.ts`:
+- [x] Create `apps/api/src/mini-apps/wpp-open-agent-updater/types/box.types.ts`:
   ```typescript
   export interface BoxFile {
     id: string;
@@ -344,7 +344,7 @@ export class TaskRunFile {
 
 **Tasks:**
 
-- [ ] Create `apps/api/src/mini-apps/wpp-open-agent-updater/services/wpp-open-agent.service.ts`
+- [x] Create `apps/api/src/mini-apps/wpp-open-agent-updater/services/wpp-open-agent.service.ts`
   - Uses user's WPP Open JWT token (passed from frontend session)
   - Required headers for CloudFront: `Origin: https://open-web-cs.wpp.ai`, `Referer: https://open-web-cs.wpp.ai/`
   - Methods:
@@ -359,7 +359,7 @@ export class TaskRunFile {
   - CS Auth scheme: `Authorization: CS {token},hierarchyAzId={azId}`
   - Reference implementation: `/Users/ivan.mayes/Documents/GitHub/unite-chat-test/apps/api/src/agent-chat/agent-chat.service.ts`
 
-- [ ] Create `apps/api/src/mini-apps/wpp-open-agent-updater/types/wpp-open.types.ts`:
+- [x] Create `apps/api/src/mini-apps/wpp-open-agent-updater/types/wpp-open.types.ts`:
   ```typescript
   export interface WppOpenAgent {
     id: string;
@@ -374,7 +374,7 @@ export class TaskRunFile {
   }
   ```
 
-- [ ] **API exploration task** (Phase 3 blocker): Before implementing `updateAgentKnowledge()`, explore the WPP Open API to discover how knowledge documents are structured within the agentConfig payload. This may require:
+- [x] **API exploration task** (Phase 3 blocker): Before implementing `updateAgentKnowledge()`, explore the WPP Open API to discover how knowledge documents are structured within the agentConfig payload. This may require:
   1. Fetching an existing agent's config to inspect its `knowledge` property structure
   2. Testing a PUT with modified knowledge to confirm the update format
   3. Documenting the discovered structure in the types file
@@ -391,7 +391,7 @@ export class TaskRunFile {
 
 **4a. Task CRUD service:**
 
-- [ ] Create `apps/api/src/mini-apps/wpp-open-agent-updater/services/updater-task.service.ts`
+- [x] Create `apps/api/src/mini-apps/wpp-open-agent-updater/services/updater-task.service.ts`
   - Methods:
     - `createTask(dto, userId, orgId): Promise<UpdaterTask>` — Validate Box folder, create task
     - `listTasks(orgId): Promise<UpdaterTask[]>` — List all tasks for org
@@ -402,7 +402,7 @@ export class TaskRunFile {
 
 **4b. Run worker service:**
 
-- [ ] Create `apps/api/src/mini-apps/wpp-open-agent-updater/services/run-worker.service.ts`
+- [x] Create `apps/api/src/mini-apps/wpp-open-agent-updater/services/run-worker.service.ts`
   - Implements `OnModuleInit` / `OnModuleDestroy` (same pattern as `ConversionWorkerService`)
   - Registers as pg-boss worker for `agent-updater-run` queue
   - Run execution pipeline:
@@ -425,7 +425,7 @@ export class TaskRunFile {
 
 **4c. DTOs:**
 
-- [ ] Create `apps/api/src/mini-apps/wpp-open-agent-updater/dtos/`:
+- [x] Create `apps/api/src/mini-apps/wpp-open-agent-updater/dtos/`:
   - `create-task.dto.ts` — `name`, `boxFolderId`, `wppOpenAgentId`, `wppOpenProjectId`
   - `update-task.dto.ts` — Partial of create (name, status)
   - `trigger-run.dto.ts` — `wppOpenToken` (user's session token for this run)
@@ -442,7 +442,7 @@ export class TaskRunFile {
 
 **Tasks:**
 
-- [ ] Create `apps/api/src/mini-apps/wpp-open-agent-updater/wpp-open-agent-updater.controller.ts`
+- [x] Create `apps/api/src/mini-apps/wpp-open-agent-updater/wpp-open-agent-updater.controller.ts`
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|

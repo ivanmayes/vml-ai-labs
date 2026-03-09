@@ -1,11 +1,8 @@
 import {
 	Body,
 	Controller,
-	DefaultValuePipe,
 	Delete,
 	Get,
-	HttpException,
-	HttpStatus,
 	Param,
 	Post,
 	Put,
@@ -14,89 +11,117 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
+import { ResponseEnvelope, ResponseStatus } from '../../_platform/models';
 import {
-	ResponseEnvelope,
-	ResponseEnvelopeFind,
-	ResponseStatus,
-	SortStrategy,
-	FindOptions,
-} from '../../_platform/models';
-import { RequiresApp, CurrentOrg } from '../../_platform/decorators';
+	RequiresApp,
+	CurrentOrg,
+	CurrentUser,
+} from '../../_platform/decorators';
 
-import { WppOpenAgentUpdaterService } from './wpp-open-agent-updater.service';
+import { UpdaterTaskService } from './services/updater-task.service';
+import { BoxService } from './services/box.service';
+import { WppOpenAgentService } from './services/wpp-open-agent.service';
+import { CreateTaskDto } from './dtos/create-task.dto';
+import { UpdateTaskDto } from './dtos/update-task.dto';
+import { TriggerRunDto } from './dtos/trigger-run.dto';
 
 @RequiresApp('wpp-open-agent-updater')
 @Controller('apps/wpp-open-agent-updater')
+@UseGuards(AuthGuard())
 export class WppOpenAgentUpdaterController {
 	constructor(
-		private readonly wppOpenAgentUpdaterService: WppOpenAgentUpdaterService,
+		private readonly taskService: UpdaterTaskService,
+		private readonly boxService: BoxService,
+		private readonly wppOpenAgentService: WppOpenAgentService,
 	) {}
 
-	@Post()
-	@UseGuards(AuthGuard())
-	public async create(@CurrentOrg() orgId: string, @Body() body: any) {
-		const result = await this.wppOpenAgentUpdaterService.add({
-			...body,
-			organizationId: orgId,
-		});
-		return new ResponseEnvelope(ResponseStatus.Success, undefined, result);
-	}
+	// ── Task CRUD ──────────────────────────────────────────────
 
-	@Get(':id')
-	@UseGuards(AuthGuard())
-	public async read(@Param('id') _id: string) {
-		return new ResponseEnvelope(ResponseStatus.Success, 'Read');
-	}
-
-	@Put(':id')
-	@UseGuards(AuthGuard())
-	public async update(@Param('id') _id: string, @Body() _body: any) {
-		return new ResponseEnvelope(ResponseStatus.Success, 'Update');
-	}
-
-	@Delete(':id')
-	@UseGuards(AuthGuard())
-	public async delete(@Param('id') _id: string) {
-		return new ResponseEnvelope(ResponseStatus.Success, 'Delete');
-	}
-
-	@Post('find')
-	@UseGuards(AuthGuard())
-	public async find(
+	@Post('tasks')
+	async createTask(
 		@CurrentOrg() orgId: string,
-		@Body() filter: any,
-		@Query('page', new DefaultValuePipe(1)) page: number,
-		@Query('perPage', new DefaultValuePipe(10)) perPage: number,
-		@Query('sortBy') sortBy?: string,
-		@Query('order', new DefaultValuePipe('ASC')) sortOrder?: SortStrategy,
+		@CurrentUser() userId: string,
+		@Body() dto: CreateTaskDto,
 	) {
-		perPage = perPage > 50 ? 50 : perPage;
-		const options: FindOptions<any> = {
-			page,
-			perPage,
-			sortBy,
-			sortOrder,
-		};
+		const task = await this.taskService.createTask(dto, userId, orgId);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, task);
+	}
 
-		const [queryResult, count] = await this.wppOpenAgentUpdaterService
-			.findPaginated(options, { ...filter, organizationId: orgId })
-			.catch((err) => {
-				console.error(err);
-				throw new HttpException(
-					new ResponseEnvelope(
-						ResponseStatus.Error,
-						'Error finding records.',
-					),
-					HttpStatus.INTERNAL_SERVER_ERROR,
-				);
-			});
+	@Get('tasks')
+	async listTasks(@CurrentOrg() orgId: string) {
+		const tasks = await this.taskService.listTasks(orgId);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, tasks);
+	}
 
-		return new ResponseEnvelopeFind(ResponseStatus.Success, undefined, {
-			page,
-			perPage,
-			numPages: Math.ceil(count / perPage) || 1,
-			totalResults: count,
-			results: queryResult,
-		});
+	@Get('tasks/:id')
+	async getTask(@Param('id') id: string, @CurrentOrg() orgId: string) {
+		const task = await this.taskService.getTask(id, orgId);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, task);
+	}
+
+	@Put('tasks/:id')
+	async updateTask(
+		@Param('id') id: string,
+		@CurrentOrg() orgId: string,
+		@Body() dto: UpdateTaskDto,
+	) {
+		const task = await this.taskService.updateTask(id, dto, orgId);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, task);
+	}
+
+	@Delete('tasks/:id')
+	async deleteTask(@Param('id') id: string, @CurrentOrg() orgId: string) {
+		await this.taskService.deleteTask(id, orgId);
+		return new ResponseEnvelope(ResponseStatus.Success, 'Task archived');
+	}
+
+	// ── Run Management ────────────────────────────────────────
+
+	@Post('tasks/:id/run')
+	async triggerRun(
+		@Param('id') id: string,
+		@CurrentOrg() orgId: string,
+		@CurrentUser() userId: string,
+		@Body() dto: TriggerRunDto,
+	) {
+		const run = await this.taskService.triggerRun(
+			id,
+			userId,
+			orgId,
+			dto.wppOpenToken,
+		);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, run);
+	}
+
+	@Get('tasks/:id/runs')
+	async listRuns(@Param('id') id: string, @CurrentOrg() orgId: string) {
+		const runs = await this.taskService.listRuns(id, orgId);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, runs);
+	}
+
+	@Get('runs/:id')
+	async getRun(@Param('id') id: string, @CurrentOrg() orgId: string) {
+		const run = await this.taskService.getRun(id, orgId);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, run);
+	}
+
+	// ── Integration Endpoints ─────────────────────────────────
+
+	@Get('box/validate/:folderId')
+	async validateBoxFolder(@Param('folderId') folderId: string) {
+		const info = await this.boxService.validateFolder(folderId);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, info);
+	}
+
+	@Get('agents')
+	async listAgents(
+		@Query('projectId') projectId: string,
+		@Query('token') token: string,
+	) {
+		const agents = await this.wppOpenAgentService.listAgents(
+			token,
+			projectId,
+		);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, agents);
 	}
 }
