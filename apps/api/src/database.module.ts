@@ -20,7 +20,7 @@ import { OrganizationApp } from './organization-app/organization-app.entity';
 
 async function ensureSchemasExist(): Promise<void> {
 	const logger = new Logger('SchemaBootstrap');
-	const manifestPath = path.resolve(__dirname, '../../mini-apps.json');
+	const manifestPath = path.resolve(__dirname, '../mini-apps.json');
 	if (!fs.existsSync(manifestPath)) {
 		logger.warn('mini-apps.json not found, skipping schema bootstrap');
 		return;

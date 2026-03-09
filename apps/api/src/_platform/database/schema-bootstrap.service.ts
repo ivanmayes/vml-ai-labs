@@ -11,10 +11,7 @@ export class SchemaBootstrapService implements OnApplicationBootstrap {
 	constructor(private readonly dataSource: DataSource) {}
 
 	async onApplicationBootstrap() {
-		const manifestPath = path.resolve(
-			__dirname,
-			'../../../../mini-apps.json',
-		);
+		const manifestPath = path.resolve(__dirname, '../../../mini-apps.json');
 		if (!fs.existsSync(manifestPath)) {
 			this.logger.warn(
 				'mini-apps.json not found, skipping schema bootstrap',
