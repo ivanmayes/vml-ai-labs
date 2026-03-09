@@ -25,11 +25,13 @@ jobs:
           export NODE_OPTIONS="--max_old_space_size=4096"
           cd apps/api
           npm i --ignore-scripts --legacy-peer-deps
+          cp ../mini-apps.json .
           npm run db:migrations:build
           npm run build
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git config http.postBuffer 524288000
+          git add -f mini-apps.json
           git add -f migrations-js
           git add -f dist
           git commit -m "Built latest;"
