@@ -1,7 +1,7 @@
 ---
 title: "feat: WPP Open Agent Updater Mini-App"
 type: feat
-status: active
+status: completed
 date: 2026-03-08
 origin: docs/brainstorms/2026-03-08-wpp-open-agent-updater-brainstorm.md
 ---
@@ -557,8 +557,8 @@ export class TaskRunFile {
 
 - [x] Verify `mini-apps.module.ts` imports `WppOpenAgentUpdaterModule`
 - [x] Verify `app.routes.ts` has lazy-loaded route for `wpp-open-agent-updater`
-- [ ] Run migration: `npm run typeorm migration:run`
-- [ ] Test end-to-end flow:
+- [x] Run migration: `npm run typeorm migration:run`
+- [x] Test end-to-end flow:
   1. Create a task with valid Box folder ID and WPP Open agent
   2. Trigger a run
   3. Verify files are downloaded, converted, and uploaded
@@ -602,30 +602,30 @@ export class TaskRunFile {
 
 ### Functional Requirements
 
-- [ ] User can create a task linking a Box folder to a WPP Open agent
-- [ ] Box folder ID is validated on entry with name + file count preview
-- [ ] WPP Open agents are listed from the API for selection
-- [ ] User can trigger a manual run of a task
-- [ ] Run processes all files modified since last run (recursive folder traversal)
-- [ ] Files are converted using the shared ConverterFactory
-- [ ] Converted content is upserted into WPP Open agent knowledge
-- [ ] Run history shows summary list (date, status, file counts)
-- [ ] Run detail shows per-file results (name, size, status, error)
-- [ ] Multiple tasks per organization are supported
-- [ ] Tasks can be edited (name, status) and archived
+- [x] User can create a task linking a Box folder to a WPP Open agent
+- [x] Box folder ID is validated on entry with name + file count preview
+- [x] WPP Open agents are listed from the API for selection
+- [x] User can trigger a manual run of a task
+- [x] Run processes all files modified since last run (recursive folder traversal)
+- [x] Files are converted using the shared ConverterFactory
+- [x] Converted content is upserted into WPP Open agent knowledge
+- [x] Run history shows summary list (date, status, file counts)
+- [x] Run detail shows per-file results (name, size, status, error)
+- [x] Multiple tasks per organization are supported
+- [x] Tasks can be edited (name, status) and archived
 
-- [ ] Concurrent runs for the same task are rejected (only one active run at a time)
-- [ ] Unsupported file types are skipped with clear status in run details
-- [ ] Token expiry during a run fails remaining files gracefully (partial success)
-- [ ] Only active tasks can be run; paused/archived tasks reject run requests
+- [x] Concurrent runs for the same task are rejected (only one active run at a time)
+- [x] Unsupported file types are skipped with clear status in run details
+- [x] Token expiry during a run fails remaining files gracefully (partial success)
+- [x] Only active tasks can be run; paused/archived tasks reject run requests
 
 ### Non-Functional Requirements
 
-- [ ] Runs execute asynchronously via pg-boss (no HTTP timeout risk)
-- [ ] Individual file failures don't stop the entire run
-- [ ] Box API rate limiting enforced (max 8 concurrent calls)
-- [ ] All UI uses PrimeNG components and `--p-` design tokens
-- [ ] All endpoints org-scoped via `@CurrentOrg()` and `@RequiresApp()`
+- [x] Runs execute asynchronously via pg-boss (no HTTP timeout risk)
+- [x] Individual file failures don't stop the entire run
+- [x] Box API rate limiting enforced (max 8 concurrent calls)
+- [x] All UI uses PrimeNG components and `--p-` design tokens
+- [x] All endpoints org-scoped via `@CurrentOrg()` and `@RequiresApp()`
 
 ---
 
