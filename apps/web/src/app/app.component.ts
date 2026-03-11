@@ -121,7 +121,7 @@ export class AppComponent implements OnInit {
 					context?.project?.id,
 					context?.project?.name,
 					context?.hierarchy,
-					tenantId,
+					workspaceScope?.tenantId ?? tenantId,
 				)
 				.pipe(take(1))
 				.subscribe((resp: WppOpenLoginResponse) => {

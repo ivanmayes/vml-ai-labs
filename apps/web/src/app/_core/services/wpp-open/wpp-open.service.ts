@@ -112,18 +112,32 @@ export class WppOpenService {
 			throw new Error('Connection not established.');
 		}
 
-		const workspaceId = this.context?.workspace?.azId;
-		if (!workspaceId) {
-			throw new Error('Workspace ID not found.');
+		const hierarchy = this.context?.hierarchy;
+		const tenantId = this.context?.tenant?.id;
+		const tenantAzId = this.context?.tenant?.azId;
+
+		// Check if tenant-level assignment (hierarchy matches tenant)
+		if (hierarchy?.azId === tenantAzId) {
+			console.log(
+				'Tenant-level assignment detected, tenantId:',
+				tenantId,
+			);
+			return {
+				workspaceId: undefined,
+				scopeId: undefined,
+				tenantId,
+			};
 		}
 
-		const scopeId = Object.values(
-			this.context?.workspace?.mapping ?? {},
-		).find((v) => !v.parentAzId)?.azId;
+		const workspaceId = hierarchy?.azId;
+		const scopeId = Object.values(hierarchy?.mapping ?? {}).find(
+			(v) => !v.parentAzId,
+		)?.azId;
 
 		return {
 			workspaceId,
 			scopeId,
+			tenantId,
 		};
 	}
 
@@ -138,13 +152,17 @@ export class WppOpenService {
 			throw new Error('Connection not established.');
 		}
 
-		for (const v of Object.values(this.context?.workspace?.mapping ?? {})) {
+		const mapping = this.context?.hierarchy?.mapping ?? {};
+		for (const v of Object.values(mapping)) {
 			if (v.type === DefaultHierarchyLevelType.Client) {
 				return v;
 			}
 		}
 
-		throw new Error('Client not found.');
+		console.log(
+			'No client found in hierarchy (may be tenant-level assignment)',
+		);
+		return null;
 	}
 
 	// private async receiveOsContext(context: FullscreenAppContext) {

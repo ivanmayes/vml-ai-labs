@@ -453,25 +453,36 @@ export class UserAuthController {
 			);
 		}
 
-		const scope: WorkspaceHierarchy | null =
-			await WPPOpen.getWorkspaceAncestor(
+		// Fetch workspace scope only if workspaceId is provided
+		let scope: WorkspaceHierarchy | null = null;
+		if (loginReq.workspaceId) {
+			scope = await WPPOpen.getWorkspaceAncestor(
 				loginReq.token,
-				loginReq.workspaceId ?? '',
+				loginReq.workspaceId,
 				loginReq.scopeId ?? '',
 			).catch((err) => {
 				console.log(err);
 				return null;
 			});
 
-		if (!scope?.workspace) {
+			if (!scope?.workspace) {
+				throw new HttpException(
+					'Invalid workspaceId.',
+					HttpStatus.BAD_REQUEST,
+				);
+			}
+
+			if (loginReq.scopeId && scope.workspace.id !== loginReq.scopeId) {
+				throw new HttpException(
+					'Invalid scopeId.',
+					HttpStatus.BAD_REQUEST,
+				);
+			}
+		} else if (!loginReq.tenantId) {
 			throw new HttpException(
-				'Invalid workspaceId.',
+				'Either workspaceId or tenantId is required.',
 				HttpStatus.BAD_REQUEST,
 			);
-		}
-
-		if (loginReq.scopeId && scope.workspace.id !== loginReq.scopeId) {
-			throw new HttpException('Invalid scopeId.', HttpStatus.BAD_REQUEST);
 		}
 
 		// Log tenant ID for debugging
@@ -479,7 +490,7 @@ export class UserAuthController {
 		console.log('🔑 [WPP Open] Tenant ID from login:', tenantIdToMatch);
 		console.log(
 			'🔑 [WPP Open] Workspace ID from login:',
-			scope.workspace.id,
+			scope?.workspace?.id,
 		);
 		console.log(
 			'🏢 [WPP Open] Organization redirectToSpace:',
@@ -487,7 +498,7 @@ export class UserAuthController {
 		);
 
 		// Use tenant ID if provided, otherwise fall back to workspace ID
-		const idToMatch = tenantIdToMatch || scope.workspace.id;
+		const idToMatch = tenantIdToMatch ?? scope?.workspace?.id;
 
 		const spaces: Space[] = await this.spaceService
 			.find({
@@ -522,7 +533,7 @@ export class UserAuthController {
 
 		// Check if we should redirect to a space
 		let redirectSpaceId: string | null = null;
-		if (organization.redirectToSpace && spaces.length > 0) {
+		if (organization.redirectToSpace && spaces.length > 0 && idToMatch) {
 			// Find space that matches the tenant/workspace ID
 			const matchingSpace = spaces.find((s) =>
 				s.approvedWPPOpenTenantIds?.includes(idToMatch),
