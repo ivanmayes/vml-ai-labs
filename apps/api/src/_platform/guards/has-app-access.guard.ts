@@ -5,6 +5,7 @@ import {
 	Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AuthGuard } from '@nestjs/passport';
 import { DataSource } from 'typeorm';
 
 import { REQUIRES_APP_KEY } from '../decorators/requires-app.decorator';
@@ -16,6 +17,7 @@ export class HasAppAccessGuard implements CanActivate {
 		{ result: boolean; expiry: number }
 	>();
 	private readonly cacheTtlMs = 60_000;
+	private readonly jwtGuard = new (AuthGuard())();
 
 	constructor(
 		private readonly reflector: Reflector,
@@ -32,7 +34,19 @@ export class HasAppAccessGuard implements CanActivate {
 			return true;
 		}
 
+		// Ensure the user is authenticated before checking app access.
+		// This guard runs as a global APP_GUARD before controller-level
+		// AuthGuard(), so request.user won't be set yet.
 		const request = context.switchToHttp().getRequest();
+		if (!request.user) {
+			try {
+				await this.jwtGuard.canActivate(context);
+			} catch {
+				// Auth failed — let the controller's own AuthGuard handle it
+				return true;
+			}
+		}
+
 		const organizationId = request.user?.organizationId;
 
 		if (!organizationId) {
