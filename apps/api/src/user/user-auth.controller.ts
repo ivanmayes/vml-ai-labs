@@ -456,7 +456,7 @@ export class UserAuthController {
 		const scope: WorkspaceHierarchy | null =
 			await WPPOpen.getWorkspaceAncestor(
 				loginReq.token,
-				loginReq.workspaceId,
+				loginReq.workspaceId ?? '',
 				loginReq.scopeId ?? '',
 			).catch((err) => {
 				console.log(err);
