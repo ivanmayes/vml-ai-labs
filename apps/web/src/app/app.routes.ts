@@ -91,6 +91,13 @@ export const routes: Routes = [
 		],
 	},
 
+	// Projects
+	{
+		path: 'projects',
+		loadChildren: () =>
+			import('./pages/projects/projects.routes').then((m) => m.routes),
+	},
+
 	// Wildcards
 	{ path: '', redirectTo: 'home', pathMatch: 'full' },
 	{ path: '**', redirectTo: 'home', pathMatch: 'full' },

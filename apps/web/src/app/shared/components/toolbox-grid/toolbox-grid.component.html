@@ -1,0 +1,40 @@
+@if (enabledApps().length) {
+	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+		@for (app of enabledApps(); track app.key) {
+			<p-card
+				styleClass="app-card cursor-pointer"
+				(click)="navigateToApp(app)"
+			>
+				<ng-template #header>
+					<div class="app-card-header">
+						<i [class]="app.icon + ' app-icon'"></i>
+					</div>
+				</ng-template>
+				<div class="app-card-body">
+					<h3 class="app-card-title">{{ app.displayName }}</h3>
+					<p class="app-card-description text-color-secondary">
+						{{ app.description }}
+					</p>
+				</div>
+				<ng-template #footer>
+					<p-button
+						label="Open"
+						icon="pi pi-arrow-right"
+						iconPos="right"
+						[text]="true"
+						(onClick)="navigateToApp(app, $event)"
+					></p-button>
+				</ng-template>
+			</p-card>
+		}
+	</div>
+} @else {
+	<div class="empty-state">
+		<i class="pi pi-inbox empty-state-icon"></i>
+		<h3>No apps available</h3>
+		<p class="text-color-secondary">
+			There are no apps enabled yet. Contact your administrator to enable
+			apps.
+		</p>
+	</div>
+}

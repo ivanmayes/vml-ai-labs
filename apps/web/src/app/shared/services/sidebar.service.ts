@@ -22,7 +22,12 @@ export class SidebarService {
 			label: 'Home',
 			route: '/home',
 		},
-		// Add more navigation items here
+		{
+			id: 'projects',
+			icon: 'folder',
+			label: 'Projects',
+			route: '/projects',
+		},
 	]);
 
 	public readonly navigationItems = this.navItems.asReadonly();

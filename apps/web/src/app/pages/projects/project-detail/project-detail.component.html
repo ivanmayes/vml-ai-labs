@@ -1,0 +1,41 @@
+<div class="project-detail-page">
+	<p-toast></p-toast>
+
+	@if (loading()) {
+		<div class="loading-state">
+			<p-progressSpinner styleClass="w-12 h-12"></p-progressSpinner>
+		</div>
+	} @else if (project(); as proj) {
+		<div class="project-header mb-4">
+			<div class="project-breadcrumb text-color-secondary mb-2">
+				<a routerLink="/projects" class="breadcrumb-link">Projects</a>
+				<i class="pi pi-angle-right mx-1"></i>
+				<span>{{ proj.name }}</span>
+			</div>
+			<h1>{{ proj.name }}</h1>
+			@if (proj.description) {
+				<p class="text-color-secondary">{{ proj.description }}</p>
+			}
+		</div>
+
+		<section class="toolbox-section">
+			<h2 class="section-title">Tools</h2>
+			<app-toolbox-grid [baseRoute]="baseRoute()" />
+		</section>
+	} @else {
+		<div class="empty-state">
+			<i class="pi pi-exclamation-triangle empty-state-icon"></i>
+			<h3>Project not found</h3>
+			<p class="text-color-secondary">
+				The project you're looking for doesn't exist or you don't have
+				access.
+			</p>
+			<p-button
+				label="Back to Projects"
+				icon="pi pi-arrow-left"
+				routerLink="/projects"
+				class="mt-3"
+			></p-button>
+		</div>
+	}
+</div>

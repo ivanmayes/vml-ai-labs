@@ -18,9 +18,9 @@ export class WPPOpenLoginRequestDto {
 	@IsNotEmpty()
 	organizationId: string;
 
-	@IsNotEmpty()
+	@IsOptional()
 	@IsString()
-	workspaceId: string;
+	workspaceId?: string;
 
 	@IsOptional()
 	@IsNotEmpty()

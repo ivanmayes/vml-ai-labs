@@ -17,8 +17,16 @@ export class ProjectService {
 		return this.projectRepository.save(project);
 	}
 
+	public async findById(id: string): Promise<Project | null> {
+		return this.projectRepository.findOneBy({ id });
+	}
+
 	public async update(project: Project) {
 		return this.projectRepository.save(project);
+	}
+
+	public async remove(id: string): Promise<void> {
+		await this.projectRepository.delete(id);
 	}
 
 	public async findPaginated(

@@ -1,0 +1,129 @@
+<div class="project-list-page">
+	<p-toast></p-toast>
+
+	<div class="page-header">
+		<div>
+			<h1>Projects</h1>
+			<p class="text-color-secondary">
+				Organize your work into projects. Each project has its own set
+				of tools.
+			</p>
+		</div>
+		<p-button
+			label="New Project"
+			icon="pi pi-plus"
+			(onClick)="openCreateDialog()"
+		></p-button>
+	</div>
+
+	@if (loading()) {
+		<div class="loading-state">
+			<p-progressSpinner styleClass="w-12 h-12"></p-progressSpinner>
+		</div>
+	} @else if (projects().length) {
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+			@for (project of projects(); track project.id) {
+				<p-card
+					styleClass="project-card cursor-pointer"
+					(click)="navigateToProject(project)"
+				>
+					<ng-template #header>
+						<div class="project-card-header">
+							<i class="pi pi-folder project-icon"></i>
+						</div>
+					</ng-template>
+					<div class="project-card-body">
+						<h3 class="project-card-title">{{ project.name }}</h3>
+						@if (project.description) {
+							<p
+								class="project-card-description text-color-secondary"
+							>
+								{{ project.description }}
+							</p>
+						}
+					</div>
+					<ng-template #footer>
+						<p-button
+							label="Open"
+							icon="pi pi-arrow-right"
+							iconPos="right"
+							[text]="true"
+							(onClick)="navigateToProject(project)"
+						></p-button>
+					</ng-template>
+				</p-card>
+			}
+		</div>
+	} @else {
+		<div class="empty-state">
+			<i class="pi pi-folder-open empty-state-icon"></i>
+			<h3>No projects yet</h3>
+			<p class="text-color-secondary">
+				Create your first project to start organizing your work.
+			</p>
+			<p-button
+				label="Create Project"
+				icon="pi pi-plus"
+				(onClick)="openCreateDialog()"
+				class="mt-3"
+			></p-button>
+		</div>
+	}
+
+	<p-dialog
+		header="New Project"
+		[(visible)]="showCreateDialog"
+		[modal]="true"
+		[style]="{ width: '450px' }"
+	>
+		<div class="dialog-form">
+			<div class="field">
+				<label for="projectName">Name</label>
+				<input
+					id="projectName"
+					type="text"
+					pInputText
+					[(ngModel)]="newProject.name"
+					class="w-full"
+					placeholder="Enter project name"
+				/>
+			</div>
+			<div class="field">
+				<label for="projectDescription">Description</label>
+				<input
+					id="projectDescription"
+					type="text"
+					pInputText
+					[(ngModel)]="newProject.description"
+					class="w-full"
+					placeholder="Optional description"
+				/>
+			</div>
+			<div class="field">
+				<label for="projectSpace">Space</label>
+				<p-select
+					id="projectSpace"
+					[(ngModel)]="newProject.spaceId"
+					[options]="spaces()"
+					optionLabel="name"
+					optionValue="id"
+					placeholder="Select a space"
+					styleClass="w-full"
+				></p-select>
+			</div>
+		</div>
+		<ng-template #footer>
+			<p-button
+				label="Cancel"
+				[text]="true"
+				(onClick)="showCreateDialog = false"
+			></p-button>
+			<p-button
+				label="Create"
+				icon="pi pi-check"
+				(onClick)="createProject()"
+				[disabled]="!newProject.name.trim() || !newProject.spaceId"
+			></p-button>
+		</ng-template>
+	</p-dialog>
+</div>
