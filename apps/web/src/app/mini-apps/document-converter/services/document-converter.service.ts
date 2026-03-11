@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { environment } from '../../../../environments/environment';
+
 export type JobStatus =
 	| 'pending'
 	| 'processing'
@@ -48,7 +50,7 @@ export interface DownloadResponse {
 @Injectable({ providedIn: 'root' })
 export class DocumentConverterService {
 	private readonly http = inject(HttpClient);
-	private readonly baseUrl = '/api/apps/document-converter';
+	private readonly baseUrl = `${environment.apiUrl}/apps/document-converter`;
 
 	uploadFile(
 		file: File,
