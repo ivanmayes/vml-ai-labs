@@ -124,14 +124,27 @@ export class AppComponent implements OnInit {
 					workspaceScope?.tenantId ?? tenantId,
 				)
 				.pipe(take(1))
-				.subscribe((resp: WppOpenLoginResponse) => {
+				.subscribe(async (resp: WppOpenLoginResponse) => {
+					// Load settings directly — no need for getUserStatus()
+					// since wppOpenLogin already authenticated us
+					await this.loadOrgSettings().catch(() => {
+						localStorage.removeItem(ORG_SETTINGS);
+					});
+					await this.loadGlobalSettings();
+
 					if (resp.redirect) {
 						this.router.navigate([resp.redirect], {
 							replaceUrl: true,
 						});
+					} else if (resp.spaceId) {
+						await this.router.navigate(['/space', resp.spaceId], {
+							replaceUrl: true,
+						});
 					} else {
-						this.initializeApp(resp.spaceId).catch(() => undefined);
+						await this.router.navigate(['/'], { replaceUrl: true });
 					}
+
+					this.loaded.set(true);
 				});
 		} else {
 			this.initializeApp().catch(() => undefined);
