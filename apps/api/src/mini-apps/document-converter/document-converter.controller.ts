@@ -88,7 +88,7 @@ export class DocumentConverterController {
 	 * Supports idempotency via Idempotency-Key header.
 	 */
 	@Post()
-	@UseGuards(AuthGuard())
+	@UseGuards(AuthGuard('jwt'))
 	@HttpCode(HttpStatus.CREATED)
 	@UseInterceptors(
 		FileInterceptor('file', {
@@ -184,7 +184,7 @@ export class DocumentConverterController {
 	 * List conversion jobs for current user with optional filters.
 	 */
 	@Get('jobs')
-	@UseGuards(AuthGuard())
+	@UseGuards(AuthGuard('jwt'))
 	async listJobs(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
@@ -213,7 +213,7 @@ export class DocumentConverterController {
 	 * Get job details by ID.
 	 */
 	@Get('jobs/:id')
-	@UseGuards(AuthGuard())
+	@UseGuards(AuthGuard('jwt'))
 	async getJob(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
@@ -229,7 +229,7 @@ export class DocumentConverterController {
 	 * Returns a presigned S3 URL valid for 1 hour.
 	 */
 	@Get('jobs/:id/download')
-	@UseGuards(AuthGuard())
+	@UseGuards(AuthGuard('jwt'))
 	async getDownloadUrl(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
@@ -252,7 +252,7 @@ export class DocumentConverterController {
 	 * Cancel a pending or processing job.
 	 */
 	@Delete('jobs/:id')
-	@UseGuards(AuthGuard())
+	@UseGuards(AuthGuard('jwt'))
 	@HttpCode(HttpStatus.OK)
 	async cancelJob(
 		@Req() req: AuthenticatedRequest,
@@ -279,7 +279,7 @@ export class DocumentConverterController {
 	 * Retry a failed job.
 	 */
 	@Post('jobs/:id/retry')
-	@UseGuards(AuthGuard())
+	@UseGuards(AuthGuard('jwt'))
 	@HttpCode(HttpStatus.OK)
 	async retryJob(
 		@Req() req: AuthenticatedRequest,
@@ -321,7 +321,7 @@ export class DocumentConverterController {
 	 * Token is stored in memory and valid for 5 minutes.
 	 */
 	@Post('sse-token')
-	@UseGuards(AuthGuard())
+	@UseGuards(AuthGuard('jwt'))
 	@HttpCode(HttpStatus.CREATED)
 	async generateSseToken(
 		@Req() req: AuthenticatedRequest,

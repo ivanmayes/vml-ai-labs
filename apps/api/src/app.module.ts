@@ -1,5 +1,5 @@
 import { APP_GUARD } from '@nestjs/core';
-import { Module, Global, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { DataSource } from 'typeorm';
@@ -31,7 +31,6 @@ import { ProjectController } from './project/project.controller';
 import { OrganizationAppController } from './organization-app/organization-app.controller';
 // CLI_CONTROLLERS_IMPORT
 
-Global();
 @Module({
 	imports: [
 		HttpModule,
