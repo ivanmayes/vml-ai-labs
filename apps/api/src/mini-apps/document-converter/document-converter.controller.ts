@@ -69,7 +69,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 @RequiresApp('document-converter')
-@Controller('apps/document-converter')
+@Controller('organization/:orgId/apps/document-converter')
 export class DocumentConverterController {
 	private readonly logger = new Logger(DocumentConverterController.name);
 

@@ -21,7 +21,7 @@ import {
 	SSE_TOKEN_TTL_MS,
 } from './document-converter.controller';
 
-@Controller('apps/document-converter')
+@Controller('organization/:orgId/apps/document-converter')
 export class DocumentConverterSseController {
 	private readonly logger = new Logger(DocumentConverterSseController.name);
 

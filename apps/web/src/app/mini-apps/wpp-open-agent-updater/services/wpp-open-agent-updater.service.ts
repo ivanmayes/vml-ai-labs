@@ -73,7 +73,7 @@ interface ApiResponse<T> {
 	providedIn: 'root',
 })
 export class WppOpenAgentUpdaterService {
-	private readonly apiUrl = `${environment.apiUrl}/apps/wpp-open-agent-updater`;
+	private readonly apiUrl = `${environment.apiUrl}/organization/${environment.organizationId}/apps/wpp-open-agent-updater`;
 
 	constructor(private readonly http: HttpClient) {}
 

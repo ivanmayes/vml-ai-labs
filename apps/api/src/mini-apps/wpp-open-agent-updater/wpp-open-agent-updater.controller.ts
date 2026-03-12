@@ -35,7 +35,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 @RequiresApp('wpp-open-agent-updater')
-@Controller('apps/wpp-open-agent-updater')
+@Controller('organization/:orgId/apps/wpp-open-agent-updater')
 @UseGuards(AuthGuard())
 export class WppOpenAgentUpdaterController {
 	constructor(

@@ -50,7 +50,7 @@ export interface DownloadResponse {
 @Injectable({ providedIn: 'root' })
 export class DocumentConverterService {
 	private readonly http = inject(HttpClient);
-	private readonly baseUrl = `${environment.apiUrl}/apps/document-converter`;
+	private readonly baseUrl = `${environment.apiUrl}/organization/${environment.organizationId}/apps/document-converter`;
 
 	uploadFile(
 		file: File,
