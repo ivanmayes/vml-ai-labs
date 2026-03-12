@@ -71,10 +71,10 @@ export const routes: Routes = [
 	// Mini Apps
 	{
 		path: 'apps',
-		canActivateChild: [appAccessGuard],
 		children: [
 			{
 				path: 'document-converter',
+				canActivate: [appAccessGuard],
 				loadChildren: () =>
 					import('./mini-apps/document-converter/document-converter.routes').then(
 						(m) => m.routes,
@@ -82,6 +82,7 @@ export const routes: Routes = [
 			},
 			{
 				path: 'wpp-open-agent-updater',
+				canActivate: [appAccessGuard],
 				loadChildren: () =>
 					import('./mini-apps/wpp-open-agent-updater/wpp-open-agent-updater.routes').then(
 						(m) => m.routes,

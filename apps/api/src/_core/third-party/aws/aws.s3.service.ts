@@ -77,10 +77,7 @@ export class AwsS3Service implements OnModuleInit {
 		this.bucketName =
 			process.env.AWS_S3_BUCKET || process.env.AWS_S3_BUCKET_NAME || '';
 		this.region =
-			process.env.AWS_S3_REGION ||
-			process.env.AWS_SES_REGION ||
-			process.env.AWS_REGION ||
-			'us-east-1';
+			process.env.AWS_S3_REGION || process.env.AWS_REGION || 'us-east-1';
 	}
 
 	onModuleInit() {
