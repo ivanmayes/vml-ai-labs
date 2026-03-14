@@ -11,12 +11,15 @@ import {
 	CONVERSION_QUEUE,
 	DEAD_LETTER_QUEUE,
 	AGENT_UPDATER_QUEUE,
+	SITE_SCRAPER_QUEUE,
+	SITE_SCRAPER_JOB_CONFIG,
 	getJobConfig,
 } from './pg-boss.config';
 import {
 	ConversionJobData,
 	DeadLetterData,
 	AgentUpdaterJobData,
+	SiteScraperJobData,
 } from './pg-boss.types';
 
 /**
@@ -125,6 +128,25 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
 			} else {
 				this.logger.warn(
 					`Could not create queue ${AGENT_UPDATER_QUEUE}:`,
+					error,
+				);
+			}
+		}
+
+		try {
+			await this.boss.createQueue(SITE_SCRAPER_QUEUE);
+			this.logger.log(`Queue created: ${SITE_SCRAPER_QUEUE}`);
+		} catch (error: unknown) {
+			if (
+				error instanceof Error &&
+				error.message.includes('already exists')
+			) {
+				this.logger.debug(
+					`Queue already exists: ${SITE_SCRAPER_QUEUE}`,
+				);
+			} else {
+				this.logger.warn(
+					`Could not create queue ${SITE_SCRAPER_QUEUE}:`,
 					error,
 				);
 			}
@@ -258,6 +280,50 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
 	): Promise<string> {
 		return this.boss.work<AgentUpdaterJobData>(
 			AGENT_UPDATER_QUEUE,
+			options || { batchSize: 1 },
+			handler,
+		);
+	}
+
+	/**
+	 * Send a site scraper job to the queue.
+	 */
+	async sendSiteScraperJob(data: SiteScraperJobData): Promise<string | null> {
+		this.logger.log(`Sending site scraper job to queue: job=${data.jobId}`);
+
+		try {
+			const pgBossJobId = await this.boss.send(SITE_SCRAPER_QUEUE, data, {
+				retryLimit: SITE_SCRAPER_JOB_CONFIG.retryLimit,
+				expireInSeconds: SITE_SCRAPER_JOB_CONFIG.expireInSeconds,
+				priority: SITE_SCRAPER_JOB_CONFIG.priority,
+				retryDelay: SITE_SCRAPER_JOB_CONFIG.retryDelay,
+				retryBackoff: SITE_SCRAPER_JOB_CONFIG.retryBackoff,
+			});
+
+			if (pgBossJobId) {
+				this.logger.log(
+					`Site scraper job queued with pg-boss ID: ${pgBossJobId}`,
+				);
+			}
+			return pgBossJobId;
+		} catch (error) {
+			this.logger.error(
+				`Failed to send site scraper job: ${data.jobId}`,
+				error,
+			);
+			throw error;
+		}
+	}
+
+	/**
+	 * Register a worker for the site scraper queue.
+	 */
+	async workSiteScraperQueue(
+		handler: (jobs: PgBoss.Job<SiteScraperJobData>[]) => Promise<void>,
+		options?: PgBoss.WorkOptions,
+	): Promise<string> {
+		return this.boss.work<SiteScraperJobData>(
+			SITE_SCRAPER_QUEUE,
 			options || { batchSize: 1 },
 			handler,
 		);

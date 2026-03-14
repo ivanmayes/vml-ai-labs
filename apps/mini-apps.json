@@ -17,6 +17,15 @@
       "defaultEnabled": true,
       "route": "/apps/wpp-open-agent-updater",
       "apiPrefix": "apps/wpp-open-agent-updater"
+    },
+    {
+      "key": "site-scraper",
+      "displayName": "Site Scraper",
+      "description": "Crawl, screenshot, and save HTML of website pages for client audits",
+      "icon": "pi pi-camera",
+      "defaultEnabled": true,
+      "route": "/apps/site-scraper",
+      "apiPrefix": "apps/site-scraper"
     }
   ]
 }

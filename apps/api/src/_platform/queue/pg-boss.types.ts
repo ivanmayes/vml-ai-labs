@@ -63,6 +63,18 @@ export interface AgentUpdaterJobData {
 }
 
 /**
+ * Job data interface for site scraper jobs.
+ */
+export interface SiteScraperJobData {
+	jobId: string;
+	url: string;
+	maxDepth: number;
+	viewports: number[];
+	userId: string;
+	organizationId: string;
+}
+
+/**
  * Dead letter queue data interface.
  */
 export interface DeadLetterData {

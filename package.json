@@ -33,6 +33,7 @@
     "postinstall": "cd apps/api && npm install && cd ../web && npm install"
   },
   "devDependencies": {
+    "@types/pdf-parse": "^1.1.5",
     "concurrently": "^8.2.2",
     "eslint": "^9.39.2",
     "husky": "^9.1.7",
@@ -58,6 +59,12 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "box-typescript-sdk-gen": "^1.19.1"
+    "@crawlee/playwright": "^3.16.0",
+    "@duckduckgo/autoconsent": "^14.59.0",
+    "box-typescript-sdk-gen": "^1.19.1",
+    "crawlee": "^3.16.0",
+    "playwright-core": "^1.58.2",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
 }

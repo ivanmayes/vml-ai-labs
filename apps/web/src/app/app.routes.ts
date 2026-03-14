@@ -88,6 +88,14 @@ export const routes: Routes = [
 						(m) => m.routes,
 					),
 			},
+			{
+				path: 'site-scraper',
+				canActivate: [appAccessGuard],
+				loadChildren: () =>
+					import('./mini-apps/site-scraper/site-scraper.routes').then(
+						(m) => m.routes,
+					),
+			},
 			// MINIAPP_ROUTES_REF
 		],
 	},

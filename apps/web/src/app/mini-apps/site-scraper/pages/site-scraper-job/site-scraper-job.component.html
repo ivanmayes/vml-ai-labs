@@ -1,0 +1,215 @@
+<p-toast />
+
+<div class="p-4">
+	<!-- Header -->
+	<div class="flex items-center gap-3 mb-4">
+		<p-button
+			icon="pi pi-arrow-left"
+			[text]="true"
+			[rounded]="true"
+			ariaLabel="Back to jobs"
+			(onClick)="goBack()"
+		/>
+		<div class="flex-1 min-w-0">
+			<h2 class="mt-0 mb-1 text-xl truncate">{{ job()?.url }}</h2>
+			<div class="flex items-center gap-3 flex-wrap">
+				@if (job(); as j) {
+					<p-tag
+						[value]="formatStatus(j.status)"
+						[severity]="getStatusSeverity(j.status)"
+					/>
+					<span class="text-sm text-[--p-text-muted-color]">
+						{{ j.pagesCompleted }} completed
+						@if (j.pagesFailed > 0) {
+							/ {{ j.pagesFailed }} failed
+						}
+						/ {{ j.pagesDiscovered }} discovered
+					</span>
+					<span class="text-sm text-[--p-text-muted-color]">
+						Depth: {{ j.maxDepth }}
+					</span>
+					@if (j.createdAt) {
+						<span class="text-sm text-[--p-text-muted-color]">
+							{{ j.createdAt | date: "medium" }}
+						</span>
+					}
+				}
+			</div>
+		</div>
+	</div>
+
+	<!-- Progress bar for running jobs -->
+	@if (job()?.status === "running") {
+		<div class="mb-4">
+			<p-progressBar [value]="getProgress()" [showValue]="true" />
+		</div>
+	}
+
+	<!-- Viewport Selector -->
+	@if (availableViewports().length > 0) {
+		<div class="flex items-center gap-3 mb-4">
+			<span class="font-medium text-sm">Viewport:</span>
+			<p-selectButton
+				[options]="availableViewports()"
+				[(ngModel)]="selectedViewport"
+				(ngModelChange)="onViewportChange()"
+				optionLabel="label"
+				optionValue="value"
+			/>
+		</div>
+	}
+
+	<!-- Loading state -->
+	@if (loadingPages()) {
+		<div class="flex justify-center p-8">
+			<p-progressSpinner strokeWidth="4" />
+		</div>
+	} @else if (completedPages().length === 0 && job()?.status !== "running") {
+		<!-- Empty state -->
+		<div class="text-center p-8 text-[--p-text-muted-color]">
+			<i class="pi pi-images text-4xl mb-3 block"></i>
+			<p>No completed pages to display.</p>
+		</div>
+	} @else {
+		<!-- Gallery Grid -->
+		<div
+			class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+		>
+			@for (page of completedPages(); track page.id) {
+				<div
+					class="rounded-lg overflow-hidden border border-[--p-surface-border] bg-[--p-surface-card] cursor-pointer hover:shadow-lg transition-shadow"
+					(click)="openViewer(page)"
+					(keydown.enter)="openViewer(page)"
+					tabindex="0"
+					role="button"
+					[attr.aria-label]="
+						'View screenshot of ' + (page.title || page.url)
+					"
+				>
+					<!-- Thumbnail -->
+					<div
+						class="relative bg-[--p-surface-ground] aspect-[4/3] overflow-hidden"
+					>
+						@if (thumbnailUrls()[page.id]) {
+							<img
+								[src]="thumbnailUrls()[page.id]"
+								[alt]="page.title || page.url"
+								loading="lazy"
+								class="w-full h-full object-cover object-top"
+								(error)="onImageError($event)"
+							/>
+						} @else {
+							<div
+								class="w-full h-full flex items-center justify-center"
+							>
+								<p-skeleton width="100%" height="100%" />
+							</div>
+						}
+						@if (page.status === "failed") {
+							<div
+								class="absolute inset-0 flex items-center justify-center bg-black/50"
+							>
+								<i
+									class="pi pi-exclamation-triangle text-2xl text-[--p-red-400]"
+								></i>
+							</div>
+						}
+					</div>
+
+					<!-- Page info -->
+					<div class="p-3">
+						<p
+							class="text-sm font-medium truncate m-0"
+							[title]="page.title || page.url"
+						>
+							{{ page.title || "Untitled" }}
+						</p>
+						<p
+							class="text-xs text-[--p-text-muted-color] truncate m-0 mt-1"
+							[title]="page.url"
+						>
+							{{ page.url }}
+						</p>
+					</div>
+				</div>
+			}
+
+			<!-- Skeleton cards for pages still loading -->
+			@for (i of pendingSkeletons(); track i) {
+				<div
+					class="rounded-lg overflow-hidden border border-[--p-surface-border] bg-[--p-surface-card]"
+				>
+					<div class="aspect-[4/3]">
+						<p-skeleton width="100%" height="100%" />
+					</div>
+					<div class="p-3">
+						<p-skeleton
+							width="80%"
+							height="1rem"
+							styleClass="mb-2"
+						/>
+						<p-skeleton width="60%" height="0.75rem" />
+					</div>
+				</div>
+			}
+		</div>
+	}
+</div>
+
+<!-- Screenshot Viewer Dialog -->
+<p-dialog
+	[(visible)]="viewerVisible"
+	[modal]="true"
+	[style]="{ width: '90vw', maxWidth: '1400px' }"
+	[maximizable]="true"
+	[header]="viewerPage()?.title || viewerPage()?.url || 'Screenshot'"
+	[dismissableMask]="true"
+>
+	@if (viewerPage(); as page) {
+		<div class="flex flex-col gap-4">
+			<!-- Full-size screenshot -->
+			<div
+				class="bg-[--p-surface-ground] rounded overflow-auto max-h-[70vh]"
+			>
+				@if (viewerImageUrl()) {
+					<img
+						[src]="viewerImageUrl()"
+						[alt]="page.title || page.url"
+						class="w-full"
+					/>
+				} @else {
+					<div class="flex justify-center p-8">
+						<p-progressSpinner strokeWidth="4" />
+					</div>
+				}
+			</div>
+
+			<!-- Page details + actions -->
+			<div class="flex items-center justify-between flex-wrap gap-3">
+				<div class="min-w-0 flex-1">
+					<p class="m-0 text-sm text-[--p-text-muted-color] truncate">
+						{{ page.url }}
+					</p>
+				</div>
+				<div class="flex gap-2">
+					<p-button
+						icon="pi pi-external-link"
+						label="Open URL"
+						[outlined]="true"
+						size="small"
+						(onClick)="openPageUrl(page.url)"
+					/>
+					@if (page.htmlS3Key) {
+						<p-button
+							icon="pi pi-code"
+							label="View HTML"
+							[outlined]="true"
+							size="small"
+							(onClick)="downloadHtml(page)"
+						/>
+					}
+				</div>
+			</div>
+		</div>
+	}
+</p-dialog>

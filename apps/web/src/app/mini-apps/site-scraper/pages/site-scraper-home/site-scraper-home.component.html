@@ -1,0 +1,237 @@
+<p-toast />
+<div class="p-4">
+	<h2 class="mt-0 mb-1">Site Scraper</h2>
+	<p class="text-[--p-text-muted-color] mb-4">
+		Crawl, screenshot, and save HTML of website pages for client audits.
+	</p>
+
+	<!-- New Scrape Form -->
+	<p-card>
+		<ng-template #header>
+			<div class="px-4 pt-4 pb-0">
+				<h3 class="m-0 text-lg font-semibold">New Scrape Job</h3>
+			</div>
+		</ng-template>
+
+		<form (ngSubmit)="submitJob()" class="flex flex-col gap-4">
+			<!-- URL Input -->
+			<div class="flex flex-col gap-2">
+				<label for="scrapeUrl" class="font-medium">Website URL</label>
+				<input
+					pInputText
+					id="scrapeUrl"
+					type="url"
+					placeholder="https://example.com"
+					[(ngModel)]="formUrl"
+					name="url"
+					required
+					class="w-full"
+				/>
+			</div>
+
+			<!-- Depth and Viewports Row -->
+			<div class="flex flex-col md:flex-row gap-4">
+				<!-- Depth -->
+				<div class="flex flex-col gap-2">
+					<label for="maxDepth" class="font-medium"
+						>Crawl Depth</label
+					>
+					<p-select
+						id="maxDepth"
+						[options]="depthOptions"
+						[(ngModel)]="formDepth"
+						name="maxDepth"
+						optionLabel="label"
+						optionValue="value"
+						placeholder="Select depth"
+						class="w-full md:w-40"
+					/>
+				</div>
+
+				<!-- Viewports -->
+				<div class="flex flex-col gap-2 flex-1">
+					<label class="font-medium" for="viewports-select"
+						>Viewports (px)</label
+					>
+					<p-selectButton
+						id="viewports-select"
+						[options]="viewportOptions"
+						[(ngModel)]="formViewports"
+						name="viewports"
+						optionLabel="label"
+						optionValue="value"
+						[multiple]="true"
+					/>
+				</div>
+			</div>
+
+			<!-- Submit -->
+			<div class="flex justify-end">
+				<p-button
+					type="submit"
+					label="Start Scrape"
+					icon="pi pi-play"
+					[disabled]="isSubmitting() || !formUrl"
+					[loading]="isSubmitting()"
+				/>
+			</div>
+		</form>
+	</p-card>
+
+	<!-- Job List -->
+	<div class="mt-6">
+		<div class="flex justify-between items-center mb-3">
+			<h3 class="m-0">Scrape Jobs</h3>
+			<div class="flex items-center gap-2">
+				@if (sseService.connectionStatus() === "connected") {
+					<p-tag
+						value="Live"
+						severity="success"
+						icon="pi pi-circle-fill"
+					/>
+				} @else if (sseService.connectionStatus() === "connecting") {
+					<p-tag
+						value="Connecting..."
+						severity="warn"
+						icon="pi pi-spin pi-spinner"
+					/>
+				}
+				<p-button
+					icon="pi pi-refresh"
+					label="Refresh"
+					[text]="true"
+					(onClick)="loadJobs()"
+				/>
+			</div>
+		</div>
+
+		@if (loading()) {
+			<div class="flex justify-center p-4">
+				<p-progressSpinner strokeWidth="4" />
+			</div>
+		} @else {
+			<p-table
+				[value]="jobs()"
+				[paginator]="true"
+				[rows]="10"
+				styleClass="p-datatable-sm"
+				selectionMode="single"
+				(onRowSelect)="onRowSelect($event)"
+				[rowHover]="true"
+			>
+				<ng-template pTemplate="header">
+					<tr>
+						<th>URL</th>
+						<th style="width: 10rem">Status</th>
+						<th style="width: 10rem">Progress</th>
+						<th style="width: 9rem">Created</th>
+						<th style="width: 6rem">Actions</th>
+					</tr>
+				</ng-template>
+				<ng-template pTemplate="body" let-job>
+					<tr [pSelectableRow]="job" class="cursor-pointer">
+						<td
+							class="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap"
+						>
+							{{ job.url }}
+						</td>
+						<td>
+							<p-tag
+								[value]="formatStatus(job.status)"
+								[severity]="getStatusSeverity(job.status)"
+							/>
+						</td>
+						<td>
+							@if (job.status === "running") {
+								<p-progressBar
+									[value]="getProgress(job)"
+									[showValue]="false"
+									styleClass="h-1.5"
+								/>
+								<span
+									class="text-xs text-[--p-text-muted-color]"
+								>
+									{{ job.pagesCompleted }}/{{
+										job.pagesDiscovered
+									}}
+									pages
+								</span>
+							} @else {
+								<span class="text-sm">
+									{{ job.pagesCompleted }}/{{
+										job.pagesDiscovered
+									}}
+									pages
+								</span>
+							}
+						</td>
+						<td class="text-sm">
+							{{ job.createdAt | date: "short" }}
+						</td>
+						<td>
+							<div
+								class="flex gap-1"
+								role="group"
+								tabindex="0"
+								(click)="$event.stopPropagation()"
+								(keydown.enter)="$event.stopPropagation()"
+							>
+								@if (
+									job.status === "completed" ||
+									job.status === "completed_with_errors"
+								) {
+									<p-button
+										icon="pi pi-eye"
+										[text]="true"
+										size="small"
+										ariaLabel="View job details"
+										(onClick)="viewJob(job)"
+									/>
+								}
+								@if (
+									job.status === "pending" ||
+									job.status === "running"
+								) {
+									<p-button
+										icon="pi pi-times"
+										[text]="true"
+										severity="danger"
+										size="small"
+										ariaLabel="Cancel scrape job"
+										(onClick)="cancelJob(job)"
+									/>
+								}
+								@if (
+									job.status === "completed" ||
+									job.status === "completed_with_errors" ||
+									job.status === "failed" ||
+									job.status === "cancelled"
+								) {
+									<p-button
+										icon="pi pi-trash"
+										[text]="true"
+										severity="danger"
+										size="small"
+										ariaLabel="Delete scrape job"
+										(onClick)="deleteJob(job)"
+									/>
+								}
+							</div>
+						</td>
+					</tr>
+				</ng-template>
+				<ng-template pTemplate="emptymessage">
+					<tr>
+						<td
+							colspan="5"
+							class="text-center text-[--p-text-muted-color] p-8"
+						>
+							<i class="pi pi-globe text-4xl mb-3 block"></i>
+							No scrape jobs yet. Create one above to get started.
+						</td>
+					</tr>
+				</ng-template>
+			</p-table>
+		}
+	</div>
+</div>

@@ -96,6 +96,19 @@ export function getJobConfig(fileExtension: string): JobConfig {
 export const CONVERSION_QUEUE = 'document-conversion';
 export const DEAD_LETTER_QUEUE = 'document-conversion-dlq';
 export const AGENT_UPDATER_QUEUE = 'agent-updater-run';
+export const SITE_SCRAPER_QUEUE = 'site-scraper';
+
+/**
+ * Site scraper job configuration.
+ * Longer timeout for deep crawls with retry backoff.
+ */
+export const SITE_SCRAPER_JOB_CONFIG: JobConfig = {
+	retryLimit: 2,
+	expireInSeconds: 1800, // 30 minutes for long crawls
+	priority: 1,
+	retryDelay: 30,
+	retryBackoff: true,
+};
 
 /**
  * Worker configuration constants.

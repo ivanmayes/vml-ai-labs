@@ -87,6 +87,10 @@ async function bootstrap() {
 		SwaggerModule.setup('api', app, document);
 	}
 
+	// Enable shutdown hooks so NestJS lifecycle hooks (onModuleDestroy) fire on SIGTERM
+	// Required for graceful cleanup of browser processes and active queue jobs
+	app.enableShutdownHooks();
+
 	await app.listen(process.env.PORT || 8001);
 }
 
