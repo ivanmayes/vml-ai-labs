@@ -28,7 +28,7 @@
 		"test:cov": "jest --coverage",
 		"test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
 		"test:e2e": "jest --config ./test/jest-e2e.json",
-		"heroku-postbuild": "npx playwright install chromium",
+		"heroku-postbuild": "./node_modules/.bin/playwright-core install chromium",
 		"useEnv:local": "node ./tools/use-env.js local",
 		"useEnv:dev": "node ./tools/use-env.js dev",
 		"useEnv:prod": "node ./tools/use-env.js prod"
