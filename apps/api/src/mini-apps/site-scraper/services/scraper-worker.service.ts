@@ -48,7 +48,7 @@ import { ScraperSseService } from './scraper-sse.service';
 
 /** Path to the autoconsent Playwright injection script */
 const AUTOCONSENT_SCRIPT = path.join(
-	require.resolve('@duckduckgo/autoconsent/package.json'),
+	path.dirname(require.resolve('@duckduckgo/autoconsent/rules/rules.json')),
 	'../dist/autoconsent.playwright.js',
 );
 
