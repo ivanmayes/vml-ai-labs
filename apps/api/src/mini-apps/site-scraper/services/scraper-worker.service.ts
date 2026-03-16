@@ -93,6 +93,9 @@ const COOKIE_DISMISS_SELECTORS = [
 	'#onetrust-accept-btn-handler',
 	'.cc-dismiss',
 	'.cc-accept',
+	// CookieReports CMP (used by AstraZeneca/pharma sites)
+	'#CookieReportsBannerAZ .wscrOk',
+	'.wscrOk',
 ];
 
 /** Private/reserved IP ranges for SSRF protection */
@@ -904,22 +907,25 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 
 	/**
 	 * Attempt to dismiss cookie consent dialogs using common CSS selectors.
+	 * Uses JS .click() instead of Playwright .click() because some CMPs
+	 * (e.g., CookieReports) only respond to DOM click events.
 	 */
 	private async dismissCookies(page: any): Promise<void> {
-		for (const selector of COOKIE_DISMISS_SELECTORS) {
-			try {
-				const button = await page.$(selector);
-				if (button) {
-					await button.click().catch(() => {
-						// Ignore click errors
-					});
-					// Brief wait after clicking
-					await page.waitForTimeout(300);
-					return; // Found and clicked a button, stop trying
+		const dismissed = await page.evaluate((selectors: string[]) => {
+			for (const selector of selectors) {
+				const el = document.querySelector(
+					selector,
+				) as HTMLElement | null;
+				if (el && el.offsetParent !== null) {
+					el.click();
+					return true;
 				}
-			} catch {
-				// Selector not found, try next one
 			}
+			return false;
+		}, COOKIE_DISMISS_SELECTORS);
+
+		if (dismissed) {
+			await page.waitForTimeout(300);
 		}
 	}
 
