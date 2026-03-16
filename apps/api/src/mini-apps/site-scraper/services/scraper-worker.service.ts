@@ -19,6 +19,7 @@
  */
 import { isIP } from 'net';
 import { lookup } from 'dns/promises';
+import * as path from 'path';
 
 import {
 	Injectable,
@@ -44,6 +45,36 @@ import {
 	SavePageResultInput,
 } from './site-scraper.service';
 import { ScraperSseService } from './scraper-sse.service';
+
+/** Path to the autoconsent Playwright injection script */
+const AUTOCONSENT_SCRIPT = path.join(
+	require.resolve('@duckduckgo/autoconsent/package.json'),
+	'../dist/autoconsent.playwright.js',
+);
+
+/** File extensions that trigger downloads instead of page navigation */
+const DOWNLOAD_EXTENSIONS = new Set([
+	'.pdf',
+	'.zip',
+	'.tar',
+	'.gz',
+	'.rar',
+	'.7z',
+	'.exe',
+	'.dmg',
+	'.iso',
+	'.doc',
+	'.docx',
+	'.xls',
+	'.xlsx',
+	'.ppt',
+	'.pptx',
+	'.mp3',
+	'.mp4',
+	'.avi',
+	'.mov',
+	'.wmv',
+]);
 
 /** Common CSS selectors for cookie consent dialogs */
 const COOKIE_DISMISS_SELECTORS = [
@@ -264,7 +295,9 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 
 					postNavigationHooks: [
 						async ({ page }) => {
-							// Attempt to dismiss cookie consent dialogs
+							// Give autoconsent time to detect and dismiss popups
+							await page.waitForTimeout(1000);
+							// Fallback: try manual selectors for any remaining popups
 							await this.dismissCookies(page);
 						},
 					],
@@ -275,6 +308,14 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 						enqueueLinks,
 						log,
 					}) => {
+						// Skip download URLs (navigation was already skipped in preNavigationHooks)
+						if (request.skipNavigation) {
+							log.info(
+								`Skipped non-HTML resource: ${request.url}`,
+							);
+							return;
+						}
+
 						// Check for cancellation
 						if (abortController.signal.aborted) {
 							log.info(
@@ -569,6 +610,23 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 					},
 
 					preNavigationHooks: [
+						async ({ request, log }) => {
+							// Skip URLs that trigger downloads (PDFs, ZIPs, etc.)
+							const urlPath = new URL(request.url).pathname;
+							const ext = path.extname(urlPath).toLowerCase();
+							if (ext && DOWNLOAD_EXTENSIONS.has(ext)) {
+								log.info(
+									`Skipping download URL: ${request.url}`,
+								);
+								request.skipNavigation = true;
+							}
+						},
+						async ({ page }) => {
+							// Inject autoconsent script to auto-dismiss cookie/privacy popups
+							await page.addInitScript({
+								path: AUTOCONSENT_SCRIPT,
+							});
+						},
 						async ({ page }) => {
 							// SSRF protection: intercept all requests and block private IPs
 							await page.route('**/*', async (route: any) => {
