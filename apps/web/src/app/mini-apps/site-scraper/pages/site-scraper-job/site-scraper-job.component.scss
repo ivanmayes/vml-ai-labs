@@ -1,3 +1,144 @@
 :host {
 	display: block;
 }
+
+.job-header {
+	background: var(--p-surface-card);
+	border: 1px solid var(--p-surface-border);
+	border-radius: 12px;
+	padding: 1.25rem 1.5rem;
+	margin-bottom: 1.5rem;
+	box-shadow:
+		0 1px 3px rgb(0 0 0 / 6%),
+		0 2px 8px rgb(0 0 0 / 4%);
+}
+
+.job-url {
+	font-size: 1.35rem;
+	font-weight: 600;
+	color: var(--p-text-color);
+	margin: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.job-url-icon {
+	font-size: 1.25rem;
+	color: var(--p-primary-color);
+}
+
+// Stat tiles
+.stat-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0.75rem;
+
+	@media (width <= 640px) {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+.stat-tile {
+	background: var(--p-surface-ground);
+	border-radius: 8px;
+	padding: 0.875rem 1rem;
+	border-left: 3px solid var(--p-surface-border);
+	transition:
+		transform 0.15s ease,
+		box-shadow 0.15s ease;
+
+	&:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+	}
+
+	&--completed {
+		border-left-color: var(--p-green-500);
+	}
+
+	&--failed {
+		border-left-color: var(--p-red-500);
+	}
+
+	&--depth {
+		border-left-color: var(--p-surface-400);
+	}
+
+	&--muted {
+		border-left-color: var(--p-surface-400);
+	}
+
+	&--in-queue {
+		border-left-color: var(--p-blue-500);
+	}
+
+	&--beyond-depth {
+		border-left-color: var(--p-yellow-500);
+	}
+}
+
+.stat-value {
+	font-size: 1.5rem;
+	font-weight: 700;
+	line-height: 1;
+	color: var(--p-text-color);
+}
+
+.stat-label {
+	font-size: 0.75rem;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--p-text-muted-color);
+	margin-top: 0.25rem;
+}
+
+// Pulsing dot for running status
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.4;
+	}
+}
+
+.status-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--p-blue-500);
+	animation: pulse 1.5s ease-in-out infinite;
+}
+
+// Completion summary
+.completion-summary {
+	margin-top: 0.75rem;
+	font-size: 0.875rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--p-text-muted-color);
+
+	&--success {
+		color: var(--p-green-500);
+	}
+
+	&--warn {
+		color: var(--p-yellow-500);
+	}
+}
+
+.completion-beyond-depth {
+	color: var(--p-text-muted-color);
+}
+
+// Progress bar section
+.header-progress {
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--p-surface-border);
+}

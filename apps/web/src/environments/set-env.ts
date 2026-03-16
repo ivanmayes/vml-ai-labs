@@ -73,7 +73,10 @@ function getAPISettingsVars() {
 			vars += `\twppOpenParentOrigin: ${wppOpenParentOrigin},\n`;
 
 			const wppOpenDebug = `'${map['localhost']?.[0].wppOpenDebug || ''}'`;
-			vars += `\twppOpenDebug: ${wppOpenDebug}\n`;
+			vars += `\twppOpenDebug: ${wppOpenDebug},\n`;
+
+			const devAutoLogin = process.env.DEV_AUTO_LOGIN === 'true';
+			vars += `\tdevAutoLogin: ${devAutoLogin}\n`;
 
 			return vars;
 		} else {
@@ -88,7 +91,8 @@ function getAPISettingsVars() {
 			production: (window as any)['production'],
 			locale: (window as any)['locale'],
 			wppOpenParentOrigin: (window as any)['wppOpenParentOrigin'],
-			wppOpenDebug: (window as any)['wppOpenDebug']
+			wppOpenDebug: (window as any)['wppOpenDebug'],
+			devAutoLogin: false
 		`;
 	}
 }

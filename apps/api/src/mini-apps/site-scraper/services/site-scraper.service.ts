@@ -20,13 +20,17 @@ import {
 	FindOptions,
 	ResponseStatus,
 } from '../../../_platform/models';
-import { JobNotFoundError } from '../../../_platform/errors/domain.errors';
+import {
+	JobNotFoundError,
+	InvalidStatusTransitionError,
+} from '../../../_platform/errors/domain.errors';
 import { ScrapeJob } from '../entities/scrape-job.entity';
 import { ScrapedPage, ScreenshotRecord } from '../entities/scraped-page.entity';
 import {
 	JobStatus,
 	PageStatus,
 	isTerminalStatus,
+	isRetryableStatus,
 } from '../types/job-status.enum';
 import { ScrapeError } from '../types/scrape-error.types';
 
@@ -80,6 +84,7 @@ export class SiteScraperService {
 			userId,
 			organizationId: orgId,
 			status: JobStatus.PENDING,
+			pagesDiscovered: 1, // seed URL counts as discovered
 		});
 
 		const savedJob = await this.jobRepository.save(job);
@@ -420,6 +425,26 @@ export class SiteScraperService {
 	}
 
 	/**
+	 * Atomically increment the pagesSkippedByDepth counter.
+	 *
+	 * @param jobId - Job UUID
+	 * @param count - Number of beyond-depth links found
+	 */
+	async incrementPagesSkippedByDepth(
+		jobId: string,
+		count: number,
+	): Promise<void> {
+		await this.jobRepository
+			.createQueryBuilder()
+			.update(ScrapeJob)
+			.set({
+				pagesSkippedByDepth: () => `"pagesSkippedByDepth" + ${count}`,
+			})
+			.where('id = :jobId', { jobId })
+			.execute();
+	}
+
+	/**
 	 * Delete a job and clean up associated S3 files.
 	 * Collects all S3 keys from pages, deletes them in batches of 1000,
 	 * then deletes the job (CASCADE deletes pages).
@@ -486,5 +511,124 @@ export class SiteScraperService {
 			select: ['id', 'status'],
 		});
 		return job?.status === JobStatus.CANCELLED;
+	}
+
+	/**
+	 * Retry a failed/errored/cancelled job.
+	 * Cleans up failed pages and their S3 artifacts, resets counters,
+	 * transitions back to PENDING, and re-queues for processing.
+	 *
+	 * @param jobId - Job UUID
+	 * @param orgId - Organization ID for authorization
+	 * @param userId - User ID for authorization and re-queuing
+	 * @returns Updated job entity
+	 * @throws JobNotFoundError if job doesn't exist or user lacks access
+	 * @throws InvalidStatusTransitionError if job is not in a retryable status
+	 */
+	async retryJob(
+		jobId: string,
+		orgId: string,
+		userId: string,
+	): Promise<ScrapeJob> {
+		const job = await this.jobRepository.findOne({
+			where: { id: jobId, organizationId: orgId, userId },
+		});
+
+		if (!job) {
+			throw new JobNotFoundError();
+		}
+
+		if (!isRetryableStatus(job.status)) {
+			throw new InvalidStatusTransitionError(
+				`Cannot retry job in ${job.status} status`,
+			);
+		}
+
+		// Find failed pages and clean up their S3 artifacts
+		const failedPages = await this.pageRepository.find({
+			where: { scrapeJobId: jobId, status: PageStatus.FAILED },
+			select: ['id', 'htmlS3Key', 'screenshots'],
+		});
+
+		if (failedPages.length > 0) {
+			const keysToDelete: string[] = [];
+			for (const page of failedPages) {
+				if (page.htmlS3Key) {
+					keysToDelete.push(page.htmlS3Key);
+				}
+				if (page.screenshots?.length) {
+					for (const screenshot of page.screenshots) {
+						keysToDelete.push(screenshot.s3Key);
+					}
+				}
+			}
+
+			if (keysToDelete.length > 0) {
+				try {
+					await this.s3Service.deleteMany(keysToDelete);
+				} catch (error) {
+					this.logger.error(
+						`Failed to delete S3 files for failed pages of job ${jobId}`,
+						error,
+					);
+				}
+			}
+
+			// Delete failed page rows
+			const failedPageIds = failedPages.map((p) => p.id);
+			await this.pageRepository.delete(failedPageIds);
+		}
+
+		// Count remaining completed pages
+		const completedCount = await this.pageRepository.count({
+			where: { scrapeJobId: jobId, status: PageStatus.COMPLETED },
+		});
+
+		// Reset job counters
+		job.pagesCompleted = completedCount;
+		job.pagesFailed = 0;
+		job.pagesDiscovered = completedCount;
+		job.pagesSkippedByDepth = 0;
+		job.error = null;
+		job.completedAt = null as any;
+		job.startedAt = null as any;
+
+		// Transition back to PENDING
+		job.transitionTo(JobStatus.PENDING);
+		const savedJob = await this.jobRepository.save(job);
+
+		// Re-queue to pg-boss
+		const jobData: SiteScraperJobData = {
+			jobId: savedJob.id,
+			url: savedJob.url,
+			maxDepth: savedJob.maxDepth,
+			viewports: savedJob.viewports,
+			userId,
+			organizationId: orgId,
+		};
+
+		await this.pgBossService.sendSiteScraperJob(jobData);
+
+		this.logger.log(
+			`Retried job ${jobId} with ${completedCount} existing completed pages`,
+		);
+
+		return savedJob;
+	}
+
+	/**
+	 * Get URLs of all completed pages for a job.
+	 * Used by the worker to skip already-completed pages on retry.
+	 *
+	 * @param jobId - Job UUID
+	 * @returns Array of completed page URLs
+	 */
+	async getCompletedPageUrls(jobId: string): Promise<string[]> {
+		const pages = await this.pageRepository.find({
+			where: { scrapeJobId: jobId, status: PageStatus.COMPLETED },
+			select: ['url'],
+		});
+
+		return pages.map((p) => p.url);
 	}
 }

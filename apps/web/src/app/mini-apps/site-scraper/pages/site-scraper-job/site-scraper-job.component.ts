@@ -19,6 +19,9 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { SkeletonModule } from 'primeng/skeleton';
 import { DialogModule } from 'primeng/dialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { PopoverModule } from 'primeng/popover';
+import { CheckboxModule } from 'primeng/checkbox';
 import { MessageService } from 'primeng/api';
 
 import {
@@ -42,6 +45,9 @@ import { SiteScraperSseService } from '../../services/site-scraper-sse.service';
 		SelectButtonModule,
 		SkeletonModule,
 		DialogModule,
+		TooltipModule,
+		PopoverModule,
+		CheckboxModule,
 	],
 	providers: [MessageService, SiteScraperSseService],
 	templateUrl: './site-scraper-job.component.html',
@@ -65,6 +71,14 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 	thumbnailUrls = signal<Record<string, string>>({});
 	selectedViewport = 1920;
 
+	// Download state
+	downloading = signal(false);
+	downloadFormats = signal<Record<string, boolean>>({
+		html: true,
+		markdown: true,
+		screenshots: true,
+	});
+
 	// Viewer state
 	viewerVisible = false;
 	viewerPage = signal<ScrapedPage | null>(null);
@@ -79,6 +93,31 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 		const j = this.job();
 		if (!j?.viewports?.length) return [];
 		return j.viewports.map((v) => ({ label: `${v}px`, value: v }));
+	});
+
+	pagesInQueue = computed(() => {
+		const j = this.job();
+		if (!j) return 0;
+		return Math.max(
+			0,
+			j.pagesDiscovered - j.pagesCompleted - j.pagesFailed,
+		);
+	});
+
+	isFullyCaptured = computed(() => {
+		const j = this.job();
+		if (!j) return false;
+		return j.pagesFailed === 0 && this.pagesInQueue() === 0;
+	});
+
+	canDownload = computed(() => {
+		const j = this.job();
+		if (!j) return false;
+		return (
+			j.pagesCompleted > 0 &&
+			j.status !== 'pending' &&
+			j.status !== 'running'
+		);
 	});
 
 	pendingSkeletons = computed(() => {
@@ -119,6 +158,41 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 		this.sseService.disconnect();
 	}
 
+	retryJob(): void {
+		this.scraperService
+			.retryJob(this.jobId)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (res) => {
+					this.job.set(res.data);
+					this.sseService.disconnect();
+					this.sseService.connect();
+					this.loadPages();
+					this.messageService.add({
+						severity: 'success',
+						summary: 'Retrying',
+						detail: 'Job re-queued for processing',
+					});
+				},
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Could not retry job',
+					});
+				},
+			});
+	}
+
+	isRetryable(): boolean {
+		const status = this.job()?.status;
+		return (
+			status === 'failed' ||
+			status === 'completed_with_errors' ||
+			status === 'cancelled'
+		);
+	}
+
 	goBack(): void {
 		this.router.navigate(['/apps/site-scraper']);
 	}
@@ -151,16 +225,29 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 
 	loadPages(): void {
 		this.loadingPages.set(true);
+		this.fetchAllPages(1, []);
+	}
+
+	private fetchAllPages(page: number, accumulated: ScrapedPage[]): void {
 		this.scraperService
-			.getPages(this.jobId)
+			.getPages(this.jobId, page, 100)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					this.pages.set(res.data || []);
-					this.loadingPages.set(false);
-					this.loadThumbnails();
+					const all = [...accumulated, ...(res.data?.results || [])];
+					if (page < res.data.numPages) {
+						this.fetchAllPages(page + 1, all);
+					} else {
+						this.pages.set(all);
+						this.loadingPages.set(false);
+						this.loadThumbnails();
+					}
 				},
 				error: () => {
+					// Set whatever we've accumulated so far
+					if (accumulated.length > 0) {
+						this.pages.set(accumulated);
+					}
 					this.loadingPages.set(false);
 				},
 			});
@@ -178,22 +265,33 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 	}
 
 	private refreshPages(): void {
+		this.refreshAllPages(1, []);
+	}
+
+	private refreshAllPages(page: number, accumulated: ScrapedPage[]): void {
 		this.scraperService
-			.getPages(this.jobId)
+			.getPages(this.jobId, page, 100)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					const newPages = res.data || [];
-					const currentIds = new Set(this.pages().map((p) => p.id));
-					this.pages.set(newPages);
+					const all = [...accumulated, ...(res.data?.results || [])];
+					if (page < res.data.numPages) {
+						this.refreshAllPages(page + 1, all);
+					} else {
+						const currentIds = new Set(
+							this.pages().map((p) => p.id),
+						);
+						this.pages.set(all);
 
-					// Load thumbnails for any new pages
-					const brandNew = newPages.filter(
-						(p) =>
-							!currentIds.has(p.id) && p.status === 'completed',
-					);
-					if (brandNew.length > 0) {
-						this.loadThumbnailsForPages(brandNew);
+						// Load thumbnails for any new pages
+						const hasNew = all.some(
+							(p) =>
+								!currentIds.has(p.id) &&
+								p.status === 'completed',
+						);
+						if (hasNew) {
+							this.loadThumbnailsForPages();
+						}
 					}
 				},
 			});
@@ -213,42 +311,27 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 	private loadThumbnails(): void {
 		const completed = this.completedPages();
 		if (completed.length === 0) return;
-		this.loadThumbnailsForPages(completed);
+		this.loadThumbnailsForPages();
 	}
 
-	private loadThumbnailsForPages(pagesToLoad: ScrapedPage[]): void {
-		// Collect s3Keys for the selected viewport from the completed pages
-		const s3Keys: string[] = [];
-		const keyToPageId: Record<string, string> = {};
-
-		for (const page of pagesToLoad) {
-			const screenshot = page.screenshots.find(
-				(s) => s.viewport === this.selectedViewport,
-			);
-			if (screenshot?.s3Key) {
-				s3Keys.push(screenshot.s3Key);
-				keyToPageId[screenshot.s3Key] = page.id;
-			}
-		}
-
-		if (s3Keys.length === 0) return;
-
+	private loadThumbnailsForPages(page = 1): void {
 		this.scraperService
-			.getBatchPresignedUrls(this.jobId, s3Keys)
+			.getBatchPresignedUrls(this.jobId, this.selectedViewport, page, 50)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					const urls = res.data?.urls || {};
 					const current = { ...this.thumbnailUrls() };
-
-					for (const [key, url] of Object.entries(urls)) {
-						const pageId = keyToPageId[key];
-						if (pageId) {
-							current[pageId] = url;
+					for (const item of res.data?.urls || []) {
+						if (item.presignedUrl) {
+							current[item.pageId] = item.presignedUrl;
 						}
 					}
-
 					this.thumbnailUrls.set(current);
+
+					// Fetch next page if more results
+					if (page < res.data.numPages) {
+						this.loadThumbnailsForPages(page + 1);
+					}
 				},
 			});
 	}
@@ -262,20 +345,13 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 	private loadViewerImage(page: ScrapedPage): void {
 		this.viewerImageUrl.set('');
 
-		// Try to use already-loaded thumbnail URL first
-		const existingUrl = this.thumbnailUrls()[page.id];
-		if (existingUrl) {
-			this.viewerImageUrl.set(existingUrl);
-			return;
-		}
-
-		// Otherwise fetch a fresh presigned URL
+		// Always fetch full-res URL for the viewer (not thumbnails)
 		this.scraperService
-			.getScreenshotUrl(this.jobId, page.id, this.selectedViewport)
+			.getScreenshotUrl(page.id, this.selectedViewport)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					this.viewerImageUrl.set(res.data.url);
+					this.viewerImageUrl.set(res.data.presignedUrl);
 				},
 				error: () => {
 					this.messageService.add({
@@ -293,11 +369,11 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 
 	downloadHtml(page: ScrapedPage): void {
 		this.scraperService
-			.getHtmlUrl(this.jobId, page.id)
+			.getHtmlUrl(page.id)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					window.open(res.data.url, '_blank');
+					window.open(res.data.presignedUrl, '_blank');
 				},
 				error: () => {
 					this.messageService.add({
@@ -307,6 +383,57 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 					});
 				},
 			});
+	}
+
+	startDownload(): void {
+		const formats = Object.entries(this.downloadFormats())
+			.filter(([, enabled]) => enabled)
+			.map(([format]) => format);
+
+		if (formats.length === 0) return;
+
+		this.downloading.set(true);
+		this.scraperService
+			.getDownloadToken(this.jobId)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (res) => {
+					const url = this.scraperService.getDownloadUrl(
+						this.jobId,
+						res.data.token,
+						formats,
+					);
+					// Use hidden iframe to trigger download without navigating away
+					// (Content-Disposition: attachment ensures browser downloads, not navigates)
+					const iframe = document.createElement('iframe');
+					iframe.style.display = 'none';
+					iframe.src = url;
+					document.body.appendChild(iframe);
+					setTimeout(() => {
+						document.body.removeChild(iframe);
+						this.downloading.set(false);
+					}, 5000);
+				},
+				error: () => {
+					this.downloading.set(false);
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Could not initiate download',
+					});
+				},
+			});
+	}
+
+	hasSelectedFormats(): boolean {
+		return Object.values(this.downloadFormats()).some((v) => v);
+	}
+
+	toggleFormat(format: string): void {
+		this.downloadFormats.update((current) => ({
+			...current,
+			[format]: !current[format],
+		}));
 	}
 
 	onImageError(event: Event): void {
@@ -394,6 +521,8 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 									pagesCompleted: event.pagesCompleted,
 									pagesFailed: event.pagesFailed,
 									pagesDiscovered: event.pagesDiscovered,
+									pagesSkippedByDepth:
+										event.pagesSkippedByDepth,
 								}
 							: j,
 					);

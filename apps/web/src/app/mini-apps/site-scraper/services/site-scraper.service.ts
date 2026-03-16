@@ -24,6 +24,7 @@ export interface ScrapeError {
 export interface ScreenshotRecord {
 	viewport: number;
 	s3Key: string;
+	thumbnailS3Key?: string;
 }
 
 export interface ScrapeJob {
@@ -35,6 +36,7 @@ export interface ScrapeJob {
 	pagesDiscovered: number;
 	pagesCompleted: number;
 	pagesFailed: number;
+	pagesSkippedByDepth: number;
 	error?: ScrapeError;
 	createdAt: string;
 	startedAt?: string;
@@ -55,18 +57,31 @@ export interface ScrapedPage {
 }
 
 export interface JobListResponse {
-	data: ScrapeJob[];
-	meta: { total: number; limit: number; offset: number; hasMore: boolean };
+	page: number;
+	perPage: number;
+	numPages: number;
+	totalResults: number;
+	results: ScrapeJob[];
 }
 
 export interface PresignedUrlResponse {
+	presignedUrl: string;
+}
+
+export interface BatchPresignedUrlItem {
+	pageId: string;
 	url: string;
-	expiresIn: number;
+	title: string | null;
+	presignedUrl: string | null;
 }
 
 export interface BatchPresignedUrlResponse {
-	urls: Record<string, string>;
-	expiresIn: number;
+	viewport: number;
+	page: number;
+	pageSize: number;
+	totalResults: number;
+	numPages: number;
+	urls: BatchPresignedUrlItem[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -80,7 +95,7 @@ export class SiteScraperService {
 		viewports?: number[];
 	}): Observable<{ status: string; data: ScrapeJob }> {
 		return this.http.post<{ status: string; data: ScrapeJob }>(
-			this.baseUrl,
+			`${this.baseUrl}/jobs`,
 			data,
 		);
 	}
@@ -102,6 +117,13 @@ export class SiteScraperService {
 		);
 	}
 
+	retryJob(id: string): Observable<{ status: string; data: ScrapeJob }> {
+		return this.http.post<{ status: string; data: ScrapeJob }>(
+			`${this.baseUrl}/jobs/${id}/retry`,
+			{},
+		);
+	}
+
 	deleteJob(
 		id: string,
 	): Observable<{ status: string; data: { id: string; status: string } }> {
@@ -113,45 +135,88 @@ export class SiteScraperService {
 
 	getPages(
 		jobId: string,
-	): Observable<{ status: string; data: ScrapedPage[] }> {
-		return this.http.get<{ status: string; data: ScrapedPage[] }>(
-			`${this.baseUrl}/jobs/${jobId}/pages`,
-		);
+		page = 1,
+		perPage = 100,
+	): Observable<{
+		status: string;
+		data: {
+			page: number;
+			perPage: number;
+			numPages: number;
+			totalResults: number;
+			results: ScrapedPage[];
+		};
+	}> {
+		return this.http.get<{
+			status: string;
+			data: {
+				page: number;
+				perPage: number;
+				numPages: number;
+				totalResults: number;
+				results: ScrapedPage[];
+			};
+		}>(`${this.baseUrl}/jobs/${jobId}/pages`, {
+			params: {
+				page: page.toString(),
+				perPage: perPage.toString(),
+			},
+		});
 	}
 
 	getScreenshotUrl(
-		jobId: string,
 		pageId: string,
 		viewport: number,
 	): Observable<{ status: string; data: PresignedUrlResponse }> {
 		return this.http.get<{ status: string; data: PresignedUrlResponse }>(
-			`${this.baseUrl}/jobs/${jobId}/pages/${pageId}/screenshot`,
+			`${this.baseUrl}/pages/${pageId}/screenshot`,
 			{ params: { viewport: viewport.toString() } },
 		);
 	}
 
 	getHtmlUrl(
-		jobId: string,
 		pageId: string,
 	): Observable<{ status: string; data: PresignedUrlResponse }> {
 		return this.http.get<{ status: string; data: PresignedUrlResponse }>(
-			`${this.baseUrl}/jobs/${jobId}/pages/${pageId}/html`,
+			`${this.baseUrl}/pages/${pageId}/html`,
 		);
 	}
 
 	getBatchPresignedUrls(
 		jobId: string,
-		s3Keys: string[],
+		viewport: number,
+		page = 1,
+		pageSize = 50,
 	): Observable<{ status: string; data: BatchPresignedUrlResponse }> {
-		return this.http.post<{
+		return this.http.get<{
 			status: string;
 			data: BatchPresignedUrlResponse;
-		}>(`${this.baseUrl}/jobs/${jobId}/presigned-urls`, { s3Keys });
+		}>(`${this.baseUrl}/jobs/${jobId}/presigned-urls`, {
+			params: {
+				viewport: viewport.toString(),
+				page: page.toString(),
+				pageSize: pageSize.toString(),
+			},
+		});
+	}
+
+	getDownloadToken(
+		jobId: string,
+	): Observable<{ status: string; data: { token: string } }> {
+		return this.http.post<{ status: string; data: { token: string } }>(
+			`${this.baseUrl}/jobs/${jobId}/download-token`,
+			{},
+		);
+	}
+
+	getDownloadUrl(jobId: string, token: string, formats: string[]): string {
+		const format = formats.join(',');
+		return `${this.baseUrl}/jobs/${jobId}/download?token=${encodeURIComponent(token)}&format=${encodeURIComponent(format)}`;
 	}
 
 	getSseToken(): Observable<{ status: string; data: { token: string } }> {
 		return this.http.post<{ status: string; data: { token: string } }>(
-			`${this.baseUrl}/sse/token`,
+			`${this.baseUrl}/sse-token`,
 			{},
 		);
 	}

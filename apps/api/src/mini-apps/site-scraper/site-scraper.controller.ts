@@ -4,6 +4,8 @@
  * REST endpoints for website scraping operations within the mini-app platform.
  * All endpoints require JWT authentication and scope access by user/organization.
  */
+import { createHmac } from 'crypto';
+
 import {
 	Controller,
 	Get,
@@ -22,6 +24,7 @@ import {
 	Logger,
 	NotFoundException,
 	ForbiddenException,
+	UnprocessableEntityException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -48,6 +51,7 @@ import { ScrapeJob } from './entities/scrape-job.entity';
 import { ScrapedPage } from './entities/scraped-page.entity';
 import { CreateScrapeJobDto } from './dtos/create-scrape-job.dto';
 import { JobStatus, isActiveStatus } from './types/job-status.enum';
+import { SiteScraperService } from './services/site-scraper.service';
 
 /**
  * In-memory SSE token store.
@@ -61,6 +65,15 @@ export const sseTokenStore = new Map<
 
 /** SSE token expiry: 5 minutes */
 export const SSE_TOKEN_TTL_MS = 5 * 60 * 1000;
+
+/** Download token expiry: 5 minutes */
+const DOWNLOAD_TOKEN_TTL_MS = 5 * 60 * 1000;
+
+/** HMAC secret for download token signing/verification */
+export const DOWNLOAD_TOKEN_SECRET =
+	process.env.PII_SIGNING_KEY ||
+	process.env.PRIVATE_KEY ||
+	'download-token-secret';
 
 // Periodic cleanup of expired tokens (every 60 seconds)
 setInterval(() => {
@@ -96,6 +109,7 @@ export class SiteScraperController {
 		@InjectRepository(ScrapedPage)
 		private readonly scrapedPageRepo: Repository<ScrapedPage>,
 		private readonly s3Service: AwsS3Service,
+		private readonly siteScraperService: SiteScraperService,
 	) {}
 
 	/**
@@ -117,18 +131,13 @@ export class SiteScraperController {
 			`Create job request from user ${req.user.id}: ${dto.url}`,
 		);
 
-		const job = this.scrapeJobRepo.create({
-			url: dto.url,
-			maxDepth: dto.maxDepth,
-			viewports: dto.viewports,
-			userId: req.user.id,
-			organizationId: orgId,
-			status: JobStatus.PENDING,
-		});
-
-		const saved = await this.scrapeJobRepo.save(job);
-
-		this.logger.log(`Created job ${saved.id} for URL ${dto.url}`);
+		const saved = await this.siteScraperService.createJob(
+			dto.url,
+			dto.maxDepth ?? 3,
+			dto.viewports ?? [1920],
+			req.user.id,
+			orgId,
+		);
 
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, {
 			id: saved.id,
@@ -258,6 +267,9 @@ export class SiteScraperController {
 			}
 			for (const screenshot of page.screenshots) {
 				s3Keys.push(screenshot.s3Key);
+				if (screenshot.thumbnailS3Key) {
+					s3Keys.push(screenshot.thumbnailS3Key);
+				}
 			}
 		}
 
@@ -280,6 +292,38 @@ export class SiteScraperController {
 			ResponseStatus.Success,
 			'Job deleted successfully',
 			{ id: jobId },
+		);
+	}
+
+	/**
+	 * Retry a failed, errored, or cancelled scrape job.
+	 * Cleans up failed pages, resets the job, and re-queues it.
+	 */
+	@Post('jobs/:jobId/retry')
+	@HttpCode(HttpStatus.OK)
+	@ApiOperation({ summary: 'Retry a failed or cancelled scrape job' })
+	@ApiResponse({ status: 200, description: 'Job retried successfully' })
+	@ApiResponse({ status: 404, description: 'Job not found' })
+	@ApiResponse({
+		status: 400,
+		description: 'Job is not in a retryable status',
+	})
+	@ApiParam({ name: 'jobId', type: String, format: 'uuid' })
+	async retryJob(
+		@Req() req: AuthenticatedRequest,
+		@CurrentOrg() orgId: string,
+		@Param('jobId', ParseUUIDPipe) jobId: string,
+	): Promise<ResponseEnvelope> {
+		const updatedJob = await this.siteScraperService.retryJob(
+			jobId,
+			orgId,
+			req.user.id,
+		);
+
+		return new ResponseEnvelope(
+			ResponseStatus.Success,
+			undefined,
+			updatedJob,
 		);
 	}
 
@@ -398,8 +442,10 @@ export class SiteScraperController {
 					};
 				}
 
+				// Prefer thumbnail for gallery view, fall back to full-res
+				const s3Key = screenshot.thumbnailS3Key || screenshot.s3Key;
 				const presignedUrl = await this.s3Service.generatePresignedUrl({
-					key: screenshot.s3Key,
+					key: s3Key,
 					expiresIn: 3600,
 				});
 
@@ -578,6 +624,57 @@ export class SiteScraperController {
 			token,
 			expiresAt,
 			expiresIn: SSE_TOKEN_TTL_MS / 1000,
+		});
+	}
+
+	/**
+	 * Generate an HMAC-signed download token for bulk export.
+	 * The token is stateless and works on any dyno.
+	 */
+	@Post('jobs/:jobId/download-token')
+	@HttpCode(HttpStatus.OK)
+	@ApiOperation({ summary: 'Generate a download token for bulk export' })
+	@ApiResponse({ status: 200, description: 'Download token generated' })
+	@ApiResponse({ status: 404, description: 'Job not found' })
+	@ApiResponse({ status: 422, description: 'No completed pages to download' })
+	async generateDownloadToken(
+		@Req() req: AuthenticatedRequest,
+		@CurrentOrg() orgId: string,
+		@Param('jobId', ParseUUIDPipe) jobId: string,
+	): Promise<ResponseEnvelope> {
+		const job = await this.scrapeJobRepo.findOne({
+			where: {
+				id: jobId,
+				userId: req.user.id,
+				organizationId: orgId,
+			},
+		});
+
+		if (!job) {
+			throw new NotFoundException(`Job ${jobId} not found`);
+		}
+
+		if (job.pagesCompleted === 0) {
+			throw new UnprocessableEntityException(
+				'No completed pages to download',
+			);
+		}
+
+		// HMAC-sign the token payload — stateless, works on any dyno
+		const payload = JSON.stringify({
+			jobId,
+			userId: req.user.id,
+			orgId,
+			exp: Date.now() + DOWNLOAD_TOKEN_TTL_MS,
+		});
+		const signature = createHmac('sha256', DOWNLOAD_TOKEN_SECRET)
+			.update(payload)
+			.digest('hex');
+		const token =
+			Buffer.from(payload).toString('base64url') + '.' + signature;
+
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, {
+			token,
 		});
 	}
 }

@@ -10,6 +10,7 @@ import { SiteScraperSseController } from './site-scraper-sse.controller';
 import { SiteScraperService } from './services/site-scraper.service';
 import { ScraperWorkerService } from './services/scraper-worker.service';
 import { ScraperSseService } from './services/scraper-sse.service';
+import { SiteScraperExportService } from './services/site-scraper-export.service';
 
 @Module({
 	imports: [
@@ -20,6 +21,11 @@ import { ScraperSseService } from './services/scraper-sse.service';
 		]),
 	],
 	controllers: [SiteScraperController, SiteScraperSseController],
-	providers: [SiteScraperService, ScraperWorkerService, ScraperSseService],
+	providers: [
+		SiteScraperService,
+		ScraperWorkerService,
+		ScraperSseService,
+		SiteScraperExportService,
+	],
 })
 export class SiteScraperModule {}

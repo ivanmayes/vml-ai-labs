@@ -22,6 +22,8 @@ export interface ScreenshotRecord {
 	viewport: number;
 	/** S3 object key for the screenshot image */
 	s3Key: string;
+	/** S3 object key for the WebP thumbnail (optional for backward compat) */
+	thumbnailS3Key?: string;
 }
 
 /**

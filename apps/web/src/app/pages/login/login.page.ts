@@ -13,15 +13,20 @@ import {
 	ReactiveFormsModule,
 	Validators,
 } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { OktaAuth } from '@okta/okta-auth-js';
 import { take } from 'rxjs/operators';
 
 import { GlobalQuery } from '../../state/global/global.query';
 import { GlobalService } from '../../state/global/global.service';
-import { VerifyResponse } from '../../state/session/session.model';
+import {
+	DefaultResponse,
+	VerifyResponse,
+} from '../../state/session/session.model';
 import { SessionQuery } from '../../state/session/session.query';
 import { SessionService } from '../../state/session/session.service';
+import { SessionStore } from '../../state/session/session.store';
 import { fade } from '../../_core/utils/animations.utils';
 import { environment } from '../../../environments/environment';
 import { PrimeNgModule } from '../../shared/primeng.module';
@@ -87,13 +92,16 @@ export class LoginComponent implements OnInit, OnDestroy {
 
 	// Configuration
 	public exclusiveServer = environment.exclusive;
+	public devAutoLogin = environment.devAutoLogin;
 
 	constructor(
 		private readonly formBuilder: FormBuilder,
 		private readonly globalQuery: GlobalQuery,
 		private readonly globalService: GlobalService,
+		private readonly httpClient: HttpClient,
 		private readonly sessionQuery: SessionQuery,
 		private readonly sessionService: SessionService,
+		private readonly sessionStore: SessionStore,
 		private readonly router: Router,
 		private readonly activatedRoute: ActivatedRoute,
 	) {
@@ -370,6 +378,50 @@ export class LoginComponent implements OnInit, OnDestroy {
 	public async changeOrg() {
 		this.sessionService.logout();
 		window.location.reload();
+	}
+
+	/**
+	 * Dev-only login that bypasses email/OTP flow using test tokens.
+	 * Only available when devAutoLogin environment variable is truthy.
+	 */
+	public devLogin() {
+		this.emailError.set(undefined);
+		this.sessionService.setLoading(true);
+
+		this.httpClient
+			.get<
+				DefaultResponse<{
+					tokens: { email: string; userId: string; token: string }[];
+				}>
+			>(`${environment.apiUrl}/user/dev/test-tokens`)
+			.subscribe(
+				(resp) => {
+					const firstToken = resp?.data?.tokens?.[0];
+					if (!firstToken) {
+						this.sessionService.setLoading(false);
+						this.emailError.set('No test users configured');
+						return;
+					}
+
+					// Set the token so the auth interceptor picks it up
+					this.sessionStore.login({ token: firstToken.token });
+
+					// Refresh to get full user profile
+					this.sessionService
+						.getUserStatus(firstToken.token)
+						.subscribe(
+							() => this.loggedIn(),
+							(err) => {
+								this.sessionService.setLoading(false);
+								this.handleError(err?.error?.statusCode);
+							},
+						);
+				},
+				(err) => {
+					this.sessionService.setLoading(false);
+					this.handleError(err?.error?.statusCode);
+				},
+			);
 	}
 
 	/**

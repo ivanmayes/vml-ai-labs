@@ -30,6 +30,7 @@ import PgBoss from 'pg-boss';
 import { PlaywrightCrawler, Configuration } from 'crawlee';
 import { chromium } from 'playwright-extra';
 import stealthPlugin from 'puppeteer-extra-plugin-stealth';
+import sharp from 'sharp';
 
 import { PgBossService, SiteScraperJobData } from '../../../_platform/queue';
 import { AwsS3Service } from '../../../_platform/aws';
@@ -200,6 +201,18 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 			// Mark job as running in the database
 			await this.scraperService.markJobRunning(jobId, pgBossJobId);
 
+			// Query completed pages for retry/resume support
+			const completedPages =
+				await this.scraperService.getCompletedPageUrls(jobId);
+			const completedUrlSet = new Set(completedPages);
+			const isRetry = completedUrlSet.size > 0;
+
+			if (isRetry) {
+				this.logger.log(
+					`Retry detected for job ${jobId}: ${completedUrlSet.size} pages already completed`,
+				);
+			}
+
 			// Emit SSE event for job started
 			this.sseService.emitJobEvent(
 				jobId,
@@ -219,12 +232,20 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 				purgeOnStart: true,
 			});
 
-			let totalPagesProcessed = 0;
+			let totalPagesProcessed = completedUrlSet.size;
+			let totalPagesDiscovered =
+				completedUrlSet.size > 0 ? completedUrlSet.size : 1; // seed URL
 			let totalPagesFailed = 0;
+
+			// Track all URLs the crawler knows about (for accurate beyond-depth counting)
+			const knownUrls = new Set<string>(completedUrlSet);
+			knownUrls.add(url); // seed URL
+			const beyondDepthUrls = new Set<string>();
 
 			const crawler = new PlaywrightCrawler(
 				{
-					maxRequestsPerCrawl: 200,
+					maxRequestsPerCrawl:
+						1000 + (isRetry ? completedUrlSet.size : 0),
 					maxConcurrency: 2,
 					requestHandlerTimeoutSecs: 60,
 					navigationTimeoutSecs: 30,
@@ -274,6 +295,37 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 						const currentDepth =
 							(request.userData?.depth as number) ?? 0;
 
+						// Skip already-completed pages on retry (but still discover links)
+						if (completedUrlSet.has(request.url)) {
+							log.info(`Skipping completed page: ${request.url}`);
+							if (currentDepth < maxDepth) {
+								const { processedRequests } =
+									await enqueueLinks({
+										strategy: 'same-hostname',
+										userData: {
+											depth: currentDepth + 1,
+										},
+									});
+
+								for (const r of processedRequests)
+									knownUrls.add(r.uniqueKey);
+
+								const newRequests = processedRequests.filter(
+									(r) => r.wasAlreadyPresent === false,
+								);
+
+								if (newRequests.length > 0) {
+									totalPagesDiscovered += newRequests.length;
+
+									await this.scraperService.incrementPagesDiscovered(
+										jobId,
+										newRequests.length,
+									);
+								}
+							}
+							return;
+						}
+
 						log.info(
 							`Scraping ${request.url} (depth: ${currentDepth})`,
 						);
@@ -310,20 +362,44 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 
 							const screenshotBuffer = await page.screenshot({
 								fullPage: true,
-								type: 'png',
+								type: 'jpeg',
+								quality: 85,
 							});
 
-							// Upload screenshot to S3 immediately
-							const screenshotS3Key = `site-scraper/${jobId}/${pageId}/screenshot-${viewport}w.png`;
+							// Upload full-res screenshot to S3
+							const screenshotS3Key = `site-scraper/${jobId}/${pageId}/screenshot-${viewport}w.jpg`;
 							await this.s3Service.upload({
 								key: screenshotS3Key,
 								buffer: Buffer.from(screenshotBuffer),
-								contentType: 'image/png',
+								contentType: 'image/jpeg',
 							});
+
+							// Generate and upload WebP thumbnail
+							let thumbnailS3Key: string | undefined;
+							try {
+								const thumbnailBuffer = await sharp(
+									Buffer.from(screenshotBuffer),
+								)
+									.resize({ width: 480 })
+									.webp({ quality: 80 })
+									.toBuffer();
+
+								thumbnailS3Key = `site-scraper/${jobId}/${pageId}/screenshot-${viewport}w-thumb.webp`;
+								await this.s3Service.upload({
+									key: thumbnailS3Key,
+									buffer: thumbnailBuffer,
+									contentType: 'image/webp',
+								});
+							} catch (thumbError) {
+								log.warning(
+									`Failed to generate thumbnail for ${request.url} at ${viewport}w: ${thumbError}`,
+								);
+							}
 
 							screenshots.push({
 								viewport,
 								s3Key: screenshotS3Key,
+								thumbnailS3Key,
 							});
 						}
 
@@ -367,7 +443,7 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 								pageUrl: request.url,
 								title: title || null,
 								pagesCompleted: totalPagesProcessed,
-								pagesDiscovered: 0, // Will be updated by enqueueLinks
+								pagesDiscovered: totalPagesDiscovered,
 							},
 						);
 
@@ -380,11 +456,16 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 								},
 							});
 
+							for (const r of processedRequests)
+								knownUrls.add(r.uniqueKey);
+
 							const newRequests = processedRequests.filter(
 								(r) => r.wasAlreadyPresent === false,
 							);
 
 							if (newRequests.length > 0) {
+								totalPagesDiscovered += newRequests.length;
+
 								await this.scraperService.incrementPagesDiscovered(
 									jobId,
 									newRequests.length,
@@ -403,9 +484,55 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 									{
 										id: jobId,
 										newUrls: newKeys,
-										totalDiscovered: newRequests.length,
+										totalDiscovered: totalPagesDiscovered,
 									},
 								);
+							}
+						} else {
+							// At max depth — collect unique outbound links as "beyond depth"
+							try {
+								const currentHostname = new URL(request.url)
+									.hostname;
+								const links: string[] = await page.$$eval(
+									'a[href]',
+									(
+										anchors: HTMLAnchorElement[],
+										hostname: string,
+									) => {
+										const urls: string[] = [];
+										for (const a of anchors) {
+											try {
+												const u = new URL(a.href);
+												if (u.hostname === hostname)
+													urls.push(u.href);
+											} catch {
+												/* skip invalid */
+											}
+										}
+										return urls;
+									},
+									currentHostname,
+								);
+
+								let newCount = 0;
+								for (const link of links) {
+									if (
+										!knownUrls.has(link) &&
+										!beyondDepthUrls.has(link)
+									) {
+										beyondDepthUrls.add(link);
+										newCount++;
+									}
+								}
+
+								if (newCount > 0) {
+									await this.scraperService.incrementPagesSkippedByDepth(
+										jobId,
+										newCount,
+									);
+								}
+							} catch {
+								// Non-critical — skip counting on error
 							}
 						}
 					},
@@ -538,6 +665,7 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 						pagesCompleted: completedJob.pagesCompleted,
 						pagesFailed: completedJob.pagesFailed,
 						pagesDiscovered: completedJob.pagesDiscovered,
+						pagesSkippedByDepth: completedJob.pagesSkippedByDepth,
 					},
 				);
 			}

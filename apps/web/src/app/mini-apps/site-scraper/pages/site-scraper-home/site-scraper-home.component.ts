@@ -107,7 +107,7 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					this.jobs.set(res.data?.data || []);
+					this.jobs.set(res.data?.results || []);
 					this.loading.set(false);
 				},
 				error: () => {
@@ -123,7 +123,7 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					this.jobs.set(res.data?.data || []);
+					this.jobs.set(res.data?.results || []);
 				},
 			});
 	}
@@ -211,12 +211,37 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 			});
 	}
 
+	retryJob(job: ScrapeJob): void {
+		this.scraperService
+			.retryJob(job.id)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: () => {
+					this.messageService.add({
+						severity: 'success',
+						summary: 'Retrying',
+						detail: `Job re-queued for ${job.url}`,
+					});
+					this.refreshJobs();
+				},
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Could not retry job',
+					});
+				},
+			});
+	}
+
 	viewJob(job: ScrapeJob): void {
 		this.router.navigate(['/apps/site-scraper', job.id]);
 	}
 
-	onRowSelect(event: { data: ScrapeJob }): void {
-		this.router.navigate(['/apps/site-scraper', event.data.id]);
+	onRowSelect(event: { data?: ScrapeJob | ScrapeJob[] }): void {
+		if (event.data && !Array.isArray(event.data)) {
+			this.router.navigate(['/apps/site-scraper', event.data.id]);
+		}
 	}
 
 	getStatusSeverity(

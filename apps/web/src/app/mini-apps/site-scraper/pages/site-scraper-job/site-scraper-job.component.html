@@ -1,63 +1,155 @@
 <p-toast />
 
 <div class="p-4">
-	<!-- Header -->
-	<div class="flex items-center gap-3 mb-4">
-		<p-button
-			icon="pi pi-arrow-left"
-			[text]="true"
-			[rounded]="true"
-			ariaLabel="Back to jobs"
-			(onClick)="goBack()"
-		/>
-		<div class="flex-1 min-w-0">
-			<h2 class="mt-0 mb-1 text-xl truncate">{{ job()?.url }}</h2>
-			<div class="flex items-center gap-3 flex-wrap">
-				@if (job(); as j) {
+	<!-- Header Card -->
+	<div class="job-header">
+		<!-- Top bar: back + actions -->
+		<div class="flex items-center justify-between gap-3 mb-4">
+			<p-button
+				icon="pi pi-arrow-left"
+				label="Back to jobs"
+				[text]="true"
+				severity="secondary"
+				(onClick)="goBack()"
+			/>
+			<div class="flex items-center gap-2">
+				@if (availableViewports().length > 0) {
+					<p-selectButton
+						[options]="availableViewports()"
+						[(ngModel)]="selectedViewport"
+						(ngModelChange)="onViewportChange()"
+						optionLabel="label"
+						optionValue="value"
+						size="small"
+					/>
+				}
+				@if (isRetryable()) {
+					<p-button
+						icon="pi pi-refresh"
+						label="Retry"
+						[outlined]="true"
+						size="small"
+						(onClick)="retryJob()"
+					/>
+				}
+				@if (canDownload()) {
+					<p-button
+						icon="pi pi-download"
+						label="Download"
+						[outlined]="true"
+						size="small"
+						[loading]="downloading()"
+						(onClick)="downloadPanel.toggle($event)"
+					/>
+				}
+			</div>
+		</div>
+
+		<!-- URL + status -->
+		@if (job(); as j) {
+			<div class="flex items-center gap-2 mb-2">
+				<i class="pi pi-globe job-url-icon"></i>
+				<h2 class="job-url" [pTooltip]="j.url" tooltipPosition="bottom">
+					{{ j.url }}
+				</h2>
+			</div>
+			<div class="flex items-center gap-3 mb-4">
+				<div class="flex items-center gap-2">
+					@if (j.status === "running") {
+						<span class="status-dot"></span>
+					}
 					<p-tag
 						[value]="formatStatus(j.status)"
 						[severity]="getStatusSeverity(j.status)"
 					/>
+				</div>
+				@if (j.createdAt) {
 					<span class="text-sm text-[--p-text-muted-color]">
-						{{ j.pagesCompleted }} completed
-						@if (j.pagesFailed > 0) {
-							/ {{ j.pagesFailed }} failed
-						}
-						/ {{ j.pagesDiscovered }} discovered
+						{{ j.createdAt | date: "medium" }}
 					</span>
-					<span class="text-sm text-[--p-text-muted-color]">
-						Depth: {{ j.maxDepth }}
-					</span>
-					@if (j.createdAt) {
-						<span class="text-sm text-[--p-text-muted-color]">
-							{{ j.createdAt | date: "medium" }}
-						</span>
-					}
 				}
 			</div>
-		</div>
+
+			<!-- Stat tiles -->
+			<div class="stat-grid">
+				<div class="stat-tile stat-tile--completed">
+					<div class="stat-value">{{ j.pagesCompleted }}</div>
+					<div class="stat-label">Captured</div>
+				</div>
+				<div
+					class="stat-tile"
+					[class.stat-tile--failed]="j.pagesFailed > 0"
+					[class.stat-tile--muted]="j.pagesFailed === 0"
+				>
+					<div class="stat-value">{{ j.pagesFailed }}</div>
+					<div class="stat-label">Failed</div>
+				</div>
+				@if (j.status === "running" || j.status === "pending") {
+					<div class="stat-tile stat-tile--in-queue">
+						<div class="stat-value">{{ pagesInQueue() }}</div>
+						<div class="stat-label">In Queue</div>
+					</div>
+				} @else {
+					<div class="stat-tile stat-tile--depth">
+						<div class="stat-value">{{ j.maxDepth }}</div>
+						<div class="stat-label">Depth</div>
+					</div>
+				}
+				<div class="stat-tile stat-tile--beyond-depth">
+					<div class="stat-value">
+						{{ j.pagesSkippedByDepth || 0 }}
+					</div>
+					<div class="stat-label">Beyond Depth</div>
+				</div>
+			</div>
+
+			<!-- Completion summary -->
+			@if (
+				j.status === "completed" || j.status === "completed_with_errors"
+			) {
+				<div
+					class="completion-summary"
+					[class.completion-summary--success]="
+						j.status === 'completed' && j.pagesFailed === 0
+					"
+					[class.completion-summary--warn]="
+						j.status === 'completed_with_errors'
+					"
+				>
+					@if (j.status === "completed" && j.pagesFailed === 0) {
+						<i class="pi pi-check-circle"></i>
+						<span
+							>All {{ j.pagesCompleted }} pages within depth
+							{{ j.maxDepth }} captured successfully</span
+						>
+					} @else {
+						<i class="pi pi-exclamation-triangle"></i>
+						<span
+							>Captured {{ j.pagesCompleted }} of
+							{{ j.pagesCompleted + j.pagesFailed }} pages within
+							depth {{ j.maxDepth }} ({{
+								j.pagesFailed
+							}}
+							failed)</span
+						>
+					}
+					@if (j.pagesSkippedByDepth > 0) {
+						<span class="completion-beyond-depth"
+							>&middot; {{ j.pagesSkippedByDepth }} additional
+							links detected beyond depth {{ j.maxDepth }}</span
+						>
+					}
+				</div>
+			}
+
+			<!-- Progress bar — only when running -->
+			@if (j.status === "running") {
+				<div class="header-progress">
+					<p-progressBar [value]="getProgress()" [showValue]="true" />
+				</div>
+			}
+		}
 	</div>
-
-	<!-- Progress bar for running jobs -->
-	@if (job()?.status === "running") {
-		<div class="mb-4">
-			<p-progressBar [value]="getProgress()" [showValue]="true" />
-		</div>
-	}
-
-	<!-- Viewport Selector -->
-	@if (availableViewports().length > 0) {
-		<div class="flex items-center gap-3 mb-4">
-			<span class="font-medium text-sm">Viewport:</span>
-			<p-selectButton
-				[options]="availableViewports()"
-				[(ngModel)]="selectedViewport"
-				(ngModelChange)="onViewportChange()"
-				optionLabel="label"
-				optionValue="value"
-			/>
-		</div>
-	}
 
 	<!-- Loading state -->
 	@if (loadingPages()) {
@@ -213,3 +305,48 @@
 		</div>
 	}
 </p-dialog>
+
+<!-- Download Format Selection -->
+<p-popover #downloadPanel>
+	<div class="flex flex-col gap-3" style="min-width: 200px">
+		<span class="font-semibold text-sm">Export Formats</span>
+		<div class="flex flex-col gap-2">
+			<div class="flex items-center gap-2 cursor-pointer">
+				<p-checkbox
+					inputId="fmt-html"
+					[binary]="true"
+					[ngModel]="downloadFormats().html"
+					(ngModelChange)="toggleFormat('html')"
+				/>
+				<label for="fmt-html" class="text-sm">HTML</label>
+			</div>
+			<div class="flex items-center gap-2 cursor-pointer">
+				<p-checkbox
+					inputId="fmt-markdown"
+					[binary]="true"
+					[ngModel]="downloadFormats().markdown"
+					(ngModelChange)="toggleFormat('markdown')"
+				/>
+				<label for="fmt-markdown" class="text-sm">Markdown</label>
+			</div>
+			<div class="flex items-center gap-2 cursor-pointer">
+				<p-checkbox
+					inputId="fmt-screenshots"
+					[binary]="true"
+					[ngModel]="downloadFormats().screenshots"
+					(ngModelChange)="toggleFormat('screenshots')"
+				/>
+				<label for="fmt-screenshots" class="text-sm">Screenshots</label>
+			</div>
+		</div>
+		<p-button
+			label="Download ZIP"
+			icon="pi pi-download"
+			size="small"
+			[disabled]="!hasSelectedFormats() || downloading()"
+			[loading]="downloading()"
+			(onClick)="startDownload(); downloadPanel.hide()"
+			styleClass="w-full"
+		/>
+	</div>
+</p-popover>

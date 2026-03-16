@@ -215,6 +215,34 @@ export class AwsS3Service implements OnModuleInit {
 	}
 
 	/**
+	 * Get an S3 object as a readable stream (no buffering).
+	 * Used for streaming large files through archiver without loading into memory.
+	 *
+	 * @param key - S3 key of the file
+	 * @returns Readable stream of the file content
+	 */
+	async getObjectStream(key: string): Promise<Readable> {
+		const params: GetObjectCommandInput = {
+			Bucket: this.bucketName,
+			Key: key,
+		};
+
+		try {
+			const command = new GetObjectCommand(params);
+			const result = await this.client.send(command);
+
+			if (!result.Body) {
+				throw new Error('Empty response body');
+			}
+
+			return result.Body as Readable;
+		} catch (error) {
+			this.logger.error(`Failed to get stream from S3: ${key}`, error);
+			throw new Error(`S3 stream failed for key: ${key}`);
+		}
+	}
+
+	/**
 	 * Generate a presigned URL for secure, time-limited download
 	 *
 	 * @param options - Presigned URL options

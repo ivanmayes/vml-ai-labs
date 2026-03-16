@@ -125,7 +125,7 @@
 						<th style="width: 10rem">Status</th>
 						<th style="width: 10rem">Progress</th>
 						<th style="width: 9rem">Created</th>
-						<th style="width: 6rem">Actions</th>
+						<th style="width: 8rem">Actions</th>
 					</tr>
 				</ng-template>
 				<ng-template pTemplate="body" let-job>
@@ -178,7 +178,9 @@
 							>
 								@if (
 									job.status === "completed" ||
-									job.status === "completed_with_errors"
+									job.status === "completed_with_errors" ||
+									job.status === "failed" ||
+									job.status === "cancelled"
 								) {
 									<p-button
 										icon="pi pi-eye"
@@ -186,6 +188,19 @@
 										size="small"
 										ariaLabel="View job details"
 										(onClick)="viewJob(job)"
+									/>
+								}
+								@if (
+									job.status === "failed" ||
+									job.status === "completed_with_errors" ||
+									job.status === "cancelled"
+								) {
+									<p-button
+										icon="pi pi-refresh"
+										[text]="true"
+										size="small"
+										ariaLabel="Retry scrape job"
+										(onClick)="retryJob(job)"
 									/>
 								}
 								@if (

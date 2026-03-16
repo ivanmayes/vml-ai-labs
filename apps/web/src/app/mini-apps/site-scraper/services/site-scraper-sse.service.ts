@@ -31,6 +31,7 @@ export interface JobCompletedEvent {
 	pagesCompleted: number;
 	pagesFailed: number;
 	pagesDiscovered: number;
+	pagesSkippedByDepth: number;
 }
 
 export interface JobFailedEvent {
@@ -98,7 +99,7 @@ export class SiteScraperSseService implements OnDestroy {
 
 	private createEventSource(token: string): void {
 		const baseUrl = `${environment.apiUrl}/organization/${environment.organizationId}/apps/site-scraper`;
-		const url = `${baseUrl}/sse/stream?token=${encodeURIComponent(token)}`;
+		const url = `${baseUrl}/events?token=${encodeURIComponent(token)}`;
 
 		this.zone.runOutsideAngular(() => {
 			this.eventSource = new EventSource(url);

@@ -58,6 +58,7 @@ export interface ScraperSSEEventPayloads {
 		pagesCompleted: number;
 		pagesFailed: number;
 		pagesDiscovered: number;
+		pagesSkippedByDepth: number;
 	};
 	[ScraperSSEEventType.JOB_FAILED]: {
 		id: string;

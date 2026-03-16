@@ -1,7 +1,7 @@
 ---
 title: "feat: Add Site Scraper Mini App"
 type: feat
-status: active
+status: completed
 date: 2026-03-14
 origin: docs/brainstorms/2026-03-14-site-scraper-brainstorm.md
 ---

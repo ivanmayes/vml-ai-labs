@@ -33,9 +33,9 @@ export const VALID_STATUS_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
 		JobStatus.CANCELLED,
 	],
 	[JobStatus.COMPLETED]: [], // Terminal state
-	[JobStatus.COMPLETED_WITH_ERRORS]: [], // Terminal state
+	[JobStatus.COMPLETED_WITH_ERRORS]: [JobStatus.PENDING], // Can retry
 	[JobStatus.FAILED]: [JobStatus.PENDING], // Can retry
-	[JobStatus.CANCELLED]: [], // Terminal state
+	[JobStatus.CANCELLED]: [JobStatus.PENDING], // Can retry
 };
 
 /**
@@ -69,4 +69,17 @@ export function isTerminalStatus(status: JobStatus): boolean {
  */
 export function isActiveStatus(status: JobStatus): boolean {
 	return status === JobStatus.PENDING || status === JobStatus.RUNNING;
+}
+
+/**
+ * Check if a job in this status can be retried.
+ * @param status Job status to check
+ * @returns true if the job can be retried
+ */
+export function isRetryableStatus(status: JobStatus): boolean {
+	return (
+		status === JobStatus.FAILED ||
+		status === JobStatus.COMPLETED_WITH_ERRORS ||
+		status === JobStatus.CANCELLED
+	);
 }

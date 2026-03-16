@@ -1,16 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { Injectable, OnApplicationBootstrap, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 @Injectable()
-export class SchemaBootstrapService implements OnApplicationBootstrap {
+export class SchemaBootstrapService implements OnModuleInit {
 	private readonly logger = new Logger(SchemaBootstrapService.name);
 
 	constructor(private readonly dataSource: DataSource) {}
 
-	async onApplicationBootstrap() {
+	async onModuleInit() {
 		const manifestPath = path.resolve(__dirname, '../../../mini-apps.json');
 		if (!fs.existsSync(manifestPath)) {
 			this.logger.warn(

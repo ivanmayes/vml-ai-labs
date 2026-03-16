@@ -66,6 +66,9 @@ export class ScrapeJob {
 	@Column({ type: 'int', default: 0 })
 	pagesFailed: number;
 
+	@Column({ type: 'int', default: 0 })
+	pagesSkippedByDepth: number;
+
 	@Column({ type: 'jsonb', name: 'error', nullable: true })
 	error: ScrapeError | null;
 

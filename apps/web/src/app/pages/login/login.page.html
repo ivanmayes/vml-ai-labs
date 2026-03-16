@@ -89,6 +89,20 @@
 				[loading]="loading()"
 				[attr.aria-label]="'Continue to verification'"
 			></p-button>
+
+			@if (devAutoLogin) {
+			<p-button
+				label="Dev Login"
+				icon="pi pi-code"
+				styleClass="w-full mt-2"
+				[outlined]="true"
+				severity="secondary"
+				(onClick)="devLogin()"
+				[disabled]="loading()"
+				[loading]="loading()"
+				[attr.aria-label]="'Auto-login with dev test token'"
+			></p-button>
+			}
 		</form>
 
 		<!-- Secondary action for multi-tenant scenarios -->
