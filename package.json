@@ -61,6 +61,7 @@
   "dependencies": {
     "@crawlee/playwright": "^3.16.0",
     "@duckduckgo/autoconsent": "^14.59.0",
+    "@ghostery/adblocker-playwright": "^2.14.1",
     "box-typescript-sdk-gen": "^1.19.1",
     "crawlee": "^3.16.0",
     "playwright-core": "^1.58.2",

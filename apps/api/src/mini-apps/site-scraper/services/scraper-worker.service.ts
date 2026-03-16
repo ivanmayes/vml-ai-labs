@@ -133,6 +133,12 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 	 */
 	private isShuttingDown = false;
 
+	/**
+	 * Ghostery adblocker instance for hiding cookie banners via CSS cosmetic rules.
+	 * Initialized in onModuleInit via dynamic import (ESM-only package).
+	 */
+	private adblocker: any = null;
+
 	constructor(
 		private readonly pgBossService: PgBossService,
 		private readonly scraperService: SiteScraperService,
@@ -148,6 +154,18 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 
 		// Register stealth plugin to avoid bot detection
 		chromium.use(stealthPlugin());
+
+		// Initialize Ghostery adblocker for cookie banner CSS hiding
+		try {
+			const { PlaywrightBlocker } =
+				await import('@ghostery/adblocker-playwright');
+			this.adblocker = await PlaywrightBlocker.fromPrebuiltFull();
+			this.logger.log('Ghostery adblocker initialized');
+		} catch (error) {
+			this.logger.warn(
+				`Failed to initialize Ghostery adblocker: ${error}`,
+			);
+		}
 
 		// Register site scraper queue worker
 		await this.pgBossService.workSiteScraperQueue(
@@ -629,6 +647,12 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 							await page.addInitScript({
 								path: AUTOCONSENT_SCRIPT,
 							});
+						},
+						async ({ page }) => {
+							// Ghostery adblocker: hide cookie banners via CSS cosmetic rules
+							if (this.adblocker) {
+								await this.adblocker.enableBlockingInPage(page);
+							}
 						},
 						async ({ page }) => {
 							// SSRF protection: intercept all requests and block private IPs
