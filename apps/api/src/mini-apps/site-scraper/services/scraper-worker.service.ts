@@ -76,6 +76,17 @@ const DOWNLOAD_EXTENSIONS = new Set([
 	'.wmv',
 ]);
 
+/** Check if a URL points to a downloadable file (PDF, ZIP, etc.) */
+function isDownloadUrl(url: string): boolean {
+	try {
+		const urlPath = new URL(url).pathname;
+		const ext = path.extname(urlPath).toLowerCase();
+		return ext !== '' && DOWNLOAD_EXTENSIONS.has(ext);
+	} catch {
+		return false;
+	}
+}
+
 /** Common CSS selectors for cookie consent dialogs */
 const COOKIE_DISMISS_SELECTORS = [
 	'[id*="cookie"] button[class*="accept"]',
@@ -153,7 +164,11 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 		this.logger.log('Starting ScraperWorkerService...');
 
 		// Register stealth plugin to avoid bot detection
-		chromium.use(stealthPlugin());
+		try {
+			chromium.use(stealthPlugin());
+		} catch (error) {
+			this.logger.error(`Failed to register stealth plugin: ${error}`);
+		}
 
 		// Initialize Ghostery adblocker for cookie banner CSS hiding
 		try {
@@ -168,11 +183,22 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 		}
 
 		// Register site scraper queue worker
-		await this.pgBossService.workSiteScraperQueue(
-			this.processJob.bind(this),
-			{ batchSize: 1 },
-		);
-		this.logger.log('Registered scraper worker with batchSize: 1');
+		try {
+			await this.pgBossService.workSiteScraperQueue(
+				this.processJob.bind(this),
+				{ batchSize: 1 },
+			);
+			this.logger.log('Registered scraper worker with batchSize: 1');
+		} catch (error) {
+			this.logger.error(`Failed to register scraper worker: ${error}`);
+		}
+
+		// Re-queue any orphaned PENDING jobs from previous crashes
+		try {
+			await this.scraperService.requeueStaleJobs();
+		} catch (error) {
+			this.logger.error(`Failed to re-queue stale jobs: ${error}`);
+		}
 	}
 
 	/**
@@ -298,7 +324,7 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 				{
 					maxRequestsPerCrawl:
 						1000 + (isRetry ? completedUrlSet.size : 0),
-					maxConcurrency: 2,
+					maxConcurrency: 1,
 					requestHandlerTimeoutSecs: 60,
 					navigationTimeoutSecs: 30,
 					launchContext: {
@@ -365,6 +391,10 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 								const { processedRequests } =
 									await enqueueLinks({
 										strategy: 'same-hostname',
+										transformRequestFunction: (req) =>
+											isDownloadUrl(req.url)
+												? false
+												: req,
 										userData: {
 											depth: currentDepth + 1,
 										},
@@ -514,6 +544,8 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 						if (currentDepth < maxDepth) {
 							const { processedRequests } = await enqueueLinks({
 								strategy: 'same-hostname',
+								transformRequestFunction: (req) =>
+									isDownloadUrl(req.url) ? false : req,
 								userData: {
 									depth: currentDepth + 1,
 								},
@@ -580,6 +612,7 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 								let newCount = 0;
 								for (const link of links) {
 									if (
+										!isDownloadUrl(link) &&
 										!knownUrls.has(link) &&
 										!beyondDepthUrls.has(link)
 									) {
@@ -632,10 +665,8 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 
 					preNavigationHooks: [
 						async ({ request, log }) => {
-							// Skip URLs that trigger downloads (PDFs, ZIPs, etc.)
-							const urlPath = new URL(request.url).pathname;
-							const ext = path.extname(urlPath).toLowerCase();
-							if (ext && DOWNLOAD_EXTENSIONS.has(ext)) {
+							// Safety net: skip download URLs that slipped past transformRequestFunction
+							if (isDownloadUrl(request.url)) {
 								log.info(
 									`Skipping download URL: ${request.url}`,
 								);

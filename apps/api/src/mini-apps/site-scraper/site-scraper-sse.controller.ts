@@ -248,11 +248,7 @@ export class SiteScraperSseController {
 		res.set({
 			'Content-Type': 'application/zip',
 			'Content-Disposition': `attachment; filename="${filename}"`,
-			'Transfer-Encoding': 'chunked',
 			'Cache-Control': 'no-store',
-			'X-Accel-Buffering': 'no',
-			'Referrer-Policy': 'no-referrer',
-			'Content-Encoding': 'identity',
 		});
 
 		// 5. Stream the ZIP

@@ -403,16 +403,11 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 						res.data.token,
 						formats,
 					);
-					// Use hidden iframe to trigger download without navigating away
-					// (Content-Disposition: attachment ensures browser downloads, not navigates)
-					const iframe = document.createElement('iframe');
-					iframe.style.display = 'none';
-					iframe.src = url;
-					document.body.appendChild(iframe);
+					window.location.assign(url);
+					// Reset downloading state after giving the browser time to start
 					setTimeout(() => {
-						document.body.removeChild(iframe);
 						this.downloading.set(false);
-					}, 5000);
+					}, 3000);
 				},
 				error: () => {
 					this.downloading.set(false);

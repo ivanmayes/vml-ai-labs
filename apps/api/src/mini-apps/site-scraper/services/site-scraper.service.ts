@@ -11,7 +11,7 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, LessThan } from 'typeorm';
 
 import { PgBossService, SiteScraperJobData } from '../../../_platform/queue';
 import { AwsS3Service } from '../../../_platform/aws';
@@ -100,7 +100,12 @@ export class SiteScraperService {
 			organizationId: orgId,
 		};
 
-		await this.pgBossService.sendSiteScraperJob(jobData);
+		// Fire-and-forget: don't block the HTTP response waiting for pg-boss
+		this.pgBossService.sendSiteScraperJob(jobData).catch((err) => {
+			this.logger.error(
+				`Failed to queue scrape job ${savedJob.id}: ${err}`,
+			);
+		});
 
 		return savedJob;
 	}
@@ -630,5 +635,38 @@ export class SiteScraperService {
 		});
 
 		return pages.map((p) => p.url);
+	}
+
+	/**
+	 * Re-queue PENDING jobs that were never picked up by pg-boss.
+	 * Recovers from fire-and-forget queue failures on startup.
+	 *
+	 * @returns Number of stale jobs re-queued
+	 */
+	async requeueStaleJobs(): Promise<number> {
+		const staleThreshold = new Date(Date.now() - 60_000); // 1 minute old
+		const staleJobs = await this.jobRepository.find({
+			where: {
+				status: JobStatus.PENDING,
+				createdAt: LessThan(staleThreshold),
+			},
+		});
+
+		for (const job of staleJobs) {
+			await this.pgBossService.sendSiteScraperJob({
+				jobId: job.id,
+				url: job.url,
+				maxDepth: job.maxDepth,
+				viewports: job.viewports,
+				userId: job.userId,
+				organizationId: job.organizationId,
+			});
+		}
+
+		if (staleJobs.length > 0) {
+			this.logger.log(`Re-queued ${staleJobs.length} stale PENDING jobs`);
+		}
+
+		return staleJobs.length;
 	}
 }
