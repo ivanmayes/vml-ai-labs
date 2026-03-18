@@ -293,6 +293,7 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
 
 		try {
 			const pgBossJobId = await this.boss.send(SITE_SCRAPER_QUEUE, data, {
+				singletonKey: data.jobId, // Prevent duplicate queue entries for the same job
 				retryLimit: SITE_SCRAPER_JOB_CONFIG.retryLimit,
 				expireInSeconds: SITE_SCRAPER_JOB_CONFIG.expireInSeconds,
 				priority: SITE_SCRAPER_JOB_CONFIG.priority,
