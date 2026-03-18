@@ -638,6 +638,36 @@ export class SiteScraperService {
 	}
 
 	/**
+	 * Cancel any active job in the org (admin, no userId check).
+	 *
+	 * @param jobId - Job UUID
+	 * @param orgId - Organization ID for authorization
+	 * @returns Updated job
+	 * @throws JobNotFoundError if job doesn't exist in the org
+	 * @throws InvalidStatusTransitionError if job is already terminal
+	 */
+	async adminCancelJob(jobId: string, orgId: string): Promise<ScrapeJob> {
+		const job = await this.jobRepository.findOne({
+			where: { id: jobId, organizationId: orgId },
+		});
+
+		if (!job) {
+			throw new JobNotFoundError();
+		}
+
+		if (isTerminalStatus(job.status)) {
+			throw new InvalidStatusTransitionError(
+				`Cannot cancel job in ${job.status} status`,
+			);
+		}
+
+		job.transitionTo(JobStatus.CANCELLED);
+		const savedJob = await this.jobRepository.save(job);
+		this.logger.log(`Admin cancelled job ${jobId}`);
+		return savedJob;
+	}
+
+	/**
 	 * Re-queue a single PENDING job that was never picked up by pg-boss.
 	 * Used by the manual "Requeue" button in the UI.
 	 *

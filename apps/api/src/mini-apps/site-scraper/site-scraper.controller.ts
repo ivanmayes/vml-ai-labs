@@ -46,6 +46,9 @@ import {
 	SortStrategy,
 } from '../../_platform/models';
 import { AwsS3Service } from '../../_platform/aws';
+import { Roles } from '../../user/auth/roles.decorator';
+import { RolesGuard } from '../../user/auth/roles.guard';
+import { UserRole } from '../../user/user-role.enum';
 
 import { ScrapeJob } from './entities/scrape-job.entity';
 import { ScrapedPage } from './entities/scraped-page.entity';
@@ -203,6 +206,85 @@ export class SiteScraperController {
 			results,
 			queuePositions: queuePositionsMap,
 		});
+	}
+
+	/**
+	 * List ALL scrape jobs in the organization (admin only).
+	 */
+	@Get('jobs/admin')
+	@UseGuards(RolesGuard)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@ApiOperation({
+		summary: 'List all scrape jobs in the organization (admin)',
+	})
+	@ApiResponse({ status: 200, description: 'Paginated list of all org jobs' })
+	@ApiQuery({ name: 'page', required: false, type: Number })
+	@ApiQuery({ name: 'perPage', required: false, type: Number })
+	async listAdminJobs(
+		@CurrentOrg() orgId: string,
+		@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+		@Query('perPage', new DefaultValuePipe(20), ParseIntPipe)
+		perPage: number,
+	): Promise<ResponseEnvelope> {
+		perPage = perPage > 50 ? 50 : perPage;
+
+		const [results, totalResults] = await this.scrapeJobRepo.findAndCount({
+			where: { organizationId: orgId },
+			relations: ['user'],
+			order: { createdAt: 'DESC' },
+			skip: (page - 1) * perPage,
+			take: perPage,
+		});
+
+		const queuePositions =
+			await this.siteScraperService.getQueuePositions();
+
+		const queuePositionsMap: Record<string, number> = {};
+		for (const job of results) {
+			if (queuePositions.has(job.id)) {
+				queuePositionsMap[job.id] = queuePositions.get(job.id)!;
+			}
+		}
+
+		// Map user info onto results
+		const mappedResults = results.map((job) => ({
+			...job,
+			userEmail: job.user?.email ?? null,
+			user: undefined,
+		}));
+
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, {
+			page,
+			perPage,
+			numPages: Math.ceil(totalResults / perPage) || 1,
+			totalResults,
+			results: mappedResults,
+			queuePositions: queuePositionsMap,
+		});
+	}
+
+	/**
+	 * Cancel any active job in the organization (admin only).
+	 */
+	@Post('jobs/:jobId/admin/cancel')
+	@HttpCode(HttpStatus.OK)
+	@UseGuards(RolesGuard)
+	@Roles(UserRole.SuperAdmin, UserRole.Admin)
+	@ApiOperation({ summary: 'Cancel any active job in the org (admin)' })
+	@ApiResponse({ status: 200, description: 'Job cancelled' })
+	@ApiResponse({ status: 404, description: 'Job not found' })
+	@ApiParam({ name: 'jobId', type: String, format: 'uuid' })
+	async adminCancelJob(
+		@CurrentOrg() orgId: string,
+		@Param('jobId', ParseUUIDPipe) jobId: string,
+	): Promise<ResponseEnvelope> {
+		const job = await this.siteScraperService.adminCancelJob(jobId, orgId);
+
+		return new ResponseEnvelope(
+			ResponseStatus.Success,
+			'Job cancelled',
+			job,
+		);
 	}
 
 	/**

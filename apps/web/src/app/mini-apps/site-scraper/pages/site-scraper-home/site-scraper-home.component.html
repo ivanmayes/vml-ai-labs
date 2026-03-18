@@ -257,4 +257,104 @@
 			</p-table>
 		}
 	</div>
+
+	<!-- Admin: All Jobs -->
+	@if (sessionQuery.isAdmin()) {
+		<div class="mt-6">
+			<div class="flex justify-between items-center mb-3">
+				<h3 class="m-0">Admin: All Jobs</h3>
+				<p-button
+					icon="pi pi-refresh"
+					label="Refresh"
+					[text]="true"
+					(onClick)="loadAdminJobs()"
+				/>
+			</div>
+			<p-table
+				[value]="adminJobs()"
+				[paginator]="true"
+				[rows]="20"
+				styleClass="p-datatable-sm"
+				[rowHover]="true"
+			>
+				<ng-template pTemplate="header">
+					<tr>
+						<th>URL</th>
+						<th style="width: 10rem">User</th>
+						<th style="width: 13rem">Status</th>
+						<th style="width: 10rem">Progress</th>
+						<th style="width: 9rem">Created</th>
+						<th style="width: 7rem">Duration</th>
+						<th style="width: 7rem">Actions</th>
+					</tr>
+				</ng-template>
+				<ng-template pTemplate="body" let-job>
+					<tr [class.bg-red-50]="isStuck(job)">
+						<td
+							class="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap"
+						>
+							{{ job.url }}
+						</td>
+						<td class="text-sm truncate">
+							{{ job.userEmail || job.userId?.slice(0, 8) }}
+						</td>
+						<td>
+							<p-tag
+								[value]="formatStatus(job.status)"
+								[severity]="getStatusSeverity(job.status)"
+							/>
+							@if (isStuck(job)) {
+								<p-tag
+									value="stuck"
+									severity="danger"
+									styleClass="ml-1"
+								/>
+							}
+							@if (
+								job.status === "pending" && job.queuePosition
+							) {
+								<span
+									class="text-xs text-[--p-text-muted-color] ml-1"
+									>#{{ job.queuePosition }}</span
+								>
+							}
+						</td>
+						<td class="text-sm">
+							{{ job.pagesCompleted }}/{{ job.pagesDiscovered }}
+							pages
+						</td>
+						<td class="text-sm">
+							{{ job.createdAt | date: "short" }}
+						</td>
+						<td class="text-sm">{{ getJobDuration(job) }}</td>
+						<td>
+							@if (
+								job.status === "pending" ||
+								job.status === "running"
+							) {
+								<p-button
+									icon="pi pi-times"
+									[text]="true"
+									severity="danger"
+									size="small"
+									ariaLabel="Cancel job"
+									(onClick)="adminCancelJob(job)"
+								/>
+							}
+						</td>
+					</tr>
+				</ng-template>
+				<ng-template pTemplate="emptymessage">
+					<tr>
+						<td
+							colspan="7"
+							class="text-center text-[--p-text-muted-color] p-8"
+						>
+							No jobs found in this organization.
+						</td>
+					</tr>
+				</ng-template>
+			</p-table>
+		</div>
+	}
 </div>

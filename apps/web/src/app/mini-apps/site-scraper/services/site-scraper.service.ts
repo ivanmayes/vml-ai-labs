@@ -66,6 +66,20 @@ export interface JobListResponse {
 	queuePositions?: Record<string, number>;
 }
 
+export interface AdminScrapeJob extends ScrapeJob {
+	userId: string;
+	userEmail?: string;
+}
+
+export interface AdminJobListResponse {
+	page: number;
+	perPage: number;
+	numPages: number;
+	totalResults: number;
+	results: AdminScrapeJob[];
+	queuePositions?: Record<string, number>;
+}
+
 export interface PresignedUrlResponse {
 	presignedUrl: string;
 }
@@ -226,6 +240,25 @@ export class SiteScraperService {
 	getSseToken(): Observable<{ status: string; data: { token: string } }> {
 		return this.http.post<{ status: string; data: { token: string } }>(
 			`${this.baseUrl}/sse-token`,
+			{},
+		);
+	}
+
+	getAdminJobs(): Observable<{
+		status: string;
+		data: AdminJobListResponse;
+	}> {
+		return this.http.get<{ status: string; data: AdminJobListResponse }>(
+			`${this.baseUrl}/jobs/admin`,
+			{ params: { perPage: '50' } },
+		);
+	}
+
+	adminCancelJob(
+		jobId: string,
+	): Observable<{ status: string; data: AdminScrapeJob }> {
+		return this.http.post<{ status: string; data: AdminScrapeJob }>(
+			`${this.baseUrl}/jobs/${jobId}/admin/cancel`,
 			{},
 		);
 	}

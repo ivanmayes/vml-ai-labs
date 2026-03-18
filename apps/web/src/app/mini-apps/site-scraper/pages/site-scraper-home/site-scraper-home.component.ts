@@ -25,8 +25,10 @@ import { MessageService } from 'primeng/api';
 import {
 	SiteScraperService,
 	ScrapeJob,
+	AdminScrapeJob,
 } from '../../services/site-scraper.service';
 import { SiteScraperSseService } from '../../services/site-scraper-sse.service';
+import { SessionQuery } from '../../../../state/session/session.query';
 
 @Component({
 	selector: 'app-site-scraper-home',
@@ -55,11 +57,13 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 	private readonly destroyRef = inject(DestroyRef);
 	private readonly router = inject(Router);
 	readonly sseService = inject(SiteScraperSseService);
+	readonly sessionQuery = inject(SessionQuery);
 
 	private refreshInterval: ReturnType<typeof setInterval> | null = null;
 
 	// State
 	jobs = signal<ScrapeJob[]>([]);
+	adminJobs = signal<AdminScrapeJob[]>([]);
 	loading = signal(false);
 	isSubmitting = signal(false);
 
@@ -89,8 +93,17 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 		this.sseService.connect();
 		this.subscribeSseEvents();
 
+		if (this.sessionQuery.isAdmin()) {
+			this.loadAdminJobs();
+		}
+
 		// Fallback polling every 15 seconds
-		this.refreshInterval = setInterval(() => this.refreshJobs(), 15000);
+		this.refreshInterval = setInterval(() => {
+			this.refreshJobs();
+			if (this.sessionQuery.isAdmin()) {
+				this.refreshAdminJobs();
+			}
+		}, 15000);
 	}
 
 	ngOnDestroy(): void {
@@ -291,11 +304,94 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 		return Math.round((job.pagesCompleted / job.pagesDiscovered) * 100);
 	}
 
+	// --- Admin ---
+
+	loadAdminJobs(): void {
+		this.scraperService
+			.getAdminJobs()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (res) => {
+					this.adminJobs.set(
+						this.mergeQueuePositions(
+							res.data?.results || [],
+							res.data?.queuePositions,
+						) as AdminScrapeJob[],
+					);
+				},
+			});
+	}
+
+	private refreshAdminJobs(): void {
+		this.scraperService
+			.getAdminJobs()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (res) => {
+					this.adminJobs.set(
+						this.mergeQueuePositions(
+							res.data?.results || [],
+							res.data?.queuePositions,
+						) as AdminScrapeJob[],
+					);
+				},
+			});
+	}
+
+	adminCancelJob(job: AdminScrapeJob): void {
+		this.scraperService
+			.adminCancelJob(job.id)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: () => {
+					this.messageService.add({
+						severity: 'info',
+						summary: 'Cancelled',
+						detail: `Admin cancelled job for ${job.url}`,
+					});
+					this.refreshAdminJobs();
+				},
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Could not cancel job',
+					});
+				},
+			});
+	}
+
+	isStuck(job: AdminScrapeJob): boolean {
+		const now = Date.now();
+		if (job.status === 'running' && job.startedAt) {
+			return now - new Date(job.startedAt).getTime() > 10 * 60 * 1000;
+		}
+		if (job.status === 'pending') {
+			return now - new Date(job.createdAt).getTime() > 5 * 60 * 1000;
+		}
+		return false;
+	}
+
+	getJobDuration(job: AdminScrapeJob): string {
+		const start = job.startedAt
+			? new Date(job.startedAt)
+			: new Date(job.createdAt);
+		const end = job.completedAt ? new Date(job.completedAt) : new Date();
+		const diffMs = end.getTime() - start.getTime();
+		const mins = Math.floor(diffMs / 60000);
+		if (mins < 1) return '<1m';
+		if (mins < 60) return `${mins}m`;
+		return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+	}
+
 	private subscribeSseEvents(): void {
 		this.sseService.jobStarted$
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe(() => {
 				this.refreshJobs();
+				if (this.sessionQuery.isAdmin()) {
+					this.refreshAdminJobs();
+				}
 			});
 
 		this.sseService.pageCompleted$
