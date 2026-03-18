@@ -325,7 +325,16 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 			}
 
 			// Mark job as running in the database
-			await this.scraperService.markJobRunning(jobId, pgBossJobId);
+			const runningJob = await this.scraperService.markJobRunning(
+				jobId,
+				pgBossJobId,
+			);
+			if (!runningJob) {
+				this.logger.warn(
+					`Job ${jobId} could not be marked as running (already terminal?), skipping`,
+				);
+				return;
+			}
 
 			// Query completed pages for retry/resume support
 			const completedPages =
@@ -375,6 +384,10 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 					maxConcurrency: 1,
 					requestHandlerTimeoutSecs: 60,
 					navigationTimeoutSecs: 30,
+					browserPoolOptions: {
+						maxOpenPagesPerBrowser: 1,
+						retireBrowserAfterPageCount: 50,
+					},
 					launchContext: {
 						launcher: chromium,
 						launchOptions: {
@@ -511,7 +524,7 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 							const screenshotS3Key = `site-scraper/${jobId}/${pageId}/screenshot-${viewport}w.jpg`;
 							await this.s3Service.upload({
 								key: screenshotS3Key,
-								buffer: Buffer.from(screenshotBuffer),
+								buffer: screenshotBuffer,
 								contentType: 'image/jpeg',
 							});
 
@@ -519,7 +532,7 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 							let thumbnailS3Key: string | undefined;
 							try {
 								const thumbnailBuffer = await sharp(
-									Buffer.from(screenshotBuffer),
+									screenshotBuffer,
 								)
 									.resize({ width: 480 })
 									.webp({ quality: 80 })
