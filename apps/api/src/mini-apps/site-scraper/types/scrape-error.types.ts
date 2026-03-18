@@ -9,7 +9,8 @@ export type ScrapeErrorCode =
 	| 'S3_ERROR'
 	| 'BROWSER_CRASH'
 	| 'SITE_UNREACHABLE'
-	| 'JOB_CANCELLED';
+	| 'JOB_CANCELLED'
+	| 'WORKER_RESTART';
 
 /**
  * Structured error information for scrape failures.

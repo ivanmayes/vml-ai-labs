@@ -319,6 +319,9 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 						) as AdminScrapeJob[],
 					);
 				},
+				error: (err) => {
+					console.error('Failed to load admin jobs:', err);
+				},
 			});
 	}
 
