@@ -328,6 +328,37 @@ export class SiteScraperController {
 	}
 
 	/**
+	 * Re-queue a PENDING job that was never picked up by pg-boss.
+	 */
+	@Post('jobs/:jobId/requeue')
+	@HttpCode(HttpStatus.OK)
+	@ApiOperation({ summary: 'Re-queue a stuck PENDING job' })
+	@ApiResponse({ status: 200, description: 'Job re-queued successfully' })
+	@ApiResponse({ status: 404, description: 'Job not found' })
+	@ApiResponse({
+		status: 400,
+		description: 'Job is not in PENDING status',
+	})
+	@ApiParam({ name: 'jobId', type: String, format: 'uuid' })
+	async requeueJob(
+		@Req() req: AuthenticatedRequest,
+		@CurrentOrg() orgId: string,
+		@Param('jobId', ParseUUIDPipe) jobId: string,
+	): Promise<ResponseEnvelope> {
+		const updatedJob = await this.siteScraperService.requeueJob(
+			jobId,
+			orgId,
+			req.user.id,
+		);
+
+		return new ResponseEnvelope(
+			ResponseStatus.Success,
+			'Job re-queued successfully',
+			updatedJob,
+		);
+	}
+
+	/**
 	 * List scraped pages for a specific job with pagination.
 	 */
 	@Get('jobs/:jobId/pages')

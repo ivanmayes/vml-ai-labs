@@ -23,6 +23,16 @@
 						size="small"
 					/>
 				}
+				@if (isPending()) {
+					<p-button
+						icon="pi pi-sync"
+						label="Requeue"
+						[outlined]="true"
+						size="small"
+						severity="warn"
+						(onClick)="requeueJob()"
+					/>
+				}
 				@if (isRetryable()) {
 					<p-button
 						icon="pi pi-refresh"

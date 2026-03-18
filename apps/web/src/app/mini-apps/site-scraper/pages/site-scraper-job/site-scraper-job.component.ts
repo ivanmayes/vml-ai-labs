@@ -184,6 +184,35 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 			});
 	}
 
+	requeueJob(): void {
+		this.scraperService
+			.requeueJob(this.jobId)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (res) => {
+					this.job.set(res.data);
+					this.sseService.disconnect();
+					this.sseService.connect();
+					this.messageService.add({
+						severity: 'success',
+						summary: 'Re-queued',
+						detail: 'Job re-submitted to processing queue',
+					});
+				},
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Could not requeue job',
+					});
+				},
+			});
+	}
+
+	isPending(): boolean {
+		return this.job()?.status === 'pending';
+	}
+
 	isRetryable(): boolean {
 		const status = this.job()?.status;
 		return (

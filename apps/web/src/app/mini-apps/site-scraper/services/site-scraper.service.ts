@@ -124,6 +124,13 @@ export class SiteScraperService {
 		);
 	}
 
+	requeueJob(id: string): Observable<{ status: string; data: ScrapeJob }> {
+		return this.http.post<{ status: string; data: ScrapeJob }>(
+			`${this.baseUrl}/jobs/${id}/requeue`,
+			{},
+		);
+	}
+
 	deleteJob(
 		id: string,
 	): Observable<{ status: string; data: { id: string; status: string } }> {

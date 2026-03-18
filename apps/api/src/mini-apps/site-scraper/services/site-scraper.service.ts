@@ -638,6 +638,49 @@ export class SiteScraperService {
 	}
 
 	/**
+	 * Re-queue a single PENDING job that was never picked up by pg-boss.
+	 * Used by the manual "Requeue" button in the UI.
+	 *
+	 * @param jobId - Job UUID
+	 * @param orgId - Organization ID for authorization
+	 * @param userId - User ID for authorization
+	 * @returns The job entity
+	 * @throws JobNotFoundError if job doesn't exist or user lacks access
+	 * @throws InvalidStatusTransitionError if job is not in PENDING status
+	 */
+	async requeueJob(
+		jobId: string,
+		orgId: string,
+		userId: string,
+	): Promise<ScrapeJob> {
+		const job = await this.jobRepository.findOne({
+			where: { id: jobId, organizationId: orgId, userId },
+		});
+
+		if (!job) {
+			throw new JobNotFoundError();
+		}
+
+		if (job.status !== JobStatus.PENDING) {
+			throw new InvalidStatusTransitionError(
+				`Cannot requeue job in ${job.status} status — only PENDING jobs can be requeued`,
+			);
+		}
+
+		await this.pgBossService.sendSiteScraperJob({
+			jobId: job.id,
+			url: job.url,
+			maxDepth: job.maxDepth,
+			viewports: job.viewports,
+			userId: job.userId,
+			organizationId: job.organizationId,
+		});
+
+		this.logger.log(`Manually re-queued PENDING job ${jobId}`);
+		return job;
+	}
+
+	/**
 	 * Re-queue PENDING jobs that were never picked up by pg-boss.
 	 * Recovers from fire-and-forget queue failures on startup.
 	 *
