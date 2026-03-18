@@ -104,7 +104,7 @@ export const SITE_SCRAPER_QUEUE = 'site-scraper';
  */
 export const SITE_SCRAPER_JOB_CONFIG: JobConfig = {
 	retryLimit: 2,
-	expireInSeconds: 3600, // 60 minutes for deep crawls on large sites
+	expireInSeconds: 1800, // 30 minutes — pg-boss safety net for stuck crawls
 	priority: 1,
 	retryDelay: 30,
 	retryBackoff: true,

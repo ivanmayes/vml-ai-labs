@@ -32,7 +32,7 @@ import {
 	isTerminalStatus,
 	isRetryableStatus,
 } from '../types/job-status.enum';
-import { ScrapeError } from '../types/scrape-error.types';
+import { ScrapeError, createScrapeError } from '../types/scrape-error.types';
 
 /**
  * Input data for saving a scraped page result.
@@ -678,6 +678,36 @@ export class SiteScraperService {
 
 		this.logger.log(`Manually re-queued PENDING job ${jobId}`);
 		return job;
+	}
+
+	/**
+	 * Fail orphaned RUNNING jobs on startup.
+	 * When the process restarts, any RUNNING jobs are orphaned —
+	 * the worker that was processing them is gone.
+	 *
+	 * @returns Number of orphaned jobs marked as failed
+	 */
+	async failOrphanedRunningJobs(): Promise<number> {
+		const runningJobs = await this.jobRepository.find({
+			where: { status: JobStatus.RUNNING },
+		});
+
+		for (const job of runningJobs) {
+			job.transitionTo(JobStatus.FAILED);
+			job.error = createScrapeError(
+				'WORKER_RESTART',
+				'Worker process restarted while job was running — use Retry to re-run',
+			);
+			await this.jobRepository.save(job);
+		}
+
+		if (runningJobs.length > 0) {
+			this.logger.log(
+				`Marked ${runningJobs.length} orphaned RUNNING jobs as FAILED`,
+			);
+		}
+
+		return runningJobs.length;
 	}
 
 	/**

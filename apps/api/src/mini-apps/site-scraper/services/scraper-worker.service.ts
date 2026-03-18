@@ -182,7 +182,21 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 			);
 		}
 
-		// Register site scraper queue worker
+		// Clean up orphaned jobs from previous process before registering worker
+		try {
+			await this.scraperService.failOrphanedRunningJobs();
+		} catch (error) {
+			this.logger.error(`Failed to clean up orphaned jobs: ${error}`);
+		}
+
+		// Re-queue any orphaned PENDING jobs from previous crashes
+		try {
+			await this.scraperService.requeueStaleJobs();
+		} catch (error) {
+			this.logger.error(`Failed to re-queue stale jobs: ${error}`);
+		}
+
+		// Register site scraper queue worker (teamSize: 1 enforced in pgBossService)
 		try {
 			await this.pgBossService.workSiteScraperQueue(
 				this.processJob.bind(this),
@@ -191,13 +205,6 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 			this.logger.log('Registered scraper worker with batchSize: 1');
 		} catch (error) {
 			this.logger.error(`Failed to register scraper worker: ${error}`);
-		}
-
-		// Re-queue any orphaned PENDING jobs from previous crashes
-		try {
-			await this.scraperService.requeueStaleJobs();
-		} catch (error) {
-			this.logger.error(`Failed to re-queue stale jobs: ${error}`);
 		}
 	}
 

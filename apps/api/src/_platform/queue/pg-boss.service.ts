@@ -325,7 +325,7 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
 	): Promise<string> {
 		return this.boss.work<SiteScraperJobData>(
 			SITE_SCRAPER_QUEUE,
-			options || { batchSize: 1 },
+			{ teamSize: 1, teamConcurrency: 1, batchSize: 1, ...options },
 			handler,
 		);
 	}
