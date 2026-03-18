@@ -122,7 +122,7 @@
 				<ng-template pTemplate="header">
 					<tr>
 						<th>URL</th>
-						<th style="width: 10rem">Status</th>
+						<th style="width: 13rem">Status</th>
 						<th style="width: 10rem">Progress</th>
 						<th style="width: 9rem">Created</th>
 						<th style="width: 8rem">Actions</th>
@@ -140,6 +140,14 @@
 								[value]="formatStatus(job.status)"
 								[severity]="getStatusSeverity(job.status)"
 							/>
+							@if (
+								job.status === "pending" && job.queuePosition
+							) {
+								<span
+									class="text-xs text-[--p-text-muted-color] ml-2"
+									>#{{ job.queuePosition }} in queue</span
+								>
+							}
 						</td>
 						<td>
 							@if (job.status === "running") {

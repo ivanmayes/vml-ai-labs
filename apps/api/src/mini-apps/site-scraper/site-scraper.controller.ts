@@ -168,7 +168,7 @@ export class SiteScraperController {
 		@Query('sortBy') sortBy?: string,
 		@Query('order', new DefaultValuePipe('DESC'))
 		sortOrder?: SortStrategy,
-	): Promise<ResponseEnvelopeFind<ScrapeJob>> {
+	): Promise<ResponseEnvelope> {
 		perPage = perPage > 50 ? 50 : perPage;
 
 		const [results, totalResults] = await this.scrapeJobRepo.findAndCount({
@@ -184,12 +184,24 @@ export class SiteScraperController {
 			take: perPage,
 		});
 
-		return new ResponseEnvelopeFind(ResponseStatus.Success, undefined, {
+		const queuePositions =
+			await this.siteScraperService.getQueuePositions();
+
+		// Build positions map for jobs on this page only
+		const queuePositionsMap: Record<string, number> = {};
+		for (const job of results) {
+			if (queuePositions.has(job.id)) {
+				queuePositionsMap[job.id] = queuePositions.get(job.id)!;
+			}
+		}
+
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, {
 			page,
 			perPage,
 			numPages: Math.ceil(totalResults / perPage) || 1,
 			totalResults,
 			results,
+			queuePositions: queuePositionsMap,
 		});
 	}
 
@@ -218,7 +230,16 @@ export class SiteScraperController {
 			throw new NotFoundException(`Job ${jobId} not found`);
 		}
 
-		return new ResponseEnvelope(ResponseStatus.Success, undefined, job);
+		let queuePosition: number | null = null;
+		if (isActiveStatus(job.status)) {
+			const positions = await this.siteScraperService.getQueuePositions();
+			queuePosition = positions.get(jobId) ?? null;
+		}
+
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, {
+			...job,
+			queuePosition,
+		});
 	}
 
 	/**

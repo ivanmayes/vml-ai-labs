@@ -41,6 +41,7 @@ export interface ScrapeJob {
 	createdAt: string;
 	startedAt?: string;
 	completedAt?: string;
+	queuePosition?: number | null;
 }
 
 export interface ScrapedPage {
@@ -62,6 +63,7 @@ export interface JobListResponse {
 	numPages: number;
 	totalResults: number;
 	results: ScrapeJob[];
+	queuePositions?: Record<string, number>;
 }
 
 export interface PresignedUrlResponse {

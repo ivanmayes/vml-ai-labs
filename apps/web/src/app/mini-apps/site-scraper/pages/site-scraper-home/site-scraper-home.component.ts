@@ -107,7 +107,12 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					this.jobs.set(res.data?.results || []);
+					this.jobs.set(
+						this.mergeQueuePositions(
+							res.data?.results || [],
+							res.data?.queuePositions,
+						),
+					);
 					this.loading.set(false);
 				},
 				error: () => {
@@ -123,9 +128,25 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					this.jobs.set(res.data?.results || []);
+					this.jobs.set(
+						this.mergeQueuePositions(
+							res.data?.results || [],
+							res.data?.queuePositions,
+						),
+					);
 				},
 			});
+	}
+
+	private mergeQueuePositions(
+		jobs: ScrapeJob[],
+		positions?: Record<string, number>,
+	): ScrapeJob[] {
+		if (!positions) return jobs;
+		return jobs.map((job) => ({
+			...job,
+			queuePosition: positions[job.id] ?? null,
+		}));
 	}
 
 	submitJob(): void {
@@ -273,8 +294,8 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 	private subscribeSseEvents(): void {
 		this.sseService.jobStarted$
 			.pipe(takeUntilDestroyed(this.destroyRef))
-			.subscribe((event) => {
-				this.updateJobInList(event.id, { status: 'running' });
+			.subscribe(() => {
+				this.refreshJobs();
 			});
 
 		this.sseService.pageCompleted$

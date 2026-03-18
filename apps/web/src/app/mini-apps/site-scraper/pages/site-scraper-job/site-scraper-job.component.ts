@@ -498,8 +498,11 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 			.subscribe((event) => {
 				if (event.id === this.jobId) {
 					this.job.update((j) =>
-						j ? { ...j, status: 'running' } : j,
+						j ? { ...j, status: 'running', queuePosition: 0 } : j,
 					);
+				} else {
+					// Another job started — our queue position may have changed
+					this.refreshJob();
 				}
 			});
 

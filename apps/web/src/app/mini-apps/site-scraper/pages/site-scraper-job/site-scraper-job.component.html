@@ -72,6 +72,11 @@
 						[value]="formatStatus(j.status)"
 						[severity]="getStatusSeverity(j.status)"
 					/>
+					@if (j.status === "pending" && j.queuePosition) {
+						<span class="text-xs text-[--p-text-muted-color]"
+							>#{{ j.queuePosition }} in queue</span
+						>
+					}
 				</div>
 				@if (j.createdAt) {
 					<span class="text-sm text-[--p-text-muted-color]">

@@ -11,7 +11,7 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, LessThan } from 'typeorm';
+import { Repository, DataSource, In, LessThan } from 'typeorm';
 
 import { PgBossService, SiteScraperJobData } from '../../../_platform/queue';
 import { AwsS3Service } from '../../../_platform/aws';
@@ -708,6 +708,38 @@ export class SiteScraperService {
 		}
 
 		return runningJobs.length;
+	}
+
+	/**
+	 * Get queue positions for all active (RUNNING + PENDING) jobs.
+	 * RUNNING jobs get position 0, PENDING jobs get 1, 2, 3... by creation order.
+	 *
+	 * @returns Map of jobId → queue position
+	 */
+	async getQueuePositions(): Promise<Map<string, number>> {
+		const activeJobs = await this.jobRepository.find({
+			where: { status: In([JobStatus.RUNNING, JobStatus.PENDING]) },
+			order: { createdAt: 'ASC' },
+			select: ['id', 'status'],
+		});
+
+		const positions = new Map<string, number>();
+		let pendingPosition = 0;
+
+		for (const job of activeJobs) {
+			if (job.status === JobStatus.RUNNING) {
+				positions.set(job.id, 0);
+			}
+		}
+
+		for (const job of activeJobs) {
+			if (job.status === JobStatus.PENDING) {
+				pendingPosition++;
+				positions.set(job.id, pendingPosition);
+			}
+		}
+
+		return positions;
 	}
 
 	/**
