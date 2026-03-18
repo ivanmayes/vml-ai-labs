@@ -145,6 +145,11 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 	private isShuttingDown = false;
 
 	/**
+	 * Interval handle for periodic recovery of stuck jobs
+	 */
+	private recoveryInterval: ReturnType<typeof setInterval> | null = null;
+
+	/**
 	 * Ghostery adblocker instance for hiding cookie banners via CSS cosmetic rules.
 	 * Initialized in onModuleInit via dynamic import (ESM-only package).
 	 */
@@ -196,16 +201,46 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 			this.logger.error(`Failed to re-queue stale jobs: ${error}`);
 		}
 
-		// Register site scraper queue worker (teamSize: 1 enforced in pgBossService)
-		try {
-			await this.pgBossService.workSiteScraperQueue(
-				this.processJob.bind(this),
-				{ batchSize: 1 },
-			);
-			this.logger.log('Registered scraper worker with batchSize: 1');
-		} catch (error) {
-			this.logger.error(`Failed to register scraper worker: ${error}`);
+		// Register site scraper queue worker with retry (teamSize: 1 enforced in pgBossService)
+		const maxAttempts = 3;
+		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+			try {
+				await this.pgBossService.workSiteScraperQueue(
+					this.processJob.bind(this),
+					{ batchSize: 1 },
+				);
+				this.logger.log('Registered scraper worker with batchSize: 1');
+				break;
+			} catch (error) {
+				this.logger.error(
+					`Failed to register scraper worker (attempt ${attempt}/${maxAttempts}): ${error}`,
+				);
+				if (attempt === maxAttempts) {
+					throw error; // Crash the module — Heroku restarts the dyno
+				}
+				await new Promise((resolve) =>
+					setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)),
+				);
+			}
 		}
+
+		// Periodic recovery: re-queue stale PENDING jobs and fail stuck RUNNING jobs
+		this.recoveryInterval = setInterval(async () => {
+			try {
+				const requeued = await this.scraperService.requeueStaleJobs();
+				const failed = await this.scraperService.failStaleRunningJobs(
+					this.activeJobs,
+				);
+				if (requeued > 0 || failed > 0) {
+					this.logger.log(
+						`Recovery sweep: requeued ${requeued} stale PENDING, failed ${failed} stale RUNNING`,
+					);
+				}
+			} catch (error) {
+				this.logger.error(`Recovery sweep failed: ${error}`);
+			}
+		}, 2 * 60_000); // Every 2 minutes
+		this.recoveryInterval.unref();
 	}
 
 	/**
@@ -214,6 +249,12 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 	async onModuleDestroy(): Promise<void> {
 		this.logger.log('Shutting down ScraperWorkerService...');
 		this.isShuttingDown = true;
+
+		// Clear recovery interval
+		if (this.recoveryInterval) {
+			clearInterval(this.recoveryInterval);
+			this.recoveryInterval = null;
+		}
 
 		// Cancel all in-flight jobs
 		for (const [jobId, controller] of this.abortControllers) {

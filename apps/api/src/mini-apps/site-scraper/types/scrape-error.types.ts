@@ -10,7 +10,8 @@ export type ScrapeErrorCode =
 	| 'BROWSER_CRASH'
 	| 'SITE_UNREACHABLE'
 	| 'JOB_CANCELLED'
-	| 'WORKER_RESTART';
+	| 'WORKER_RESTART'
+	| 'QUEUE_FAILED';
 
 /**
  * Structured error information for scrape failures.
@@ -51,6 +52,7 @@ export const RETRYABLE_ERROR_CODES: ScrapeErrorCode[] = [
 	'CRAWL_TIMEOUT',
 	'S3_ERROR',
 	'BROWSER_CRASH',
+	'QUEUE_FAILED',
 ];
 
 /**

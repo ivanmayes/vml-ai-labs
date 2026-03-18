@@ -100,12 +100,19 @@ export class SiteScraperService {
 			organizationId: orgId,
 		};
 
-		// Fire-and-forget: don't block the HTTP response waiting for pg-boss
-		this.pgBossService.sendSiteScraperJob(jobData).catch((err) => {
+		try {
+			await this.pgBossService.sendSiteScraperJob(jobData);
+		} catch (err) {
 			this.logger.error(
 				`Failed to queue scrape job ${savedJob.id}: ${err}`,
 			);
-		});
+			savedJob.transitionTo(JobStatus.FAILED);
+			savedJob.error = createScrapeError(
+				'QUEUE_FAILED',
+				'Failed to submit job to queue. Please retry.',
+			);
+			await this.jobRepository.save(savedJob);
+		}
 
 		return savedJob;
 	}
@@ -738,6 +745,45 @@ export class SiteScraperService {
 		}
 
 		return runningJobs.length;
+	}
+
+	/**
+	 * Fail RUNNING jobs whose updatedAt is older than 35 minutes.
+	 * These are likely stuck — pg-boss expiry is 30 min, so 35 min gives buffer.
+	 * Skips any jobs in the activeJobIds set (still being processed by this worker).
+	 *
+	 * @param activeJobIds - Set of job IDs currently being processed
+	 * @returns Number of stale jobs marked as failed
+	 */
+	async failStaleRunningJobs(activeJobIds: Set<string>): Promise<number> {
+		const staleThreshold = new Date(Date.now() - 35 * 60_000); // 35 minutes
+		const staleJobs = await this.jobRepository.find({
+			where: {
+				status: JobStatus.RUNNING,
+				updatedAt: LessThan(staleThreshold),
+			},
+		});
+
+		let failedCount = 0;
+		for (const job of staleJobs) {
+			if (activeJobIds.has(job.id)) continue;
+
+			job.transitionTo(JobStatus.FAILED);
+			job.error = createScrapeError(
+				'CRAWL_TIMEOUT',
+				'Job exceeded maximum running time and was marked as failed',
+			);
+			await this.jobRepository.save(job);
+			failedCount++;
+		}
+
+		if (failedCount > 0) {
+			this.logger.log(
+				`Marked ${failedCount} stale RUNNING jobs as FAILED (older than 35 minutes)`,
+			);
+		}
+
+		return failedCount;
 	}
 
 	/**

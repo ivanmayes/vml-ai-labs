@@ -25,7 +25,11 @@ export enum PageStatus {
  * Defines which status transitions are allowed from each state.
  */
 export const VALID_STATUS_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
-	[JobStatus.PENDING]: [JobStatus.RUNNING, JobStatus.CANCELLED],
+	[JobStatus.PENDING]: [
+		JobStatus.RUNNING,
+		JobStatus.CANCELLED,
+		JobStatus.FAILED,
+	],
 	[JobStatus.RUNNING]: [
 		JobStatus.COMPLETED,
 		JobStatus.COMPLETED_WITH_ERRORS,
