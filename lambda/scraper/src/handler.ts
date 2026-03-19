@@ -386,7 +386,7 @@ async function processRecord(
 				},
 			],
 
-			requestHandler: async ({ page, enqueueLinks, request }) => {
+			requestHandler: async ({ page, request }) => {
 				// Skip download URLs (navigation was already skipped)
 				if (request.skipNavigation) return;
 
@@ -415,19 +415,56 @@ async function processRecord(
 				// Get page title
 				pageTitle = (await page.title()) || null;
 
-				// Discover same-hostname links (only if below maxDepth)
+				// Discover same-hostname links from the Crawlee-rendered page.
+				// We use direct $$eval instead of enqueueLinks() because Crawlee
+				// enforces maxRequestsPerCrawl budget on enqueueLinks, limiting
+				// it to 0 when maxRequestsPerCrawl: 1.
 				if (message.depth < message.maxDepth) {
-					const { processedRequests } = await enqueueLinks({
-						strategy: 'same-hostname',
-						transformRequestFunction: (req: any) =>
-							isDownloadUrl(req.url) ? false : req,
-					});
+					const rawLinks: string[] = await page.$$eval(
+						'a[href]',
+						(anchors: HTMLAnchorElement[], hostname: string) => {
+							const urls: string[] = [];
+							for (const a of anchors) {
+								try {
+									const u = new URL(a.href);
+									if (
+										u.hostname === hostname &&
+										(u.protocol === 'http:' ||
+											u.protocol === 'https:')
+									) {
+										urls.push(u.href);
+									}
+								} catch {
+									// Skip invalid URLs
+								}
+							}
+							return urls;
+						},
+						message.seedHostname,
+					);
 
-					discoveredUrls = processedRequests
-						.filter(
-							(r: any) => !r.wasAlreadyPresent,
-						)
-						.map((r: any) => r.uniqueKey);
+					// Deduplicate and filter download URLs
+					const seen = new Set<string>();
+					for (const raw of rawLinks) {
+						if (isDownloadUrl(raw)) continue;
+						try {
+							const u = new URL(raw);
+							u.hash = '';
+							if (
+								u.pathname.length > 1 &&
+								u.pathname.endsWith('/')
+							) {
+								u.pathname = u.pathname.slice(0, -1);
+							}
+							const normalized = u.toString();
+							if (!seen.has(normalized)) {
+								seen.add(normalized);
+								discoveredUrls.push(normalized);
+							}
+						} catch {
+							// Skip invalid URLs
+						}
+					}
 				}
 			},
 

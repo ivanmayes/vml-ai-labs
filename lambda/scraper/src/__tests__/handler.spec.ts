@@ -141,21 +141,15 @@ function createMockCrawlerContext() {
 			addInitScript: jest.fn().mockResolvedValue(undefined),
 			route: jest.fn().mockResolvedValue(undefined),
 			setViewportSize: jest.fn().mockResolvedValue(undefined),
+			$$eval: jest.fn().mockResolvedValue([
+				'https://example.com/found',
+				'https://example.com/about',
+			]),
 		},
 		request: {
 			url: VALID_MESSAGE.url,
 			skipNavigation: false,
 		},
-		enqueueLinks: jest.fn().mockResolvedValue({
-			processedRequests: [
-				{
-					uniqueKey: 'https://example.com/found',
-					wasAlreadyPresent: false,
-					wasAlreadyHandled: false,
-				},
-			],
-			unprocessedRequests: [],
-		}),
 		log: {
 			info: jest.fn(),
 			debug: jest.fn(),
@@ -460,12 +454,14 @@ describe('Lambda handler', () => {
 			expect(uploadHtml).toHaveBeenCalledTimes(1);
 		});
 
-		it('should call enqueueLinks with same-hostname strategy', async () => {
+		it('should extract links via $$eval with seedHostname', async () => {
 			const event = createSQSEvent([VALID_MESSAGE]);
 			await handler(event);
 
-			expect(mockContext.enqueueLinks).toHaveBeenCalledWith(
-				expect.objectContaining({ strategy: 'same-hostname' }),
+			expect(mockContext.page.$$eval).toHaveBeenCalledWith(
+				'a[href]',
+				expect.any(Function),
+				VALID_MESSAGE.seedHostname,
 			);
 		});
 
@@ -479,13 +475,13 @@ describe('Lambda handler', () => {
 			expect(uploadHtml).not.toHaveBeenCalled();
 		});
 
-		it('should not call enqueueLinks when depth >= maxDepth', async () => {
+		it('should not extract links when depth >= maxDepth', async () => {
 			const event = createSQSEvent([
 				{ ...VALID_MESSAGE, depth: 2, maxDepth: 2 },
 			]);
 			await handler(event);
 
-			expect(mockContext.enqueueLinks).not.toHaveBeenCalled();
+			expect(mockContext.page.$$eval).not.toHaveBeenCalled();
 		});
 
 		it('should continue if networkidle times out', async () => {
@@ -528,32 +524,23 @@ describe('Lambda handler', () => {
 			expect(payload.htmlS3Key).toMatch(/page\.html$/);
 		});
 
-		it('should filter processedRequests by wasAlreadyPresent', async () => {
-			mockContext.enqueueLinks.mockResolvedValue({
-				processedRequests: [
-					{
-						uniqueKey: 'https://example.com/a',
-						wasAlreadyPresent: false,
-					},
-					{
-						uniqueKey: 'https://example.com/b',
-						wasAlreadyPresent: true,
-					},
-					{
-						uniqueKey: 'https://example.com/c',
-						wasAlreadyPresent: false,
-					},
-				],
-				unprocessedRequests: [],
-			});
+		it('should deduplicate and normalize discovered URLs', async () => {
+			mockContext.page.$$eval.mockResolvedValue([
+				'https://example.com/a',
+				'https://example.com/a#section',
+				'https://example.com/b/',
+				'https://example.com/b',
+				'https://example.com/file.pdf',
+			]);
 
 			const event = createSQSEvent([VALID_MESSAGE]);
 			await handler(event);
 
 			const payload = (sendCallback as jest.Mock).mock.calls[0][0];
+			// Deduplicated (a + a#section = 1), normalized (b/ = b), PDF filtered
 			expect(payload.discoveredUrls).toEqual([
 				'https://example.com/a',
-				'https://example.com/c',
+				'https://example.com/b',
 			]);
 		});
 
