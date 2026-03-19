@@ -1,16 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 @Injectable()
-export class SchemaBootstrapService implements OnModuleInit {
+export class SchemaBootstrapService implements OnApplicationBootstrap {
 	private readonly logger = new Logger(SchemaBootstrapService.name);
 
 	constructor(private readonly dataSource: DataSource) {}
 
-	async onModuleInit() {
+	async onApplicationBootstrap() {
 		const manifestPath = path.resolve(__dirname, '../../../mini-apps.json');
 		if (!fs.existsSync(manifestPath)) {
 			this.logger.warn(
@@ -20,7 +20,6 @@ export class SchemaBootstrapService implements OnModuleInit {
 		}
 
 		const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-		const schemas: string[] = [];
 
 		for (const app of manifest.apps) {
 			const schemaName = app.key.replace(/-/g, '_');
@@ -35,14 +34,7 @@ export class SchemaBootstrapService implements OnModuleInit {
 			await this.dataSource.query(
 				`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`,
 			);
-			schemas.push(schemaName);
 			this.logger.log(`Ensured schema exists: ${schemaName}`);
-		}
-
-		if (schemas.length > 0) {
-			const searchPath = ['public', ...schemas].join(', ');
-			await this.dataSource.query(`SET search_path TO ${searchPath}`);
-			this.logger.log(`Set search_path to: ${searchPath}`);
 		}
 	}
 }

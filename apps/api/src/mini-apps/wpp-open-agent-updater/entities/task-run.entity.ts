@@ -3,6 +3,7 @@ import {
 	Column,
 	PrimaryGeneratedColumn,
 	ManyToOne,
+	OneToMany,
 	JoinColumn,
 	Index,
 	CreateDateColumn,
@@ -10,6 +11,7 @@ import {
 } from 'typeorm';
 
 import { UpdaterTask } from './updater-task.entity';
+import { TaskRunFile } from './task-run-file.entity';
 
 export enum TaskRunStatus {
 	PENDING = 'pending',
@@ -36,6 +38,9 @@ export class TaskRun {
 		foreignKeyConstraintName: 'fk_woau_runs_task',
 	})
 	task: UpdaterTask;
+
+	@OneToMany(() => TaskRunFile, (file) => file.taskRun)
+	files: TaskRunFile[];
 
 	@Column({
 		type: 'enum',

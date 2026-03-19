@@ -13,6 +13,7 @@ import {
 	Logger,
 	UnauthorizedException,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
 
 import { ConversionSseService } from './services/conversion-sse.service';
@@ -21,6 +22,7 @@ import {
 	SSE_TOKEN_TTL_MS,
 } from './document-converter.controller';
 
+@ApiTags('Document Converter')
 @Controller('organization/:orgId/apps/document-converter')
 export class DocumentConverterSseController {
 	private readonly logger = new Logger(DocumentConverterSseController.name);
@@ -35,6 +37,14 @@ export class DocumentConverterSseController {
 	 * Token is obtained from POST /apps/document-converter/sse-token (JWT-authenticated).
 	 */
 	@Get('events')
+	@ApiOperation({ summary: 'SSE endpoint for real-time job status updates' })
+	@ApiQuery({
+		name: 'token',
+		required: true,
+		description: 'SSE authentication token',
+	})
+	@ApiResponse({ status: 200, description: 'SSE stream established' })
+	@ApiResponse({ status: 401, description: 'Invalid or expired token' })
 	async events(
 		@Query('token') token: string,
 		@Res() res: Response,

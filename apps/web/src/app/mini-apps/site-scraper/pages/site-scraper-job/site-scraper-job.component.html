@@ -214,7 +214,14 @@
 						}
 						@if (page.status === "failed") {
 							<div
-								class="absolute inset-0 flex items-center justify-center bg-black/50"
+								class="absolute inset-0 flex items-center justify-center"
+								style="
+									background: color-mix(
+										in srgb,
+										var(--p-surface-950) 50%,
+										transparent
+									);
+								"
 							>
 								<i
 									class="pi pi-exclamation-triangle text-2xl text-[--p-red-400]"

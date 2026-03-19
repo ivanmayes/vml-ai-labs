@@ -386,7 +386,7 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 					navigationTimeoutSecs: 30,
 					browserPoolOptions: {
 						maxOpenPagesPerBrowser: 1,
-						retireBrowserAfterPageCount: 50,
+						retireBrowserAfterPageCount: 20,
 					},
 					launchContext: {
 						launcher: chromium,
@@ -465,7 +465,9 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 									knownUrls.add(r.uniqueKey);
 
 								const newRequests = processedRequests.filter(
-									(r) => r.wasAlreadyPresent === false,
+									(r) =>
+										r.wasAlreadyPresent === false &&
+										!isDownloadUrl(r.uniqueKey),
 								);
 
 								if (newRequests.length > 0) {
@@ -616,7 +618,9 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 								knownUrls.add(r.uniqueKey);
 
 							const newRequests = processedRequests.filter(
-								(r) => r.wasAlreadyPresent === false,
+								(r) =>
+									r.wasAlreadyPresent === false &&
+									!isDownloadUrl(r.uniqueKey),
 							);
 
 							if (newRequests.length > 0) {

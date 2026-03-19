@@ -96,8 +96,20 @@ export class UpdaterTaskService {
 	): Promise<UpdaterTask> {
 		const task = await this.getTask(id, orgId);
 
+		if (task.status === UpdaterTaskStatus.ARCHIVED) {
+			throw new BadRequestException('Cannot update an archived task');
+		}
+
+		if (dto.status !== undefined) {
+			if (dto.status === UpdaterTaskStatus.ARCHIVED) {
+				throw new BadRequestException(
+					'Use the delete endpoint to archive a task',
+				);
+			}
+			task.status = dto.status;
+		}
+
 		if (dto.name !== undefined) task.name = dto.name;
-		if (dto.status !== undefined) task.status = dto.status;
 
 		return this.taskRepo.save(task);
 	}
@@ -109,6 +121,21 @@ export class UpdaterTaskService {
 		const task = await this.getTask(id, orgId);
 		task.status = UpdaterTaskStatus.ARCHIVED;
 		await this.taskRepo.save(task);
+
+		await this.runRepo
+			.createQueryBuilder()
+			.update(TaskRun)
+			.set({
+				status: TaskRunStatus.CANCELLED,
+				completedAt: new Date(),
+				errorMessage: 'Task was archived',
+			})
+			.where('taskId = :taskId', { taskId: id })
+			.andWhere('status IN (:...statuses)', {
+				statuses: [TaskRunStatus.PENDING, TaskRunStatus.PROCESSING],
+			})
+			.execute();
+
 		this.logger.log(`Task archived: ${id}`);
 	}
 
@@ -192,7 +219,7 @@ export class UpdaterTaskService {
 	async getRun(runId: string, orgId: string): Promise<TaskRun> {
 		const run = await this.runRepo.findOne({
 			where: { id: runId, organizationId: orgId },
-			relations: ['task'],
+			relations: ['task', 'files'],
 		});
 
 		if (!run) {

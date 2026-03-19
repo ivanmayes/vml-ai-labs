@@ -249,6 +249,9 @@ export class SiteScraperSseController {
 			'Content-Type': 'application/zip',
 			'Content-Disposition': `attachment; filename="${filename}"`,
 			'Cache-Control': 'no-store',
+			'X-Accel-Buffering': 'no',
+			'Referrer-Policy': 'no-referrer',
+			'Content-Encoding': 'identity',
 		});
 
 		// 5. Stream the ZIP

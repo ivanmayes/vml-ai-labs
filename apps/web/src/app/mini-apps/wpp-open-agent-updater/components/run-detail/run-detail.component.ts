@@ -9,6 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -24,6 +25,7 @@ import {
 	standalone: true,
 	imports: [
 		CommonModule,
+		TableModule,
 		TagModule,
 		ButtonModule,
 		CardModule,
@@ -132,6 +134,42 @@ import {
 						{{ run()!.errorMessage }}
 					</div>
 				}
+
+				@if (run()!.files && run()!.files!.length > 0) {
+					<h3>Files</h3>
+					<p-table
+						[value]="run()!.files!"
+						styleClass="p-datatable-sm"
+					>
+						<ng-template pTemplate="header">
+							<tr>
+								<th>File Name</th>
+								<th>Size</th>
+								<th>Status</th>
+								<th>Error</th>
+							</tr>
+						</ng-template>
+						<ng-template pTemplate="body" let-file>
+							<tr>
+								<td>{{ file.fileName }}</td>
+								<td>{{ formatFileSize(file.fileSize) }}</td>
+								<td>
+									<p-tag
+										[value]="file.status"
+										[severity]="
+											getFileStatusSeverity(file.status)
+										"
+									/>
+								</td>
+								<td>
+									<span class="text-color-secondary">{{
+										file.errorMessage || '-'
+									}}</span>
+								</td>
+							</tr>
+						</ng-template>
+					</p-table>
+				}
 			}
 		</div>
 	`,
@@ -194,6 +232,32 @@ export class RunDetailComponent implements OnInit, OnDestroy {
 			this.router.navigate(['apps/wpp-open-agent-updater', r.taskId]);
 		} else {
 			this.router.navigate(['apps/wpp-open-agent-updater']);
+		}
+	}
+
+	formatFileSize(bytes: number): string {
+		if (bytes === 0) return '0 B';
+		const units = ['B', 'KB', 'MB', 'GB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(1024));
+		return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
+	}
+
+	getFileStatusSeverity(
+		status: string,
+	): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+		switch (status) {
+			case 'completed':
+				return 'success';
+			case 'downloading':
+			case 'converting':
+			case 'uploading':
+				return 'info';
+			case 'pending':
+				return 'warn';
+			case 'failed':
+				return 'danger';
+			default:
+				return 'secondary';
 		}
 	}
 

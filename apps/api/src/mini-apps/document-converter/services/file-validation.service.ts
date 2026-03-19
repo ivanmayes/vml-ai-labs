@@ -88,6 +88,10 @@ export class FileValidationService {
 	 * @returns ValidatedFile with sanitized properties
 	 */
 	async validateFile(file: Express.Multer.File): Promise<ValidatedFile> {
+		if (!file || !file.buffer) {
+			throw new EmptyFileError();
+		}
+
 		this.logger.debug(`Validating file: ${file.originalname}`);
 
 		// Basic validation first (fast checks)

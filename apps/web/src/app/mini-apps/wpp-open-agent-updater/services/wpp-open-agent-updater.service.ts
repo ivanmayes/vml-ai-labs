@@ -31,6 +31,7 @@ export interface TaskRun {
 	filesSkipped: number;
 	errorMessage: string | null;
 	createdAt: string;
+	files?: TaskRunFile[];
 }
 
 export interface TaskRunFile {

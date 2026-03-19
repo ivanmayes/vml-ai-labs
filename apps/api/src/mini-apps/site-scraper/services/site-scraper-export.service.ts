@@ -59,6 +59,7 @@ export class SiteScraperExportService {
 	): Promise<void> {
 		const archive = archiver('zip', {
 			zlib: { level: 1 },
+			forceZip64: true,
 		});
 
 		let activeStream: Readable | null = null;
@@ -117,21 +118,37 @@ export class SiteScraperExportService {
 			try {
 				if (needsBoth && page.htmlS3Key) {
 					// Cache HTML buffer when both formats requested (saves S3 round-trip)
-					const htmlBuffer = await this.s3Service.download(
-						page.htmlS3Key,
-					);
-					archive.append(htmlBuffer, {
-						name: `${prefix}/html/${basePath}.html`,
-					});
+					try {
+						const htmlBuffer = await this.s3Service.download(
+							page.htmlS3Key,
+						);
+						archive.append(htmlBuffer, {
+							name: `${prefix}/html/${basePath}.html`,
+						});
 
-					const markdown = this.turndown.turndown(
-						this.sanitizeHtmlForMarkdown(
-							htmlBuffer.toString('utf-8'),
-						),
-					);
-					archive.append(markdown, {
-						name: `${prefix}/markdown/${basePath}.md`,
-					});
+						const markdown = this.turndown.turndown(
+							this.sanitizeHtmlForMarkdown(
+								htmlBuffer.toString('utf-8'),
+							),
+						);
+						archive.append(markdown, {
+							name: `${prefix}/markdown/${basePath}.md`,
+						});
+					} catch (err) {
+						this.logger.warn(
+							`Skipping HTML+markdown for ${page.url}: ${(err as Error).message}`,
+						);
+						skippedFiles.push({
+							url: page.url,
+							file: `html/${basePath}.html`,
+							reason: (err as Error).message,
+						});
+						skippedFiles.push({
+							url: page.url,
+							file: `markdown/${basePath}.md`,
+							reason: (err as Error).message,
+						});
+					}
 				} else {
 					if (formats.has('html') && page.htmlS3Key) {
 						try {

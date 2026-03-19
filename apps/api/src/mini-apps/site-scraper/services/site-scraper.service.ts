@@ -430,9 +430,10 @@ export class SiteScraperService {
 			.createQueryBuilder()
 			.update(ScrapeJob)
 			.set({
-				pagesDiscovered: () => `"pagesDiscovered" + ${count}`,
+				pagesDiscovered: () => `"pagesDiscovered" + :count`,
 			})
 			.where('id = :jobId', { jobId })
+			.setParameter('count', count)
 			.execute();
 	}
 
@@ -450,9 +451,10 @@ export class SiteScraperService {
 			.createQueryBuilder()
 			.update(ScrapeJob)
 			.set({
-				pagesSkippedByDepth: () => `"pagesSkippedByDepth" + ${count}`,
+				pagesSkippedByDepth: () => `"pagesSkippedByDepth" + :count`,
 			})
 			.where('id = :jobId', { jobId })
+			.setParameter('count', count)
 			.execute();
 	}
 

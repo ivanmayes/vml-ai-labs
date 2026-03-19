@@ -24,6 +24,7 @@ import {
 	Logger,
 	NotFoundException,
 	ForbiddenException,
+	BadRequestException,
 	UnprocessableEntityException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -46,6 +47,10 @@ import {
 	SortStrategy,
 } from '../../_platform/models';
 import { AwsS3Service } from '../../_platform/aws';
+import {
+	JobNotFoundError,
+	InvalidStatusTransitionError,
+} from '../../_platform/errors/domain.errors';
 import { Roles } from '../../user/auth/roles.decorator';
 import { RolesGuard } from '../../user/auth/roles.guard';
 import { UserRole } from '../../user/user-role.enum';
@@ -174,14 +179,26 @@ export class SiteScraperController {
 	): Promise<ResponseEnvelope> {
 		perPage = perPage > 50 ? 50 : perPage;
 
+		const ALLOWED_SORT_FIELDS: (keyof ScrapeJob)[] = [
+			'createdAt',
+			'updatedAt',
+			'status',
+			'url',
+			'pagesCompleted',
+			'pagesDiscovered',
+		];
+		const validSortBy: keyof ScrapeJob =
+			sortBy && ALLOWED_SORT_FIELDS.includes(sortBy as keyof ScrapeJob)
+				? (sortBy as keyof ScrapeJob)
+				: 'createdAt';
+
 		const [results, totalResults] = await this.scrapeJobRepo.findAndCount({
 			where: {
 				userId: req.user.id,
 				organizationId: orgId,
 			},
 			order: {
-				[(sortBy as keyof ScrapeJob) || 'createdAt']:
-					sortOrder || SortStrategy.DESC,
+				[validSortBy]: sortOrder || SortStrategy.DESC,
 			},
 			skip: (page - 1) * perPage,
 			take: perPage,
@@ -278,13 +295,26 @@ export class SiteScraperController {
 		@CurrentOrg() orgId: string,
 		@Param('jobId', ParseUUIDPipe) jobId: string,
 	): Promise<ResponseEnvelope> {
-		const job = await this.siteScraperService.adminCancelJob(jobId, orgId);
+		try {
+			const job = await this.siteScraperService.adminCancelJob(
+				jobId,
+				orgId,
+			);
 
-		return new ResponseEnvelope(
-			ResponseStatus.Success,
-			'Job cancelled',
-			job,
-		);
+			return new ResponseEnvelope(
+				ResponseStatus.Success,
+				'Job cancelled',
+				job,
+			);
+		} catch (error) {
+			if (error instanceof JobNotFoundError) {
+				throw new NotFoundException(error.message);
+			}
+			if (error instanceof InvalidStatusTransitionError) {
+				throw new BadRequestException(error.message);
+			}
+			throw error;
+		}
 	}
 
 	/**
@@ -417,17 +447,27 @@ export class SiteScraperController {
 		@CurrentOrg() orgId: string,
 		@Param('jobId', ParseUUIDPipe) jobId: string,
 	): Promise<ResponseEnvelope> {
-		const updatedJob = await this.siteScraperService.retryJob(
-			jobId,
-			orgId,
-			req.user.id,
-		);
+		try {
+			const updatedJob = await this.siteScraperService.retryJob(
+				jobId,
+				orgId,
+				req.user.id,
+			);
 
-		return new ResponseEnvelope(
-			ResponseStatus.Success,
-			undefined,
-			updatedJob,
-		);
+			return new ResponseEnvelope(
+				ResponseStatus.Success,
+				undefined,
+				updatedJob,
+			);
+		} catch (error) {
+			if (error instanceof JobNotFoundError) {
+				throw new NotFoundException(error.message);
+			}
+			if (error instanceof InvalidStatusTransitionError) {
+				throw new BadRequestException(error.message);
+			}
+			throw error;
+		}
 	}
 
 	/**
@@ -448,17 +488,27 @@ export class SiteScraperController {
 		@CurrentOrg() orgId: string,
 		@Param('jobId', ParseUUIDPipe) jobId: string,
 	): Promise<ResponseEnvelope> {
-		const updatedJob = await this.siteScraperService.requeueJob(
-			jobId,
-			orgId,
-			req.user.id,
-		);
+		try {
+			const updatedJob = await this.siteScraperService.requeueJob(
+				jobId,
+				orgId,
+				req.user.id,
+			);
 
-		return new ResponseEnvelope(
-			ResponseStatus.Success,
-			'Job re-queued successfully',
-			updatedJob,
-		);
+			return new ResponseEnvelope(
+				ResponseStatus.Success,
+				'Job re-queued successfully',
+				updatedJob,
+			);
+		} catch (error) {
+			if (error instanceof JobNotFoundError) {
+				throw new NotFoundException(error.message);
+			}
+			if (error instanceof InvalidStatusTransitionError) {
+				throw new BadRequestException(error.message);
+			}
+			throw error;
+		}
 	}
 
 	/**

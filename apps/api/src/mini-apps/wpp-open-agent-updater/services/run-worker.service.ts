@@ -113,7 +113,19 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			startedAt: new Date(),
 		});
 
-		// 2. List files from Box (with date filter)
+		// 2. Validate WPP Open token before doing any work
+		try {
+			await this.wppOpenAgentService.listAgents(
+				wppOpenToken,
+				data.wppOpenProjectId,
+			);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : 'Unknown error';
+			throw new Error(`WPP Open token validation failed: ${message}`);
+		}
+
+		// 3. List files from Box (with date filter)
 		const modifiedAfter = lastRunAt
 			? new Date(new Date(lastRunAt).getTime() - LAST_RUN_BUFFER_MS)
 			: undefined;
@@ -138,7 +150,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			return;
 		}
 
-		// 3. Create TaskRunFile records
+		// 4. Create TaskRunFile records
 		const runFiles = files.map((file) =>
 			this.runFileRepo.create({
 				taskRunId,
@@ -150,9 +162,10 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		);
 		await this.runFileRepo.save(runFiles);
 
-		// 4. Process files with concurrency limit
-		let processed = 0;
+		// 5. Process files with concurrency limit
+		let converted = 0;
 		let failed = 0;
+		let skipped = 0;
 		const knowledgeDocs: WppOpenKnowledgeItem[] = [];
 
 		for (let i = 0; i < runFiles.length; i += FILE_CONCURRENCY) {
@@ -163,29 +176,28 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 
 			const results = await Promise.allSettled(
 				batch.map((runFile, idx) =>
-					this.processFile(
-						runFile,
-						batchFiles[idx],
-						wppOpenToken,
-						knowledgeDocs,
-					),
+					this.processFile(runFile, batchFiles[idx], knowledgeDocs),
 				),
 			);
 
 			for (const result of results) {
-				if (
-					result.status === 'fulfilled' &&
-					result.value === 'completed'
-				) {
-					processed++;
+				if (result.status === 'fulfilled') {
+					if (result.value === 'converted') {
+						converted++;
+					} else if (result.value === 'skipped') {
+						skipped++;
+					} else {
+						failed++;
+					}
 				} else {
 					failed++;
 				}
 			}
 		}
 
-		// 5. Upsert knowledge into WPP Open agent (batch all docs at once)
+		// 6. Upsert knowledge into WPP Open agent (batch all docs at once)
 		let upsertError: string | null = null;
+		let processed = 0;
 		if (knowledgeDocs.length > 0) {
 			try {
 				await this.wppOpenAgentService.upsertKnowledge(
@@ -197,6 +209,20 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				this.logger.log(
 					`Upserted ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId}`,
 				);
+				processed = converted;
+
+				await this.runFileRepo
+					.createQueryBuilder()
+					.update(TaskRunFile)
+					.set({
+						status: TaskRunFileStatus.COMPLETED,
+						processedAt: new Date(),
+					})
+					.where('taskRunId = :taskRunId', { taskRunId })
+					.andWhere('status = :status', {
+						status: TaskRunFileStatus.CONVERTING,
+					})
+					.execute();
 			} catch (error) {
 				upsertError =
 					error instanceof Error ? error.message : 'Unknown error';
@@ -204,11 +230,8 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					`Failed to upsert knowledge for run ${taskRunId}:`,
 					error,
 				);
-				// Mark all as failed if the final upsert fails
-				failed += processed;
-				processed = 0;
+				failed += converted;
 
-				// Update individual file records to reflect the upsert failure
 				await this.runFileRepo
 					.createQueryBuilder()
 					.update(TaskRunFile)
@@ -218,13 +241,13 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					})
 					.where('taskRunId = :taskRunId', { taskRunId })
 					.andWhere('status = :status', {
-						status: TaskRunFileStatus.COMPLETED,
+						status: TaskRunFileStatus.CONVERTING,
 					})
 					.execute();
 			}
 		}
 
-		// 6. Finalize run
+		// 7. Finalize run
 		const finalStatus =
 			processed > 0 ? TaskRunStatus.COMPLETED : TaskRunStatus.FAILED;
 
@@ -233,6 +256,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			completedAt: new Date(),
 			filesProcessed: processed,
 			filesFailed: failed,
+			filesSkipped: skipped,
 			errorMessage:
 				finalStatus === TaskRunStatus.FAILED
 					? upsertError
@@ -241,7 +265,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					: null,
 		});
 
-		// 7. Update task's lastRunAt
+		// 8. Update task's lastRunAt
 		await this.taskRepo.update(taskId, { lastRunAt: new Date() });
 
 		this.logger.log(
@@ -251,14 +275,17 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 
 	/**
 	 * Process a single file: download, convert, collect for knowledge upsert.
-	 * Returns 'completed' or 'failed'.
+	 * Returns 'converted', 'skipped', or 'failed'.
+	 *
+	 * Files that complete conversion are left at CONVERTING status.
+	 * The caller is responsible for marking them COMPLETED or FAILED
+	 * after the batch upsert to WPP Open succeeds or fails.
 	 */
 	private async processFile(
 		runFile: TaskRunFile,
 		fileInfo: { id: string; name: string; size: number; extension: string },
-		_wppOpenToken: string,
 		knowledgeDocs: WppOpenKnowledgeItem[],
-	): Promise<'completed' | 'failed'> {
+	): Promise<'converted' | 'skipped' | 'failed'> {
 		try {
 			// Size check
 			if (fileInfo.size > MAX_FILE_SIZE) {
@@ -267,7 +294,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					errorMessage: `File too large (${Math.round(fileInfo.size / 1024 / 1024)}MB exceeds 50MB limit)`,
 					processedAt: new Date(),
 				});
-				return 'failed';
+				return 'skipped';
 			}
 
 			// Download
@@ -276,7 +303,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			});
 			const buffer = await this.boxService.downloadFile(fileInfo.id);
 
-			// Convert
+			// Convert (status stays at CONVERTING until batch upsert resolves)
 			await this.runFileRepo.update(runFile.id, {
 				status: TaskRunFileStatus.CONVERTING,
 			});
@@ -285,23 +312,13 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				fileInfo.extension,
 			);
 
-			// Collect for batch upsert
-			await this.runFileRepo.update(runFile.id, {
-				status: TaskRunFileStatus.UPLOADING,
-			});
 			knowledgeDocs.push({
 				title: fileInfo.name,
 				content: result.content,
 				source: `box://${fileInfo.id}`,
 			});
 
-			// Mark completed
-			await this.runFileRepo.update(runFile.id, {
-				status: TaskRunFileStatus.COMPLETED,
-				processedAt: new Date(),
-			});
-
-			return 'completed';
+			return 'converted';
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : 'Unknown error';

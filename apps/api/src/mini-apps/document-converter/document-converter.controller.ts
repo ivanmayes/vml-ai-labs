@@ -10,6 +10,7 @@ import {
 	Post,
 	Delete,
 	Param,
+	Body,
 	Query,
 	Req,
 	UseGuards,
@@ -19,9 +20,19 @@ import {
 	HttpCode,
 	HttpStatus,
 	Logger,
+	BadRequestException,
+	HttpException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+	ApiTags,
+	ApiOperation,
+	ApiResponse,
+	ApiConsumes,
+	ApiParam,
+	ApiBearerAuth,
+} from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -29,10 +40,12 @@ import { RequiresApp, CurrentOrg } from '../../_platform/decorators';
 import { ResponseEnvelope, ResponseStatus } from '../../_platform/models';
 import { PgBossService } from '../../_platform/queue';
 import { AwsS3Service } from '../../_platform/aws';
+import { DomainError } from '../../_platform/errors/domain.errors';
 
 import { ConversionService } from './services/conversion.service';
 import { FileValidationService } from './services/file-validation.service';
-import { JobStatus } from './types/job-status.enum';
+import { UploadFileDto } from './dtos/upload-file.dto';
+import { JobListQueryDto } from './dtos/job-list-query.dto';
 
 /**
  * In-memory SSE token store.
@@ -68,6 +81,8 @@ interface AuthenticatedRequest extends Request {
 	};
 }
 
+@ApiTags('Document Converter')
+@ApiBearerAuth()
 @RequiresApp('document-converter')
 @Controller('organization/:orgId/apps/document-converter')
 export class DocumentConverterController {
@@ -85,11 +100,18 @@ export class DocumentConverterController {
 	 *
 	 * Accepts multipart form data with a single file.
 	 * Validates the file, uploads to S3, and creates a conversion job.
-	 * Supports idempotency via Idempotency-Key header.
+	 * Supports idempotency via idempotencyKey form field.
 	 */
 	@Post()
 	@UseGuards(AuthGuard('jwt'))
 	@HttpCode(HttpStatus.CREATED)
+	@ApiOperation({ summary: 'Upload a document for conversion' })
+	@ApiConsumes('multipart/form-data')
+	@ApiResponse({ status: 201, description: 'File uploaded and job created' })
+	@ApiResponse({
+		status: 400,
+		description: 'Invalid file or validation error',
+	})
 	@UseInterceptors(
 		FileInterceptor('file', {
 			storage: memoryStorage(),
@@ -103,14 +125,23 @@ export class DocumentConverterController {
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
 		@UploadedFile() file: Express.Multer.File,
+		@Body() body: UploadFileDto,
 	): Promise<ResponseEnvelope> {
 		this.logger.log(
 			`Upload request from user ${req.user.id}: ${file?.originalname || 'no file'}`,
 		);
 
-		// Validate the uploaded file
-		const validatedFile =
-			await this.fileValidationService.validateFile(file);
+		if (!file) {
+			throw new BadRequestException('No file provided');
+		}
+
+		let validatedFile;
+		try {
+			// Validate the uploaded file
+			validatedFile = await this.fileValidationService.validateFile(file);
+		} catch (error) {
+			throw this.mapDomainError(error);
+		}
 
 		// Generate S3 key with document-converter prefix and upload
 		const s3Key = this.s3Service.generateKey(
@@ -139,6 +170,7 @@ export class DocumentConverterController {
 				userId: req.user.id,
 				organizationId: orgId,
 				s3InputKey: s3Key,
+				idempotencyKey: body.idempotencyKey,
 			});
 
 			// Queue the job for processing via pg-boss
@@ -164,7 +196,7 @@ export class DocumentConverterController {
 					s3Error,
 				);
 			}
-			throw error;
+			throw this.mapDomainError(error);
 		}
 
 		this.logger.log(
@@ -185,25 +217,20 @@ export class DocumentConverterController {
 	 */
 	@Get('jobs')
 	@UseGuards(AuthGuard('jwt'))
+	@ApiOperation({ summary: 'List conversion jobs' })
+	@ApiResponse({ status: 200, description: 'Paginated list of jobs' })
 	async listJobs(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
-		@Query('status') status?: string,
-		@Query('limit') limit?: number,
-		@Query('offset') offset?: number,
-		@Query('search') search?: string,
+		@Query() query: JobListQueryDto,
 	): Promise<ResponseEnvelope> {
-		const statusArray = status
-			? (status.split(',') as JobStatus[])
-			: undefined;
-
 		const result = await this.conversionService.listJobs({
 			userId: req.user.id,
 			organizationId: orgId,
-			status: statusArray,
-			limit: limit ? Number(limit) : undefined,
-			offset: offset ? Number(offset) : undefined,
-			search,
+			status: query.status,
+			limit: query.limit,
+			offset: query.offset,
+			search: query.search,
 		});
 
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, result);
@@ -214,14 +241,25 @@ export class DocumentConverterController {
 	 */
 	@Get('jobs/:id')
 	@UseGuards(AuthGuard('jwt'))
+	@ApiOperation({ summary: 'Get job details by ID' })
+	@ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+	@ApiResponse({ status: 200, description: 'Job details' })
+	@ApiResponse({ status: 404, description: 'Job not found' })
 	async getJob(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
 		@Param('id', ParseUUIDPipe) id: string,
 	): Promise<ResponseEnvelope> {
-		const job = await this.conversionService.getJob(id, req.user.id, orgId);
-
-		return new ResponseEnvelope(ResponseStatus.Success, undefined, job);
+		try {
+			const job = await this.conversionService.getJob(
+				id,
+				req.user.id,
+				orgId,
+			);
+			return new ResponseEnvelope(ResponseStatus.Success, undefined, job);
+		} catch (error) {
+			throw this.mapDomainError(error);
+		}
 	}
 
 	/**
@@ -230,22 +268,31 @@ export class DocumentConverterController {
 	 */
 	@Get('jobs/:id/download')
 	@UseGuards(AuthGuard('jwt'))
+	@ApiOperation({ summary: 'Get presigned download URL for completed job' })
+	@ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+	@ApiResponse({ status: 200, description: 'Download URL' })
+	@ApiResponse({ status: 404, description: 'Job not found' })
+	@ApiResponse({ status: 410, description: 'Download expired' })
 	async getDownloadUrl(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
 		@Param('id', ParseUUIDPipe) id: string,
 	): Promise<ResponseEnvelope> {
-		const downloadInfo = await this.conversionService.getDownloadInfo(
-			id,
-			req.user.id,
-			orgId,
-		);
+		try {
+			const downloadInfo = await this.conversionService.getDownloadInfo(
+				id,
+				req.user.id,
+				orgId,
+			);
 
-		return new ResponseEnvelope(
-			ResponseStatus.Success,
-			undefined,
-			downloadInfo,
-		);
+			return new ResponseEnvelope(
+				ResponseStatus.Success,
+				undefined,
+				downloadInfo,
+			);
+		} catch (error) {
+			throw this.mapDomainError(error);
+		}
 	}
 
 	/**
@@ -254,25 +301,34 @@ export class DocumentConverterController {
 	@Delete('jobs/:id')
 	@UseGuards(AuthGuard('jwt'))
 	@HttpCode(HttpStatus.OK)
+	@ApiOperation({ summary: 'Cancel a job' })
+	@ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+	@ApiResponse({ status: 200, description: 'Job cancelled' })
+	@ApiResponse({ status: 400, description: 'Invalid status transition' })
+	@ApiResponse({ status: 404, description: 'Job not found' })
 	async cancelJob(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
 		@Param('id', ParseUUIDPipe) id: string,
 	): Promise<ResponseEnvelope> {
-		const job = await this.conversionService.cancelJob(
-			id,
-			req.user.id,
-			orgId,
-		);
+		try {
+			const job = await this.conversionService.cancelJob(
+				id,
+				req.user.id,
+				orgId,
+			);
 
-		return new ResponseEnvelope(
-			ResponseStatus.Success,
-			'Job cancelled successfully',
-			{
-				id: job.id,
-				status: job.status,
-			},
-		);
+			return new ResponseEnvelope(
+				ResponseStatus.Success,
+				'Job cancelled successfully',
+				{
+					id: job.id,
+					status: job.status,
+				},
+			);
+		} catch (error) {
+			throw this.mapDomainError(error);
+		}
 	}
 
 	/**
@@ -281,37 +337,49 @@ export class DocumentConverterController {
 	@Post('jobs/:id/retry')
 	@UseGuards(AuthGuard('jwt'))
 	@HttpCode(HttpStatus.OK)
+	@ApiOperation({ summary: 'Retry a failed job' })
+	@ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+	@ApiResponse({ status: 200, description: 'Job requeued' })
+	@ApiResponse({
+		status: 400,
+		description: 'Max retries exceeded or invalid status',
+	})
+	@ApiResponse({ status: 404, description: 'Job not found' })
 	async retryJob(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
 		@Param('id', ParseUUIDPipe) id: string,
 	): Promise<ResponseEnvelope> {
-		const job = await this.conversionService.retryJob(
-			id,
-			req.user.id,
-			orgId,
-		);
+		try {
+			const job = await this.conversionService.retryJob(
+				id,
+				req.user.id,
+				orgId,
+			);
 
-		// Re-queue the job for processing via pg-boss
-		await this.pgBossService.sendConversionJob({
-			jobId: job.id,
-			userId: job.userId,
-			organizationId: job.organizationId,
-			fileExtension: job.fileExtension,
-			s3InputKey: job.s3InputKey,
-			originalFileName: job.originalFileName,
-			retryCount: job.retryCount,
-		});
-
-		return new ResponseEnvelope(
-			ResponseStatus.Success,
-			'Job requeued for processing',
-			{
-				id: job.id,
-				status: job.status,
+			// Re-queue the job for processing via pg-boss
+			await this.pgBossService.sendConversionJob({
+				jobId: job.id,
+				userId: job.userId,
+				organizationId: job.organizationId,
+				fileExtension: job.fileExtension,
+				s3InputKey: job.s3InputKey,
+				originalFileName: job.originalFileName,
 				retryCount: job.retryCount,
-			},
-		);
+			});
+
+			return new ResponseEnvelope(
+				ResponseStatus.Success,
+				'Job requeued for processing',
+				{
+					id: job.id,
+					status: job.status,
+					retryCount: job.retryCount,
+				},
+			);
+		} catch (error) {
+			throw this.mapDomainError(error);
+		}
 	}
 
 	/**
@@ -323,6 +391,8 @@ export class DocumentConverterController {
 	@Post('sse-token')
 	@UseGuards(AuthGuard('jwt'))
 	@HttpCode(HttpStatus.CREATED)
+	@ApiOperation({ summary: 'Generate SSE authentication token' })
+	@ApiResponse({ status: 201, description: 'Token generated' })
 	async generateSseToken(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
@@ -345,5 +415,28 @@ export class DocumentConverterController {
 			expiresAt,
 			expiresIn: SSE_TOKEN_TTL_MS / 1000,
 		});
+	}
+
+	/**
+	 * Maps DomainError instances to NestJS HttpExceptions so that the correct
+	 * HTTP status code and message are returned to the client.
+	 * Non-DomainError errors are returned unchanged.
+	 */
+	private mapDomainError(error: unknown): Error {
+		if (error instanceof DomainError) {
+			return new HttpException(
+				{
+					statusCode: error.httpStatus,
+					code: error.code,
+					message: error.message,
+					retryable: error.retryable,
+				},
+				error.httpStatus,
+			);
+		}
+		if (error instanceof Error) {
+			return error;
+		}
+		return new Error(String(error));
 	}
 }
