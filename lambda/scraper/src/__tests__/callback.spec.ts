@@ -35,7 +35,6 @@ const TEST_CONFIG: LambdaEnvConfig = {
 
 const TEST_PAYLOAD: CallbackPayload = {
 	jobId: '11111111-1111-1111-1111-111111111111',
-	urlHash: 'abc123',
 	url: 'https://example.com/page',
 	title: 'Test Page',
 	htmlS3Key: 'jobs/123/page.html',
@@ -47,7 +46,7 @@ const TEST_PAYLOAD: CallbackPayload = {
 		},
 	],
 	status: 'completed',
-	discoveredLinks: ['https://example.com/other'],
+	discoveredUrls: ['https://example.com/other'],
 	depth: 0,
 };
 

@@ -13,9 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Chrome for Testing (stable channel)
-# Keep the installed files — they get copied to the production stage
-RUN npx --yes @puppeteer/browsers install chrome@stable --install-deps
+# Install Chrome for Testing (stable channel) WITHOUT --install-deps
+# System deps are installed separately in the production stage
+RUN npx --yes @puppeteer/browsers install chrome@stable
 
 # ---------------------------------------------------------------------------
 # Stage 2: Build TypeScript
@@ -98,6 +98,7 @@ RUN CHROME_PATH=$(find /chrome -name "chrome" -type f -executable | head -1) \
     && echo "Chrome found at: ${CHROME_PATH}"
 
 ENV CHROME_EXECUTABLE_PATH=""
+ENV CRAWLEE_STORAGE_DIR=/tmp/crawlee
 
 # Lambda handler entrypoint
 ENTRYPOINT ["aws-lambda-ric"]

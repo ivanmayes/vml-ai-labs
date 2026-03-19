@@ -41,7 +41,6 @@ export interface ScreenshotRecord {
 
 export interface CallbackPayload {
 	jobId: string;
-	urlHash: string;
 	url: string;
 	title: string | null;
 	htmlS3Key: string | null;
@@ -49,7 +48,7 @@ export interface CallbackPayload {
 	status: 'completed' | 'failed';
 	errorMessage?: string;
 	/** Links discovered on this page (same-hostname, not download URLs) */
-	discoveredLinks: string[];
+	discoveredUrls: string[];
 	depth: number;
 }
 
