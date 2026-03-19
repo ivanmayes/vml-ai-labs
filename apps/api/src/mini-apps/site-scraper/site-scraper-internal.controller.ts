@@ -279,6 +279,9 @@ export class SiteScraperInternalController {
 		if (dto.htmlS3Key) {
 			keysToValidate.push(dto.htmlS3Key);
 		}
+		if (dto.sessionStateS3Key) {
+			keysToValidate.push(dto.sessionStateS3Key);
+		}
 		for (const screenshot of dto.screenshots) {
 			keysToValidate.push(screenshot.s3Key);
 			if (screenshot.thumbnailS3Key) {

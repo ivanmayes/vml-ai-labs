@@ -395,6 +395,12 @@ export class SiteScraperController {
 		});
 
 		const s3Keys: string[] = [];
+
+		// Include session state S3 key from the job itself
+		if (job.sessionStateS3Key) {
+			s3Keys.push(job.sessionStateS3Key);
+		}
+
 		for (const page of pages) {
 			if (page.htmlS3Key) {
 				s3Keys.push(page.htmlS3Key);

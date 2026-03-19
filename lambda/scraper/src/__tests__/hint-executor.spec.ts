@@ -36,6 +36,7 @@ function createMockPage() {
 		fill: jest.fn().mockResolvedValue(undefined),
 		blur: jest.fn().mockResolvedValue(undefined),
 		evaluate: jest.fn().mockResolvedValue(undefined),
+		press: jest.fn().mockResolvedValue(undefined),
 	};
 	return {
 		locator: jest.fn().mockReturnValue(mockLocator),
@@ -105,12 +106,13 @@ describe('hint-executor', () => {
 			expect(mockPage._mockLocator.blur).toHaveBeenCalled();
 		});
 
-		it('should call locator.click() for fillSubmit action', async () => {
-			const hint: EventHint = { action: 'fillSubmit', selector: '#submit-btn' };
+		it('should call locator.fill() then press Enter for fillSubmit action', async () => {
+			const hint: EventHint = { action: 'fillSubmit', selector: '#submit-btn', value: 'test' };
 			await executeAction(mockPage as any, hint);
 
 			expect(mockPage.locator).toHaveBeenCalledWith('css=#submit-btn');
-			expect(mockPage._mockLocator.click).toHaveBeenCalledWith({ timeout: 5000 });
+			expect(mockPage._mockLocator.fill).toHaveBeenCalledWith('test', { timeout: 5000 });
+			expect(mockPage._mockLocator.press).toHaveBeenCalledWith('Enter');
 		});
 
 		it('should call page.waitForTimeout() for wait action', async () => {

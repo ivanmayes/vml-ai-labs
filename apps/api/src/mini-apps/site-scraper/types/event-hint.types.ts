@@ -137,7 +137,7 @@ export function resolveHintsForUrl(config: HintConfig, pageUrl: string): EventHi
 
 	// If any per-URL pattern matched, use merged per-URL hints (full replacement)
 	// Otherwise, fall back to global hints
-	const rawHints = anyPerUrlMatch ? matchedHints : [...config.global];
+	const rawHints = anyPerUrlMatch ? matchedHints : [...(config.global || [])];
 
 	return sortHints(deduplicateHints(rawHints));
 }

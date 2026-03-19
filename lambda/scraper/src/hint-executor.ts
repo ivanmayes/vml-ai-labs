@@ -111,7 +111,8 @@ export async function executeAction(
 			await page.locator(sel).blur();
 			break;
 		case 'fillSubmit':
-			await page.locator(sel).click({ timeout: 5000 });
+			await page.locator(sel).fill(hint.value ?? '', { timeout: 5000 });
+			await page.locator(sel).press('Enter');
 			break;
 		case 'wait':
 			await page.waitForTimeout(hint.waitAfter ?? 1000);

@@ -432,14 +432,18 @@ async function processRecord(
 				// ----- Hint execution (after cookie dismissal, before baseline screenshots) -----
 				let hintScreenshots: ScreenshotRecord[] = [];
 				if (message.hints && message.hints.length > 0) {
-					const { executeHints } = await import('./hint-executor');
-					hintScreenshots = await executeHints(
-						page,
-						message.hints,
-						message.viewports[0], // primary viewport
-						message,
-						pageId,
-					);
+					try {
+						const { executeHints } = await import('./hint-executor');
+						hintScreenshots = await executeHints(
+							page,
+							message.hints,
+							message.viewports[0], // primary viewport
+							message,
+							pageId,
+						);
+					} catch (hintError) {
+						console.warn(`Hint execution failed (non-fatal): ${hintError}`);
+					}
 				}
 
 				// ----- Session state extraction (for siteEntry hints) -----

@@ -638,6 +638,12 @@ export class SiteScraperService {
 		});
 
 		const keysToDelete: string[] = [];
+
+		// Include session state S3 key from the job itself
+		if (job.sessionStateS3Key) {
+			keysToDelete.push(job.sessionStateS3Key);
+		}
+
 		for (const page of pages) {
 			if (page.htmlS3Key) {
 				keysToDelete.push(page.htmlS3Key);
