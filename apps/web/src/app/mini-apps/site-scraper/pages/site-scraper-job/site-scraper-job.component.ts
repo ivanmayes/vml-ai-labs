@@ -402,7 +402,13 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (res) => {
-					window.open(res.data.presignedUrl, '_blank');
+					const a = document.createElement('a');
+					a.href = res.data.presignedUrl;
+					a.target = '_blank';
+					a.rel = 'noopener noreferrer';
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
 				},
 				error: () => {
 					this.messageService.add({

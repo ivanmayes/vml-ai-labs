@@ -657,6 +657,121 @@ export class SiteScraperService {
 			);
 		}
 
+		if (USE_LAMBDA_SCRAPER) {
+			return this.retryJobWithLambda(job);
+		}
+
+		return this.retryJobWithPgBoss(job, userId, orgId);
+	}
+
+	/**
+	 * Retry via Lambda: only re-send failed + pending pages to SQS.
+	 * No re-crawl — just re-process the pages that didn't succeed.
+	 */
+	private async retryJobWithLambda(job: ScrapeJob): Promise<ScrapeJob> {
+		const jobId = job.id;
+
+		// Find failed and pending pages
+		const retryablePages = await this.pageRepository.find({
+			where: [
+				{ scrapeJobId: jobId, status: PageStatus.FAILED },
+				{ scrapeJobId: jobId, status: PageStatus.PENDING },
+			],
+			select: ['id', 'url', 'htmlS3Key', 'screenshots', 'status'],
+		});
+
+		if (retryablePages.length === 0) {
+			this.logger.log(
+				`No failed/pending pages to retry for job ${jobId}`,
+			);
+			return job;
+		}
+
+		// Clean up S3 artifacts from failed pages
+		const keysToDelete: string[] = [];
+		for (const page of retryablePages) {
+			if (page.htmlS3Key) {
+				keysToDelete.push(page.htmlS3Key);
+			}
+			if (page.screenshots?.length) {
+				for (const screenshot of page.screenshots) {
+					keysToDelete.push(screenshot.s3Key);
+				}
+			}
+		}
+
+		if (keysToDelete.length > 0) {
+			try {
+				await this.s3Service.deleteMany(keysToDelete);
+			} catch (error) {
+				this.logger.error(
+					`Failed to delete S3 files for retryable pages of job ${jobId}`,
+					error,
+				);
+			}
+		}
+
+		// Reset retryable pages to PENDING
+		const retryablePageIds = retryablePages.map((p) => p.id);
+		await this.pageRepository.update(retryablePageIds, {
+			status: PageStatus.PENDING,
+			errorMessage: null,
+			htmlS3Key: null,
+			screenshots: [],
+		});
+
+		// Reset job counters — keep completed count, zero out failures
+		const completedCount = await this.pageRepository.count({
+			where: { scrapeJobId: jobId, status: PageStatus.COMPLETED },
+		});
+
+		job.pagesCompleted = completedCount;
+		job.pagesFailed = 0;
+		job.error = null;
+		job.completedAt = null as any;
+
+		// Transition directly to RUNNING (no pg-boss pickup needed)
+		job.transitionTo(JobStatus.PENDING);
+		job.transitionTo(JobStatus.RUNNING);
+		const savedJob = await this.jobRepository.save(job);
+
+		// Send retryable page URLs to SQS
+		const seedHostname = new URL(job.url).hostname;
+		const sqsMessages: Record<string, unknown>[] = retryablePages.map(
+			(page) =>
+				({
+					jobId,
+					url: page.url,
+					urlHash: this.hashUrl(page.url),
+					depth: job.maxDepth, // Don't discover new links on retry
+					maxDepth: job.maxDepth,
+					maxPages: 1000,
+					viewports: job.viewports,
+					seedHostname,
+					s3Prefix: `site-scraper/${jobId}/`,
+				}) satisfies PageWorkMessage,
+		);
+
+		await this.sqsService.sendBatch(sqsMessages);
+
+		this.logger.log(
+			`Retried job ${jobId}: re-queued ${retryablePages.length} failed/pending pages via Lambda`,
+		);
+
+		return savedJob;
+	}
+
+	/**
+	 * Retry via pg-boss: delete failed pages and re-crawl the site.
+	 * The worker will skip already-completed pages.
+	 */
+	private async retryJobWithPgBoss(
+		job: ScrapeJob,
+		userId: string,
+		orgId: string,
+	): Promise<ScrapeJob> {
+		const jobId = job.id;
+
 		// Find failed pages and clean up their S3 artifacts
 		const failedPages = await this.pageRepository.find({
 			where: { scrapeJobId: jobId, status: PageStatus.FAILED },

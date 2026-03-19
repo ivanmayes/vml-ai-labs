@@ -66,7 +66,14 @@
 			</div>
 
 			<!-- Submit -->
-			<div class="flex justify-end">
+			<div class="flex justify-end items-center gap-3">
+				@if (formDepth > 2) {
+					<span class="text-[--p-orange-500] text-sm">
+						<i class="pi pi-exclamation-triangle mr-1"></i>
+						Depth {{ formDepth }} may discover a large number of
+						pages and take significantly longer.
+					</span>
+				}
 				<p-button
 					type="submit"
 					label="Start Scrape"

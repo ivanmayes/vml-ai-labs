@@ -69,7 +69,7 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 
 	// Form state
 	formUrl = '';
-	formDepth = 3;
+	formDepth = 2;
 	formViewports: number[] = [1920];
 
 	// Options
