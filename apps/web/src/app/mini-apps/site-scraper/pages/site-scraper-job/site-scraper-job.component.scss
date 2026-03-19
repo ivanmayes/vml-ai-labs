@@ -140,3 +140,67 @@
 	padding-top: 1rem;
 	border-top: 1px solid var(--p-surface-border);
 }
+
+// Hint toggle link
+.hint-toggle-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	margin-top: 0.375rem;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--p-primary-color);
+	font-size: 0.75rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: color 0.15s ease;
+
+	&:hover {
+		color: var(--p-primary-600);
+	}
+
+	.pi {
+		font-size: 0.625rem;
+	}
+}
+
+// Hint screenshots panel
+.hint-screenshots-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding: 0.5rem 0.75rem 0.75rem;
+	border-top: 1px solid var(--p-surface-border);
+}
+
+.hint-screenshot-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.375rem;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+
+	&:hover {
+		background: var(--p-surface-ground);
+	}
+}
+
+.hint-screenshot-thumb {
+	width: 3.5rem;
+	height: 2.5rem;
+	border-radius: 4px;
+	overflow: hidden;
+	flex-shrink: 0;
+	background: var(--p-surface-ground);
+}
+
+.hint-screenshot-meta {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	min-width: 0;
+	flex: 1;
+}

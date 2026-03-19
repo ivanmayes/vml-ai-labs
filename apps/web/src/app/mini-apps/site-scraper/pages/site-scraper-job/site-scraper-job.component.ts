@@ -28,6 +28,7 @@ import {
 	SiteScraperService,
 	ScrapeJob,
 	ScrapedPage,
+	ScreenshotRecord,
 } from '../../services/site-scraper.service';
 import { SiteScraperSseService } from '../../services/site-scraper-sse.service';
 
@@ -83,6 +84,11 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 	viewerVisible = false;
 	viewerPage = signal<ScrapedPage | null>(null);
 	viewerImageUrl = signal<string>('');
+	viewerScreenshot = signal<ScreenshotRecord | null>(null);
+
+	// Hint screenshots state
+	expandedHintPages = signal<Record<string, boolean>>({});
+	hintScreenshotUrls = signal<Record<string, string>>({});
 
 	// Computed
 	completedPages = computed(() =>
@@ -329,6 +335,8 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 	onViewportChange(): void {
 		// Clear existing thumbnails and reload for new viewport
 		this.thumbnailUrls.set({});
+		this.hintScreenshotUrls.set({});
+		this.expandedHintPages.set({});
 		this.loadThumbnails();
 		// Clear viewer image if open
 		this.viewerImageUrl.set('');
@@ -367,6 +375,7 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 
 	openViewer(page: ScrapedPage): void {
 		this.viewerPage.set(page);
+		this.viewerScreenshot.set(null);
 		this.viewerVisible = true;
 		this.loadViewerImage(page);
 	}
@@ -469,6 +478,127 @@ export class SiteScraperJobComponent implements OnInit, OnDestroy {
 	onImageError(event: Event): void {
 		const img = event.target as HTMLImageElement;
 		img.style.display = 'none';
+	}
+
+	/** Get hint screenshots for a page at the currently selected viewport */
+	getHintScreenshots(page: ScrapedPage): ScreenshotRecord[] {
+		return page.screenshots
+			.filter(
+				(s) =>
+					s.viewport === this.selectedViewport &&
+					s.hintLabel != null,
+			)
+			.sort((a, b) => (a.hintIndex ?? 0) - (b.hintIndex ?? 0));
+	}
+
+	/** Count distinct hint states for a page at the current viewport */
+	getHintStateCount(page: ScrapedPage): number {
+		return this.getHintScreenshots(page).length;
+	}
+
+	/** Check if hint panel is expanded for a page */
+	isHintExpanded(pageId: string): boolean {
+		return this.expandedHintPages()[pageId] ?? false;
+	}
+
+	/** Toggle hint screenshots panel for a page */
+	toggleHintPanel(event: Event, page: ScrapedPage): void {
+		event.stopPropagation();
+		const pageId = page.id;
+		const wasExpanded = this.isHintExpanded(pageId);
+		this.expandedHintPages.update((current) => ({
+			...current,
+			[pageId]: !wasExpanded,
+		}));
+
+		// Load hint screenshot URLs when expanding
+		if (!wasExpanded) {
+			this.loadHintScreenshotUrls(page);
+		}
+	}
+
+	/** Load presigned URLs for a page's hint screenshots */
+	private loadHintScreenshotUrls(page: ScrapedPage): void {
+		const hints = this.getHintScreenshots(page);
+		for (const screenshot of hints) {
+			const cacheKey = screenshot.s3Key;
+			if (this.hintScreenshotUrls()[cacheKey]) continue;
+
+			this.scraperService
+				.getScreenshotUrl(
+					page.id,
+					this.selectedViewport,
+					screenshot.s3Key,
+				)
+				.pipe(takeUntilDestroyed(this.destroyRef))
+				.subscribe({
+					next: (res) => {
+						this.hintScreenshotUrls.update((current) => ({
+							...current,
+							[cacheKey]: res.data.presignedUrl,
+						}));
+					},
+				});
+		}
+	}
+
+	/** Open viewer for a specific hint screenshot */
+	openHintViewer(event: Event, page: ScrapedPage, screenshot: ScreenshotRecord): void {
+		event.stopPropagation();
+		this.viewerPage.set(page);
+		this.viewerScreenshot.set(screenshot);
+		this.viewerVisible = true;
+		this.loadViewerImageForScreenshot(page, screenshot);
+	}
+
+	private loadViewerImageForScreenshot(
+		page: ScrapedPage,
+		screenshot: ScreenshotRecord,
+	): void {
+		this.viewerImageUrl.set('');
+		this.scraperService
+			.getScreenshotUrl(page.id, this.selectedViewport, screenshot.s3Key)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (res) => {
+					this.viewerImageUrl.set(res.data.presignedUrl);
+				},
+				error: () => {
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: 'Could not load screenshot',
+					});
+				},
+			});
+	}
+
+	/** Get the timing label for display */
+	getTimingLabel(timing?: string): string {
+		switch (timing) {
+			case 'before':
+				return 'Before';
+			case 'after':
+				return 'After';
+			case 'baseline':
+				return 'Baseline';
+			default:
+				return '';
+		}
+	}
+
+	/** Get the severity for timing tags */
+	getTimingSeverity(
+		timing?: string,
+	): 'info' | 'success' | 'warn' | 'secondary' {
+		switch (timing) {
+			case 'before':
+				return 'warn';
+			case 'after':
+				return 'success';
+			default:
+				return 'secondary';
+		}
 	}
 
 	getProgress(): number {

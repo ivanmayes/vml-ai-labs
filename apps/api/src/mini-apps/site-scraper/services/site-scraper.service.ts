@@ -35,10 +35,35 @@ import {
 	isRetryableStatus,
 } from '../types/job-status.enum';
 import { ScrapeError, createScrapeError } from '../types/scrape-error.types';
+import {
+	HintConfig,
+	encryptHintValues,
+	resolveHintsForUrl,
+} from '../types/event-hint.types';
 import { PageWorkMessage } from '../types/page-work-message.types';
 
 /** Whether to use Lambda + SQS instead of pg-boss + in-process worker */
 const USE_LAMBDA_SCRAPER = process.env.USE_LAMBDA_SCRAPER === 'true';
+
+/** Key used to encrypt fill values in hints (AES-256-GCM). */
+const PII_ENCRYPTION_KEY = process.env.PII_SIGNING_KEY || 'default-dev-key';
+
+/** Actions whose `value` field contains sensitive data. */
+const ENCRYPTABLE_ACTIONS = new Set(['fill', 'fillSubmit']);
+
+/**
+ * Check if a HintConfig contains any fill/fillSubmit hints that need encryption.
+ */
+function hasEncryptableHints(config: HintConfig | null): boolean {
+	if (!config) return false;
+	const allHints = [
+		...(config.global || []),
+		...(config.perUrl || []).flatMap((g) => g.hints),
+	];
+	return allHints.some(
+		(h) => ENCRYPTABLE_ACTIONS.has(h.action) && h.value != null,
+	);
+}
 
 /**
  * Input data for saving a scraped page result.
@@ -75,6 +100,7 @@ export class SiteScraperService {
 	 * @param viewports - Viewport widths for screenshots
 	 * @param userId - User who initiated the job
 	 * @param orgId - Organization context
+	 * @param hints - Optional event hint configuration for page interactions
 	 * @returns Created scrape job
 	 */
 	async createJob(
@@ -83,6 +109,7 @@ export class SiteScraperService {
 		viewports: number[],
 		userId: string,
 		orgId: string,
+		hints: HintConfig | null = null,
 	): Promise<ScrapeJob> {
 		if (USE_LAMBDA_SCRAPER) {
 			return this.createJobWithLambda(
@@ -91,13 +118,21 @@ export class SiteScraperService {
 				viewports,
 				userId,
 				orgId,
+				hints,
 			);
 		}
+
+		// Encrypt fill values before persisting
+		const encryptedHints =
+			hints && hasEncryptableHints(hints)
+				? encryptHintValues(hints, PII_ENCRYPTION_KEY)
+				: hints;
 
 		const job = this.jobRepository.create({
 			url,
 			maxDepth,
 			viewports,
+			hints: encryptedHints,
 			userId,
 			organizationId: orgId,
 			status: JobStatus.PENDING,
@@ -144,6 +179,7 @@ export class SiteScraperService {
 	 * @param viewports - Viewport widths for screenshots
 	 * @param userId - User who initiated the job
 	 * @param orgId - Organization context
+	 * @param hints - Optional event hint configuration for page interactions
 	 * @returns Created scrape job
 	 */
 	async createJobWithLambda(
@@ -152,11 +188,19 @@ export class SiteScraperService {
 		viewports: number[],
 		userId: string,
 		orgId: string,
+		hints: HintConfig | null = null,
 	): Promise<ScrapeJob> {
+		// Encrypt fill values before persisting
+		const encryptedHints =
+			hints && hasEncryptableHints(hints)
+				? encryptHintValues(hints, PII_ENCRYPTION_KEY)
+				: hints;
+
 		const job = this.jobRepository.create({
 			url,
 			maxDepth,
 			viewports,
+			hints: encryptedHints,
 			userId,
 			organizationId: orgId,
 			status: JobStatus.PENDING,
@@ -194,6 +238,17 @@ export class SiteScraperService {
 				seedHostname,
 				s3Prefix: `site-scraper/${savedJob.id}/`,
 			};
+
+			// Resolve hints for the seed URL (if configured)
+			if (savedJob.hints) {
+				const resolvedHints = resolveHintsForUrl(savedJob.hints, url);
+				if (resolvedHints.length > 0) {
+					message.hints = resolvedHints;
+				}
+				if (savedJob.sessionStateS3Key) {
+					message.sessionStateS3Key = savedJob.sessionStateS3Key;
+				}
+			}
 
 			await this.sqsService.sendPageWork(
 				message as unknown as Record<string, unknown>,
@@ -385,6 +440,9 @@ export class SiteScraperService {
 			job.pagesCompleted = completedCount;
 			job.pagesFailed = failedCount;
 
+			// Clear session state on terminal state
+			job.sessionStateS3Key = null;
+
 			if (failedCount > 0) {
 				job.transitionTo(JobStatus.COMPLETED_WITH_ERRORS);
 			} else {
@@ -424,6 +482,8 @@ export class SiteScraperService {
 		try {
 			job.transitionTo(JobStatus.FAILED);
 			job.error = error;
+			// Clear session state on terminal state
+			job.sessionStateS3Key = null;
 			return this.jobRepository.save(job);
 		} catch (e) {
 			this.logger.error(`Failed to mark job ${jobId} as failed`, e);
@@ -452,6 +512,8 @@ export class SiteScraperService {
 
 		try {
 			job.transitionTo(JobStatus.CANCELLED);
+			// Clear session state on terminal state
+			job.sessionStateS3Key = null;
 			const savedJob = await this.jobRepository.save(job);
 			this.logger.log(`Marked job ${jobId} as cancelled`);
 			return savedJob;
@@ -576,6 +638,12 @@ export class SiteScraperService {
 		});
 
 		const keysToDelete: string[] = [];
+
+		// Include session state S3 key from the job itself
+		if (job.sessionStateS3Key) {
+			keysToDelete.push(job.sessionStateS3Key);
+		}
+
 		for (const page of pages) {
 			if (page.htmlS3Key) {
 				keysToDelete.push(page.htmlS3Key);
@@ -738,8 +806,8 @@ export class SiteScraperService {
 		// Send retryable page URLs to SQS
 		const seedHostname = new URL(job.url).hostname;
 		const sqsMessages: Record<string, unknown>[] = retryablePages.map(
-			(page) =>
-				({
+			(page) => {
+				const message: PageWorkMessage = {
 					jobId,
 					url: page.url,
 					urlHash: this.hashUrl(page.url),
@@ -749,7 +817,24 @@ export class SiteScraperService {
 					viewports: job.viewports,
 					seedHostname,
 					s3Prefix: `site-scraper/${jobId}/`,
-				}) satisfies PageWorkMessage,
+				};
+
+				// Resolve hints for this retry page (if job has hint config)
+				if (job.hints) {
+					const resolvedHints = resolveHintsForUrl(
+						job.hints,
+						page.url,
+					);
+					if (resolvedHints.length > 0) {
+						message.hints = resolvedHints;
+					}
+					if (job.sessionStateS3Key) {
+						message.sessionStateS3Key = job.sessionStateS3Key;
+					}
+				}
+
+				return message as unknown as Record<string, unknown>;
+			},
 		);
 
 		await this.sqsService.sendBatch(sqsMessages);
@@ -885,6 +970,8 @@ export class SiteScraperService {
 		}
 
 		job.transitionTo(JobStatus.CANCELLED);
+		// Clear session state on terminal state
+		job.sessionStateS3Key = null;
 		const savedJob = await this.jobRepository.save(job);
 		this.logger.log(`Admin cancelled job ${jobId}`);
 		return savedJob;
@@ -1086,6 +1173,24 @@ export class SiteScraperService {
 	}
 
 	/**
+	 * Update the session state S3 key on a job.
+	 * Called when a Lambda callback includes a sessionStateS3Key
+	 * (e.g., after siteEntry hints capture authentication state).
+	 *
+	 * @param jobId - Job UUID
+	 * @param sessionStateS3Key - S3 key for the serialized session state
+	 */
+	async updateSessionStateS3Key(
+		jobId: string,
+		sessionStateS3Key: string,
+	): Promise<void> {
+		await this.jobRepository.update(jobId, { sessionStateS3Key });
+		this.logger.debug(
+			`Updated sessionStateS3Key for job ${jobId}: ${sessionStateS3Key}`,
+		);
+	}
+
+	/**
 	 * Upsert a page result from a Lambda callback.
 	 * Uses INSERT ... ON CONFLICT (scrapeJobId, url) DO UPDATE for idempotency.
 	 * Atomically increments pagesCompleted or pagesFailed.
@@ -1236,20 +1341,43 @@ export class SiteScraperService {
 		// Increment pagesDiscovered atomically
 		await this.incrementPagesDiscovered(jobId, newUrls.length);
 
+		// Load the job to get hint config and session state for child messages
+		const job = await this.jobRepository.findOne({
+			where: { id: jobId },
+			select: ['id', 'hints', 'sessionStateS3Key'],
+		});
+
 		// Build SQS messages for new URLs
 		const sqsMessages: Record<string, unknown>[] = newUrls.map(
-			(url) =>
-				({
+			(childUrl) => {
+				const message: PageWorkMessage = {
 					jobId,
-					url,
-					urlHash: this.hashUrl(url),
+					url: childUrl,
+					urlHash: this.hashUrl(childUrl),
 					depth: nextDepth,
 					maxDepth,
 					maxPages: jobConfig.maxPages,
 					viewports: jobConfig.viewports,
 					seedHostname: jobConfig.seedHostname,
 					s3Prefix: jobConfig.s3Prefix,
-				}) satisfies PageWorkMessage,
+				};
+
+				// Resolve hints for this child URL (if job has hint config)
+				if (job?.hints) {
+					const resolvedHints = resolveHintsForUrl(
+						job.hints,
+						childUrl,
+					);
+					if (resolvedHints.length > 0) {
+						message.hints = resolvedHints;
+					}
+					if (job.sessionStateS3Key) {
+						message.sessionStateS3Key = job.sessionStateS3Key;
+					}
+				}
+
+				return message as unknown as Record<string, unknown>;
+			},
 		);
 
 		// Send to SQS

@@ -232,19 +232,88 @@
 
 					<!-- Page info -->
 					<div class="p-3">
-						<p
-							class="text-sm font-medium truncate m-0"
-							[title]="page.title || page.url"
-						>
-							{{ page.title || "Untitled" }}
-						</p>
+						<div class="flex items-center gap-2">
+							<p
+								class="text-sm font-medium truncate m-0 flex-1"
+								[title]="page.title || page.url"
+							>
+								{{ page.title || "Untitled" }}
+							</p>
+							@if (getHintStateCount(page) > 0) {
+								<p-tag
+									[value]="getHintStateCount(page) + (getHintStateCount(page) === 1 ? ' state' : ' states')"
+									severity="info"
+									[rounded]="true"
+								/>
+							}
+						</div>
 						<p
 							class="text-xs text-[--p-text-muted-color] truncate m-0 mt-1"
 							[title]="page.url"
 						>
 							{{ page.url }}
 						</p>
+						@if (getHintStateCount(page) > 0) {
+							<button
+								class="hint-toggle-link"
+								(click)="toggleHintPanel($event, page)"
+								(keydown.enter)="toggleHintPanel($event, page)"
+							>
+								<i
+									class="pi"
+									[class.pi-chevron-down]="!isHintExpanded(page.id)"
+									[class.pi-chevron-up]="isHintExpanded(page.id)"
+								></i>
+								{{ isHintExpanded(page.id) ? 'Hide' : 'View ' + getHintStateCount(page) + ' hint' }}{{ !isHintExpanded(page.id) && getHintStateCount(page) !== 1 ? 's' : '' }}
+							</button>
+						}
 					</div>
+
+					<!-- Hint screenshots expandable panel -->
+					@if (isHintExpanded(page.id)) {
+						<div class="hint-screenshots-panel">
+							@for (screenshot of getHintScreenshots(page); track screenshot.s3Key) {
+								<div
+									class="hint-screenshot-item"
+									(click)="openHintViewer($event, page, screenshot)"
+									(keydown.enter)="openHintViewer($event, page, screenshot)"
+									tabindex="0"
+									role="button"
+									[attr.aria-label]="'View hint screenshot: ' + screenshot.hintLabel"
+								>
+									<div class="hint-screenshot-thumb">
+										@if (hintScreenshotUrls()[screenshot.s3Key]) {
+											<img
+												[src]="hintScreenshotUrls()[screenshot.s3Key]"
+												[alt]="screenshot.hintLabel || 'Hint screenshot'"
+												loading="lazy"
+												class="w-full h-full object-cover object-top"
+												(error)="onImageError($event)"
+											/>
+										} @else {
+											<p-skeleton width="100%" height="100%" />
+										}
+									</div>
+									<div class="hint-screenshot-meta">
+										<span
+											class="text-xs font-medium truncate"
+											[title]="screenshot.hintLabel"
+										>
+											{{ screenshot.hintLabel }}
+										</span>
+										@if (screenshot.snapshotTiming) {
+											<p-tag
+												[value]="getTimingLabel(screenshot.snapshotTiming)"
+												[severity]="getTimingSeverity(screenshot.snapshotTiming)"
+												[rounded]="true"
+												styleClass="text-xs"
+											/>
+										}
+									</div>
+								</div>
+							}
+						</div>
+					}
 				</div>
 			}
 
@@ -281,6 +350,24 @@
 >
 	@if (viewerPage(); as page) {
 		<div class="flex flex-col gap-4">
+			<!-- Hint metadata banner -->
+			@if (viewerScreenshot(); as vs) {
+				<div class="flex items-center gap-2">
+					<p-tag
+						[value]="vs.hintLabel || 'Hint Screenshot'"
+						severity="info"
+						[rounded]="true"
+					/>
+					@if (vs.snapshotTiming) {
+						<p-tag
+							[value]="getTimingLabel(vs.snapshotTiming)"
+							[severity]="getTimingSeverity(vs.snapshotTiming)"
+							[rounded]="true"
+						/>
+					}
+				</div>
+			}
+
 			<!-- Full-size screenshot -->
 			<div
 				class="bg-[--p-surface-ground] rounded overflow-auto max-h-[70vh]"

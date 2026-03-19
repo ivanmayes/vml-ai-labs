@@ -108,10 +108,26 @@ export class SiteScraperInternalController {
 				viewport: s.viewport,
 				s3Key: s.s3Key,
 				thumbnailS3Key: s.thumbnailS3Key,
+				hintLabel: s.hintLabel,
+				hintIndex: s.hintIndex,
+				snapshotTiming: s.snapshotTiming as
+					| 'baseline'
+					| 'before'
+					| 'after'
+					| undefined,
 			})),
 			status: dto.status,
 			errorMessage: dto.errorMessage || null,
 		});
+
+		// 4b. If callback includes sessionStateS3Key (from siteEntry hints),
+		//     persist it on the job so subsequent child pages can use the session
+		if (dto.sessionStateS3Key) {
+			await this.siteScraperService.updateSessionStateS3Key(
+				dto.jobId,
+				dto.sessionStateS3Key,
+			);
+		}
 
 		// 5. Process discovered links: dedup + enqueue new ones to SQS
 		let newUrlCount = 0;
@@ -262,6 +278,9 @@ export class SiteScraperInternalController {
 		const keysToValidate: string[] = [];
 		if (dto.htmlS3Key) {
 			keysToValidate.push(dto.htmlS3Key);
+		}
+		if (dto.sessionStateS3Key) {
+			keysToValidate.push(dto.sessionStateS3Key);
 		}
 		for (const screenshot of dto.screenshots) {
 			keysToValidate.push(screenshot.s3Key);
