@@ -6,6 +6,7 @@ import { ScrapedPage } from './entities/scraped-page.entity';
 // MINIAPP_ENTITY_IMPORT
 
 import { SiteScraperController } from './site-scraper.controller';
+import { SiteScraperInternalController } from './site-scraper-internal.controller';
 import { SiteScraperSseController } from './site-scraper-sse.controller';
 import { SiteScraperService } from './services/site-scraper.service';
 import { ScraperWorkerService } from './services/scraper-worker.service';
@@ -20,7 +21,11 @@ import { SiteScraperExportService } from './services/site-scraper-export.service
 			// MINIAPP_ENTITY_REF
 		]),
 	],
-	controllers: [SiteScraperController, SiteScraperSseController],
+	controllers: [
+		SiteScraperController,
+		SiteScraperInternalController,
+		SiteScraperSseController,
+	],
 	providers: [
 		SiteScraperService,
 		ScraperWorkerService,

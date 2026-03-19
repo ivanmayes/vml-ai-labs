@@ -9,12 +9,14 @@
  * All public methods require organizationId to ensure
  * users can only access jobs within their organization.
  */
+import { createHash } from 'crypto';
+
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In, LessThan } from 'typeorm';
 
 import { PgBossService, SiteScraperJobData } from '../../../_platform/queue';
-import { AwsS3Service } from '../../../_platform/aws';
+import { AwsS3Service, AwsSqsService } from '../../../_platform/aws';
 import {
 	ResponseEnvelopeFind,
 	FindOptions,
@@ -33,6 +35,10 @@ import {
 	isRetryableStatus,
 } from '../types/job-status.enum';
 import { ScrapeError, createScrapeError } from '../types/scrape-error.types';
+import { PageWorkMessage } from '../types/page-work-message.types';
+
+/** Whether to use Lambda + SQS instead of pg-boss + in-process worker */
+const USE_LAMBDA_SCRAPER = process.env.USE_LAMBDA_SCRAPER === 'true';
 
 /**
  * Input data for saving a scraped page result.
@@ -57,6 +63,7 @@ export class SiteScraperService {
 		private readonly pageRepository: Repository<ScrapedPage>,
 		private readonly pgBossService: PgBossService,
 		private readonly s3Service: AwsS3Service,
+		private readonly sqsService: AwsSqsService,
 		private readonly dataSource: DataSource,
 	) {}
 
@@ -77,6 +84,16 @@ export class SiteScraperService {
 		userId: string,
 		orgId: string,
 	): Promise<ScrapeJob> {
+		if (USE_LAMBDA_SCRAPER) {
+			return this.createJobWithLambda(
+				url,
+				maxDepth,
+				viewports,
+				userId,
+				orgId,
+			);
+		}
+
 		const job = this.jobRepository.create({
 			url,
 			maxDepth,
@@ -110,6 +127,89 @@ export class SiteScraperService {
 			savedJob.error = createScrapeError(
 				'QUEUE_FAILED',
 				'Failed to submit job to queue. Please retry.',
+			);
+			await this.jobRepository.save(savedJob);
+		}
+
+		return savedJob;
+	}
+
+	/**
+	 * Create a new scrape job using the Lambda + SQS path.
+	 * Creates the job entity, inserts the seed URL as a pending ScrapedPage,
+	 * sends the seed URL to SQS, and marks the job as RUNNING.
+	 *
+	 * @param url - URL to start crawling from
+	 * @param maxDepth - Maximum crawl depth
+	 * @param viewports - Viewport widths for screenshots
+	 * @param userId - User who initiated the job
+	 * @param orgId - Organization context
+	 * @returns Created scrape job
+	 */
+	async createJobWithLambda(
+		url: string,
+		maxDepth: number,
+		viewports: number[],
+		userId: string,
+		orgId: string,
+	): Promise<ScrapeJob> {
+		const job = this.jobRepository.create({
+			url,
+			maxDepth,
+			viewports,
+			userId,
+			organizationId: orgId,
+			status: JobStatus.PENDING,
+			pagesDiscovered: 1, // seed URL counts as discovered
+		});
+
+		const savedJob = await this.jobRepository.save(job);
+		this.logger.log(`Created Lambda scrape job: ${savedJob.id} for ${url}`);
+
+		try {
+			// Insert seed URL as a pending ScrapedPage for dedup tracking
+			await this.pageRepository
+				.createQueryBuilder()
+				.insert()
+				.into(ScrapedPage)
+				.values({
+					scrapeJobId: savedJob.id,
+					url,
+					status: PageStatus.PENDING,
+					screenshots: [],
+				})
+				.orIgnore()
+				.execute();
+
+			// Send seed URL to SQS
+			const seedHostname = new URL(url).hostname;
+			const message: PageWorkMessage = {
+				jobId: savedJob.id,
+				url,
+				urlHash: this.hashUrl(url),
+				depth: 0,
+				maxDepth,
+				maxPages: 1000,
+				viewports,
+				seedHostname,
+				s3Prefix: `site-scraper/${savedJob.id}/`,
+			};
+
+			await this.sqsService.sendPageWork(
+				message as unknown as Record<string, unknown>,
+			);
+
+			// Mark job as RUNNING immediately
+			savedJob.transitionTo(JobStatus.RUNNING);
+			await this.jobRepository.save(savedJob);
+		} catch (err) {
+			this.logger.error(
+				`Failed to start Lambda scrape job ${savedJob.id}: ${err}`,
+			);
+			savedJob.transitionTo(JobStatus.FAILED);
+			savedJob.error = createScrapeError(
+				'QUEUE_FAILED',
+				'Failed to submit job to SQS queue. Please retry.',
 			);
 			await this.jobRepository.save(savedJob);
 		}
@@ -227,12 +327,12 @@ export class SiteScraperService {
 	 * Used by the worker when it picks up a job.
 	 *
 	 * @param jobId - Job UUID
-	 * @param pgBossJobId - pg-boss job ID for tracking
+	 * @param pgBossJobId - pg-boss job ID for tracking (optional for Lambda path)
 	 * @returns Updated job or null if not found
 	 */
 	async markJobRunning(
 		jobId: string,
-		pgBossJobId: string,
+		pgBossJobId?: string,
 	): Promise<ScrapeJob | null> {
 		const job = await this.jobRepository.findOne({
 			where: { id: jobId },
@@ -242,9 +342,8 @@ export class SiteScraperService {
 		try {
 			job.transitionTo(JobStatus.RUNNING);
 			const savedJob = await this.jobRepository.save(job);
-			this.logger.log(
-				`Marked job ${jobId} as running (pg-boss: ${pgBossJobId})`,
-			);
+			const source = pgBossJobId ? `pg-boss: ${pgBossJobId}` : 'lambda';
+			this.logger.log(`Marked job ${jobId} as running (${source})`);
 			return savedJob;
 		} catch (e) {
 			this.logger.error(`Failed to mark job ${jobId} as running`, e);
@@ -851,5 +950,253 @@ export class SiteScraperService {
 		}
 
 		return staleJobs.length;
+	}
+
+	// ─────────────────────────────────────────────────────────────────
+	// Lambda / SQS path methods
+	// ─────────────────────────────────────────────────────────────────
+
+	/**
+	 * Get a job by ID without organization scoping.
+	 * Used by the internal callback controller which has already
+	 * verified the request via Bearer token.
+	 *
+	 * @param jobId - Job UUID
+	 * @returns The job or null if not found
+	 */
+	async getJobById(jobId: string): Promise<ScrapeJob | null> {
+		return this.jobRepository.findOne({
+			where: { id: jobId },
+		});
+	}
+
+	/**
+	 * Upsert a page result from a Lambda callback.
+	 * Uses INSERT ... ON CONFLICT (scrapeJobId, url) DO UPDATE for idempotency.
+	 * Atomically increments pagesCompleted or pagesFailed.
+	 *
+	 * @param jobId - Job UUID
+	 * @param data - Page result data
+	 * @returns The upserted page entity
+	 */
+	async upsertPageResult(
+		jobId: string,
+		data: SavePageResultInput,
+	): Promise<ScrapedPage> {
+		const pageStatus =
+			data.status === 'completed'
+				? PageStatus.COMPLETED
+				: PageStatus.FAILED;
+
+		return this.dataSource.transaction(async (manager) => {
+			// Upsert the page: INSERT ON CONFLICT DO UPDATE
+			await manager
+				.createQueryBuilder()
+				.insert()
+				.into(ScrapedPage)
+				.values({
+					scrapeJobId: jobId,
+					url: data.url,
+					title: data.title,
+					htmlS3Key: data.htmlS3Key,
+					screenshots: data.screenshots,
+					status: pageStatus,
+					errorMessage: data.errorMessage || null,
+				})
+				.orUpdate(
+					[
+						'title',
+						'htmlS3Key',
+						'screenshots',
+						'status',
+						'errorMessage',
+					],
+					['scrapeJobId', 'url'],
+				)
+				.execute();
+
+			// Check if this was an insert (new page) vs update (retry/duplicate)
+			// We only increment counters if the page was previously PENDING
+			// The ON CONFLICT UPDATE always runs, so we use a conditional increment
+			// that only fires when the previous status was PENDING
+			const counterColumn =
+				data.status === 'completed'
+					? '"pagesCompleted"'
+					: '"pagesFailed"';
+
+			await manager
+				.createQueryBuilder()
+				.update(ScrapeJob)
+				.set({
+					...(data.status === 'completed'
+						? { pagesCompleted: () => `${counterColumn} + 1` }
+						: { pagesFailed: () => `${counterColumn} + 1` }),
+				})
+				.where('id = :jobId', { jobId })
+				.execute();
+
+			// Return the upserted page
+			const page = await manager.getRepository(ScrapedPage).findOne({
+				where: { scrapeJobId: jobId, url: data.url },
+			});
+
+			return page!;
+		});
+	}
+
+	/**
+	 * Deduplicate discovered URLs and enqueue new ones to SQS.
+	 *
+	 * For each discovered URL:
+	 * 1. INSERT INTO scraped_pages ON CONFLICT DO NOTHING (dedup)
+	 * 2. Count how many were actually inserted (new URLs)
+	 * 3. Increment pagesDiscovered by the count of new URLs
+	 * 4. Send new URLs to SQS for Lambda processing
+	 *
+	 * @param jobId - Job UUID
+	 * @param urls - Array of discovered URLs
+	 * @param currentDepth - Depth of the page that discovered these URLs
+	 * @param maxDepth - Maximum allowed crawl depth
+	 * @param jobConfig - Job configuration for SQS message
+	 * @returns Number of newly enqueued URLs
+	 */
+	async enqueueDiscoveredUrls(
+		jobId: string,
+		urls: string[],
+		currentDepth: number,
+		maxDepth: number,
+		jobConfig: {
+			maxPages: number;
+			viewports: number[];
+			seedHostname: string;
+			s3Prefix: string;
+		},
+	): Promise<number> {
+		const nextDepth = currentDepth + 1;
+
+		// Skip URLs that exceed max depth
+		if (nextDepth > maxDepth) {
+			if (urls.length > 0) {
+				await this.incrementPagesSkippedByDepth(jobId, urls.length);
+			}
+			return 0;
+		}
+
+		// Deduplicate: INSERT each URL as a pending ScrapedPage, ON CONFLICT DO NOTHING
+		const newUrls: string[] = [];
+
+		for (const url of urls) {
+			try {
+				const result = await this.pageRepository
+					.createQueryBuilder()
+					.insert()
+					.into(ScrapedPage)
+					.values({
+						scrapeJobId: jobId,
+						url,
+						status: PageStatus.PENDING,
+						screenshots: [],
+					})
+					.orIgnore() // ON CONFLICT DO NOTHING
+					.execute();
+
+				// Check if a row was actually inserted (not a duplicate)
+				const wasInserted = result.raw && result.raw.length > 0;
+
+				if (wasInserted) {
+					newUrls.push(url);
+				}
+			} catch {
+				// Unique constraint violation is expected for duplicates
+				this.logger.debug(
+					`URL already exists for job ${jobId}: ${url}`,
+				);
+			}
+		}
+
+		if (newUrls.length === 0) {
+			return 0;
+		}
+
+		// Increment pagesDiscovered atomically
+		await this.incrementPagesDiscovered(jobId, newUrls.length);
+
+		// Build SQS messages for new URLs
+		const sqsMessages: Record<string, unknown>[] = newUrls.map(
+			(url) =>
+				({
+					jobId,
+					url,
+					urlHash: this.hashUrl(url),
+					depth: nextDepth,
+					maxDepth,
+					maxPages: jobConfig.maxPages,
+					viewports: jobConfig.viewports,
+					seedHostname: jobConfig.seedHostname,
+					s3Prefix: jobConfig.s3Prefix,
+				}) satisfies PageWorkMessage,
+		);
+
+		// Send to SQS
+		await this.sqsService.sendBatch(sqsMessages);
+
+		this.logger.debug(
+			`Enqueued ${newUrls.length} new URLs for job ${jobId} at depth ${nextDepth}`,
+		);
+
+		return newUrls.length;
+	}
+
+	/**
+	 * Check if a job is complete and transition it to the appropriate terminal state.
+	 *
+	 * Completion criteria:
+	 * - pagesCompleted + pagesFailed >= pagesDiscovered
+	 * - No pending pages remain in the database
+	 *
+	 * @param jobId - Job UUID
+	 */
+	async checkAndCompleteJob(jobId: string): Promise<void> {
+		const job = await this.jobRepository.findOne({
+			where: { id: jobId },
+		});
+
+		if (!job || isTerminalStatus(job.status)) {
+			return;
+		}
+
+		// Check counters
+		const processedCount = job.pagesCompleted + job.pagesFailed;
+		if (processedCount < job.pagesDiscovered) {
+			return;
+		}
+
+		// Double-check: no pending pages in DB
+		const pendingCount = await this.pageRepository.count({
+			where: { scrapeJobId: jobId, status: PageStatus.PENDING },
+		});
+
+		if (pendingCount > 0) {
+			this.logger.debug(
+				`Job ${jobId} has ${pendingCount} pending pages — not yet complete`,
+			);
+			return;
+		}
+
+		// Mark complete
+		this.logger.log(
+			`Job ${jobId} complete: ${job.pagesCompleted} completed, ${job.pagesFailed} failed`,
+		);
+		await this.markJobCompleted(jobId);
+	}
+
+	/**
+	 * Compute SHA-256 hash of a URL for deduplication.
+	 *
+	 * @param url - URL to hash
+	 * @returns Hex-encoded SHA-256 hash
+	 */
+	private hashUrl(url: string): string {
+		return createHash('sha256').update(url).digest('hex');
 	}
 }

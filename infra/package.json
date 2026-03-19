@@ -1,0 +1,22 @@
+{
+  "name": "vml-scraper-infra",
+  "version": "1.0.0",
+  "description": "AWS CDK infrastructure for VML site scraper Lambda workers",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.180.0",
+    "constructs": "^10.4.2"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.180.0",
+    "typescript": "~5.7.0"
+  }
+}

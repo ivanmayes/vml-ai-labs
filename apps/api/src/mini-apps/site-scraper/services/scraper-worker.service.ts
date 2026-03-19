@@ -53,7 +53,7 @@ const AUTOCONSENT_SCRIPT = path.join(
 );
 
 /** File extensions that trigger downloads instead of page navigation */
-const DOWNLOAD_EXTENSIONS = new Set([
+export const DOWNLOAD_EXTENSIONS = new Set([
 	'.pdf',
 	'.zip',
 	'.tar',
@@ -77,7 +77,7 @@ const DOWNLOAD_EXTENSIONS = new Set([
 ]);
 
 /** Check if a URL points to a downloadable file (PDF, ZIP, etc.) */
-function isDownloadUrl(url: string): boolean {
+export function isDownloadUrl(url: string): boolean {
 	try {
 		const urlPath = new URL(url).pathname;
 		const ext = path.extname(urlPath).toLowerCase();
@@ -85,6 +85,15 @@ function isDownloadUrl(url: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+/** Count genuinely new page requests, excluding downloads and already-present URLs */
+export function countNewPageRequests(
+	processedRequests: { uniqueKey: string; wasAlreadyPresent: boolean }[],
+): number {
+	return processedRequests.filter(
+		(r) => r.wasAlreadyPresent === false && !isDownloadUrl(r.uniqueKey),
+	).length;
 }
 
 /** Common CSS selectors for cookie consent dialogs */
@@ -464,18 +473,15 @@ export class ScraperWorkerService implements OnModuleInit, OnModuleDestroy {
 								for (const r of processedRequests)
 									knownUrls.add(r.uniqueKey);
 
-								const newRequests = processedRequests.filter(
-									(r) =>
-										r.wasAlreadyPresent === false &&
-										!isDownloadUrl(r.uniqueKey),
-								);
+								const newCount =
+									countNewPageRequests(processedRequests);
 
-								if (newRequests.length > 0) {
-									totalPagesDiscovered += newRequests.length;
+								if (newCount > 0) {
+									totalPagesDiscovered += newCount;
 
 									await this.scraperService.incrementPagesDiscovered(
 										jobId,
-										newRequests.length,
+										newCount,
 									);
 								}
 							}
