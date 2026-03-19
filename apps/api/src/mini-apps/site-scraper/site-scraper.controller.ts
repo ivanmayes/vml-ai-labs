@@ -145,6 +145,7 @@ export class SiteScraperController {
 			dto.viewports ?? [1920],
 			req.user.id,
 			orgId,
+			dto.hints ?? null,
 		);
 
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, {
@@ -610,12 +611,20 @@ export class SiteScraperController {
 			take: pageSize,
 		});
 
-		// Generate presigned URLs for the requested viewport
+		// Generate presigned URLs for the requested viewport (baseline only)
 		const urls = await Promise.all(
 			pages.map(async (scrapedPage) => {
-				const screenshot = scrapedPage.screenshots.find(
-					(s) => s.viewport === viewport,
-				);
+				// Prefer baseline screenshot; fall back to first matching viewport
+				const screenshot =
+					scrapedPage.screenshots.find(
+						(s) =>
+							s.viewport === viewport &&
+							(!s.snapshotTiming ||
+								s.snapshotTiming === 'baseline'),
+					) ||
+					scrapedPage.screenshots.find(
+						(s) => s.viewport === viewport,
+					);
 
 				if (!screenshot) {
 					return {
@@ -664,11 +673,19 @@ export class SiteScraperController {
 	@ApiResponse({ status: 404, description: 'Page or screenshot not found' })
 	@ApiParam({ name: 'pageId', type: String, format: 'uuid' })
 	@ApiQuery({ name: 'viewport', required: true, type: Number })
+	@ApiQuery({
+		name: 's3Key',
+		required: false,
+		type: String,
+		description:
+			'Specific S3 key to fetch (for hint screenshots). Must belong to this page.',
+	})
 	async getScreenshot(
 		@Req() req: AuthenticatedRequest,
 		@CurrentOrg() orgId: string,
 		@Param('pageId', ParseUUIDPipe) pageId: string,
 		@Query('viewport', ParseIntPipe) viewport: number,
+		@Query('s3Key') s3Key?: string,
 	): Promise<ResponseEnvelope> {
 		// Verify org ownership by joining through the parent job
 		const page = await this.scrapedPageRepo.findOne({
@@ -687,9 +704,24 @@ export class SiteScraperController {
 			throw new ForbiddenException('You do not have access to this page');
 		}
 
-		const screenshot = page.screenshots.find(
-			(s) => s.viewport === viewport,
-		);
+		let screenshot;
+		if (s3Key) {
+			// Find by exact S3 key — used for hint screenshots
+			screenshot = page.screenshots.find((s) => s.s3Key === s3Key);
+		} else {
+			// Default: find the baseline screenshot for the viewport
+			screenshot = page.screenshots.find(
+				(s) =>
+					s.viewport === viewport &&
+					(!s.snapshotTiming || s.snapshotTiming === 'baseline'),
+			);
+			// Fallback to first matching viewport (backward compat)
+			if (!screenshot) {
+				screenshot = page.screenshots.find(
+					(s) => s.viewport === viewport,
+				);
+			}
+		}
 
 		if (!screenshot) {
 			throw new NotFoundException(

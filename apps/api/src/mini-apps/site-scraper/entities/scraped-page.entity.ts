@@ -24,6 +24,12 @@ export interface ScreenshotRecord {
 	s3Key: string;
 	/** S3 object key for the WebP thumbnail (optional for backward compat) */
 	thumbnailS3Key?: string;
+	/** Human-readable label from the hint that produced this screenshot */
+	hintLabel?: string;
+	/** Index of the hint in the resolved hints array */
+	hintIndex?: number;
+	/** Whether this screenshot is a baseline, before-hint, or after-hint capture */
+	snapshotTiming?: 'baseline' | 'before' | 'after';
 }
 
 /**

@@ -325,6 +325,8 @@ async function processRecord(
 	let screenshots: ScreenshotRecord[] = [];
 	let discoveredUrls: string[] = [];
 	let crawlError: Error | null = null;
+	let mergedScreenshots: ScreenshotRecord[] | null = null;
+	let callbackSessionStateS3Key: string | undefined;
 
 	const pageId = generatePageId();
 
@@ -401,11 +403,75 @@ async function processRecord(
 					);
 				}
 
+				// ----- Session state injection (before cookie dismissal) -----
+				// If a prior siteEntry page captured session state, inject it
+				if (message.sessionStateS3Key) {
+					try {
+						const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
+						const s3 = new S3Client({});
+						const s3Response = await s3.send(new GetObjectCommand({
+							Bucket: process.env.S3_BUCKET!,
+							Key: message.sessionStateS3Key,
+						}));
+						const sessionState = JSON.parse(await s3Response.Body!.transformToString());
+						if (sessionState.cookies?.length > 0) {
+							await page.context().addCookies(sessionState.cookies);
+							// Reload page with injected cookies
+							await page.reload({ waitUntil: 'domcontentloaded' });
+							try { await page.waitForLoadState('networkidle', { timeout: 10_000 }); } catch {}
+						}
+						console.log(`Injected session state from ${message.sessionStateS3Key}`);
+					} catch (sessionError) {
+						console.warn(`Failed to inject session state: ${sessionError}`);
+					}
+				}
+
 				// Dismiss cookies again after full load
 				await dismissCookies(page);
 
-				// Capture screenshots at each viewport and upload to S3
+				// ----- Hint execution (after cookie dismissal, before baseline screenshots) -----
+				let hintScreenshots: ScreenshotRecord[] = [];
+				if (message.hints && message.hints.length > 0) {
+					const { executeHints } = await import('./hint-executor');
+					hintScreenshots = await executeHints(
+						page,
+						message.hints,
+						message.viewports[0], // primary viewport
+						message,
+						pageId,
+					);
+				}
+
+				// ----- Session state extraction (for siteEntry hints) -----
+				let sessionStateS3Key: string | undefined;
+				if (message.hints?.some(h => h.siteEntry)) {
+					try {
+						const cookies = await page.context().cookies();
+						if (cookies.length > 0) {
+							const sessionState = { cookies, capturedAt: Date.now() };
+							const sessionKey = `${message.s3Prefix}session-state.json`;
+							const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+							const s3 = new S3Client({});
+							await s3.send(new PutObjectCommand({
+								Bucket: process.env.S3_BUCKET!,
+								Key: sessionKey,
+								Body: JSON.stringify(sessionState),
+								ContentType: 'application/json',
+								ServerSideEncryption: 'aws:kms',
+							}));
+							sessionStateS3Key = sessionKey;
+							console.log(`Saved session state to ${sessionKey}`);
+						}
+					} catch (sessionSaveError) {
+						console.warn(`Failed to save session state: ${sessionSaveError}`);
+					}
+				}
+
+				// Capture baseline screenshots at each viewport and upload to S3
 				screenshots = await captureAndUpload(page, message, pageId);
+
+				// Merge hint screenshots with baseline screenshots
+				const allScreenshots = [...hintScreenshots, ...screenshots];
 
 				// Get page HTML and upload to S3
 				const htmlContent = await page.content();
@@ -466,6 +532,10 @@ async function processRecord(
 						}
 					}
 				}
+
+				// Store merged screenshots for callback payload
+				mergedScreenshots = allScreenshots;
+				callbackSessionStateS3Key = sessionStateS3Key;
 			},
 
 			failedRequestHandler: async (_context, error) => {
@@ -485,21 +555,23 @@ async function processRecord(
 		throw crawlError;
 	}
 
-	// Build callback payload
+	// Build callback payload — use merged screenshots (hints + baseline) if available
+	const finalScreenshots = mergedScreenshots ?? screenshots;
 	const callbackPayload: CallbackPayload = {
 		jobId: message.jobId,
 		url: message.url,
 		title: pageTitle,
 		htmlS3Key,
-		screenshots,
+		screenshots: finalScreenshots,
 		status: 'completed',
 		discoveredUrls,
 		depth: message.depth,
+		sessionStateS3Key: callbackSessionStateS3Key,
 	};
 
 	await sendCallback(callbackPayload, config);
 
 	console.log(
-		`Completed page: ${message.url} (${screenshots.length} screenshots, ${discoveredUrls.length} links discovered)`,
+		`Completed page: ${message.url} (${finalScreenshots.length} screenshots, ${discoveredUrls.length} links discovered)`,
 	);
 }

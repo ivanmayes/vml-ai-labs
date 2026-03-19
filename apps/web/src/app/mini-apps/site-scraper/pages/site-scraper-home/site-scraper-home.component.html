@@ -65,6 +65,51 @@
 				</div>
 			</div>
 
+			<!-- Event Hints Toggle -->
+			<div class="flex align-items-center gap-2 mt-3 mb-2">
+				<p-button
+					[label]="showHints ? 'Hide Event Hints' : 'Add Event Hints'"
+					[icon]="showHints ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+					severity="secondary" [text]="true" size="small"
+					(onClick)="toggleHints()">
+				</p-button>
+			</div>
+
+			<!-- Event Hints Section -->
+			<div *ngIf="showHints" class="mt-2">
+				<p-panel header="Global Hints (apply to all pages)" [toggleable]="true">
+					<div *ngFor="let hint of formHints.global; let i = index" class="flex gap-2 align-items-start mb-2 p-2 border-1 surface-border border-round">
+						<p-select [options]="actionOptions" [(ngModel)]="hint.action" [ngModelOptions]="{standalone: true}" placeholder="Action" [style]="{'min-width': '140px'}"></p-select>
+						<input *ngIf="hint.action !== 'wait'" pInputText [(ngModel)]="hint.selector" [ngModelOptions]="{standalone: true}" placeholder="CSS Selector" class="flex-1">
+						<input *ngIf="hint.action === 'fill'" pInputText type="password" [(ngModel)]="hint.value" [ngModelOptions]="{standalone: true}" placeholder="Value" [style]="{'width': '200px'}">
+						<p-inputNumber *ngIf="hint.action === 'click'" [(ngModel)]="hint.count" [ngModelOptions]="{standalone: true}" [min]="1" [max]="100" placeholder="Count" [style]="{'width': '100px'}"></p-inputNumber>
+						<p-select [options]="snapshotOptions" [(ngModel)]="hint.snapshot" [ngModelOptions]="{standalone: true}" placeholder="Snapshot" [style]="{'min-width': '120px'}"></p-select>
+						<p-button icon="pi pi-trash" severity="danger" [text]="true" ariaLabel="Remove hint" (onClick)="removeGlobalHint(i)"></p-button>
+					</div>
+					<p-button label="Add Hint" icon="pi pi-plus" severity="secondary" [text]="true" size="small" (onClick)="addGlobalHint()"></p-button>
+				</p-panel>
+
+				<p-panel header="Per-URL Hints (override global for matching pages)" [toggleable]="true" class="mt-2">
+					<div *ngFor="let group of formHints.perUrl; let gi = index" class="mb-3 p-3 surface-ground border-round">
+						<div class="flex gap-2 align-items-center mb-2">
+							<label class="font-semibold text-sm">URL Pattern:</label>
+							<input pInputText [(ngModel)]="group.pattern" [ngModelOptions]="{standalone: true}" placeholder="/products/*" class="flex-1">
+							<p-button icon="pi pi-trash" severity="danger" [text]="true" ariaLabel="Remove URL group" (onClick)="removeUrlGroup(gi)"></p-button>
+						</div>
+						<div *ngFor="let hint of group.hints; let hi = index" class="flex gap-2 align-items-start mb-2 p-2 border-1 surface-border border-round">
+							<p-select [options]="actionOptions" [(ngModel)]="hint.action" [ngModelOptions]="{standalone: true}" placeholder="Action" [style]="{'min-width': '140px'}"></p-select>
+							<input *ngIf="hint.action !== 'wait'" pInputText [(ngModel)]="hint.selector" [ngModelOptions]="{standalone: true}" placeholder="CSS Selector" class="flex-1">
+							<input *ngIf="hint.action === 'fill'" pInputText type="password" [(ngModel)]="hint.value" [ngModelOptions]="{standalone: true}" placeholder="Value" [style]="{'width': '200px'}">
+							<p-inputNumber *ngIf="hint.action === 'click'" [(ngModel)]="hint.count" [ngModelOptions]="{standalone: true}" [min]="1" [max]="100" placeholder="Count" [style]="{'width': '100px'}"></p-inputNumber>
+							<p-select [options]="snapshotOptions" [(ngModel)]="hint.snapshot" [ngModelOptions]="{standalone: true}" placeholder="Snapshot" [style]="{'min-width': '120px'}"></p-select>
+							<p-button icon="pi pi-trash" severity="danger" [text]="true" ariaLabel="Remove hint" (onClick)="removeUrlHint(gi, hi)"></p-button>
+						</div>
+						<p-button label="Add Hint" icon="pi pi-plus" severity="secondary" [text]="true" size="small" (onClick)="addUrlHint(gi)"></p-button>
+					</div>
+					<p-button label="Add URL Group" icon="pi pi-plus" severity="secondary" [text]="true" size="small" (onClick)="addUrlGroup()"></p-button>
+				</p-panel>
+			</div>
+
 			<!-- Submit -->
 			<div class="flex justify-end items-center gap-3">
 				@if (formDepth > 2) {
