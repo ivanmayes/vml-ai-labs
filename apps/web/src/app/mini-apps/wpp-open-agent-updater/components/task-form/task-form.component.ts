@@ -12,7 +12,7 @@ import { debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
-// p-select with [multiple]="true" replaces deprecated p-multiSelect
+import { MultiSelectModule } from 'primeng/multiselect';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { CardModule } from 'primeng/card';
 import { ToastModule } from 'primeng/toast';
@@ -44,6 +44,7 @@ const CADENCE_OPTIONS = [{ label: 'Manual', value: 'manual' }];
 		InputTextModule,
 		ButtonModule,
 		SelectModule,
+		MultiSelectModule,
 		ToggleSwitchModule,
 		CardModule,
 		ToastModule,
@@ -151,13 +152,12 @@ const CADENCE_OPTIONS = [{ label: 'Manual', value: 'manual' }];
 						<!-- File Extensions -->
 						<div class="flex flex-col gap-2">
 							<label for="fileExtensions">File Types</label>
-							<p-select
+							<p-multiSelect
 								formControlName="fileExtensions"
 								[options]="extensionOptions"
 								optionLabel="label"
 								optionValue="value"
 								placeholder="Select file types to sync"
-								[multiple]="true"
 								display="chip"
 							/>
 						</div>
@@ -355,12 +355,26 @@ export class TaskFormComponent implements OnInit {
 					return;
 				}
 
+				// Pass osContext for project ID resolution on the backend
+				let osContext: unknown;
+				try {
+					osContext = this.wppOpenService.context;
+				} catch {
+					// Not in iframe
+				}
+
 				this.service
-					.listAgents(projectId, token)
+					.listAgents(token, { osContext })
 					.pipe(takeUntilDestroyed(this.destroyRef))
 					.subscribe({
-						next: (agents) => {
-							this.agents.set(agents);
+						next: (result) => {
+							this.agents.set(result.agents);
+							// Update project ID with the resolved CS project ID
+							if (result.resolvedProjectId) {
+								this.form.patchValue({
+									wppOpenProjectId: result.resolvedProjectId,
+								});
+							}
 							this.loadingAgents.set(false);
 						},
 						error: () => {

@@ -116,7 +116,9 @@ export class WppOpenAgentService {
 	): Promise<string> {
 		const result = await this.csRequest<{
 			data: { id: string };
-		}>('PUT', '/v1/project/external/open', token, osContext, osContext);
+		}>('PUT', '/v1/project/external/open', token, osContext, {
+			osContext,
+		});
 
 		if (!result?.data?.id) {
 			throw new HttpException(

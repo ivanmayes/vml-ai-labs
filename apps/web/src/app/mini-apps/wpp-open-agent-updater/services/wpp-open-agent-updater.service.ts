@@ -164,11 +164,23 @@ export class WppOpenAgentUpdaterService {
 			.pipe(map((res) => res.data!));
 	}
 
-	listAgents(projectId: string, token: string): Observable<WppOpenAgent[]> {
+	listAgents(
+		token: string,
+		options: {
+			projectId?: string;
+			osContext?: unknown;
+		},
+	): Observable<{ agents: WppOpenAgent[]; resolvedProjectId: string }> {
 		return this.http
-			.post<ApiResponse<WppOpenAgent[]>>(`${this.apiUrl}/agents`, {
-				projectId,
+			.post<
+				ApiResponse<{
+					agents: WppOpenAgent[];
+					resolvedProjectId: string;
+				}>
+			>(`${this.apiUrl}/agents`, {
+				projectId: options.projectId,
 				wppOpenToken: token,
+				osContext: options.osContext,
 			})
 			.pipe(map((res) => res.data!));
 	}
