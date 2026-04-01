@@ -1,5 +1,6 @@
 import { Component, signal, inject, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TableModule } from 'primeng/table';
@@ -7,8 +8,12 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
+import { WppOpenService } from '../../../../_core/services/wpp-open/wpp-open.service';
 import {
 	WppOpenAgentUpdaterService,
 	UpdaterTask,
@@ -20,22 +25,25 @@ import {
 	standalone: true,
 	imports: [
 		CommonModule,
+		FormsModule,
 		TableModule,
 		TagModule,
 		ButtonModule,
 		CardModule,
 		ToastModule,
+		DialogModule,
+		InputTextModule,
+		ConfirmDialogModule,
 	],
-	providers: [MessageService],
+	providers: [MessageService, ConfirmationService],
 	template: `
 		<p-toast />
+		<p-confirmDialog />
 		<div class="p-4">
 			@if (task()) {
 				<p-card>
 					<ng-template pTemplate="header">
-						<div
-							class="flex justify-content-between align-items-center p-3"
-						>
+						<div class="flex justify-between items-center p-3">
 							<div>
 								<h2 class="m-0">{{ task()!.name }}</h2>
 								<p class="text-color-secondary mt-1 mb-0">
@@ -51,8 +59,32 @@ import {
 											task()!.wppOpenAgentId
 									}}
 								</p>
+								<div
+									class="flex gap-3 mt-2 text-color-secondary text-sm"
+								>
+									<span
+										><i class="pi pi-file mr-1"></i
+										>{{
+											task()!.fileExtensions?.join(
+												', '
+											) || 'All types'
+										}}</span
+									>
+									<span
+										><i class="pi pi-folder-open mr-1"></i
+										>{{
+											task()!.includeSubfolders
+												? 'Subfolders included'
+												: 'Root folder only'
+										}}</span
+									>
+									<span
+										><i class="pi pi-clock mr-1"></i
+										>{{ task()!.cadence || 'manual' }}</span
+									>
+								</div>
 							</div>
-							<div class="flex gap-2 align-items-center">
+							<div class="flex gap-2 items-center">
 								<p-tag
 									[value]="task()!.status"
 									[severity]="
@@ -63,7 +95,11 @@ import {
 									label="Run Now"
 									icon="pi pi-play"
 									(onClick)="onRun()"
-									[disabled]="task()!.status !== 'active'"
+									[disabled]="
+										task()!.status !== 'active' ||
+										runningTask()
+									"
+									[loading]="runningTask()"
 								/>
 								<p-button
 									label="Edit"
@@ -155,18 +191,60 @@ import {
 				</p-card>
 			}
 		</div>
+
+		<!-- Token fallback dialog for standalone dev mode -->
+		<p-dialog
+			header="Enter WPP Open Token"
+			[(visible)]="showTokenDialog"
+			[modal]="true"
+			[style]="{ width: '450px' }"
+		>
+			<div class="flex flex-col gap-3">
+				<p class="text-color-secondary m-0">
+					Could not obtain token automatically. Enter your WPP Open
+					token to proceed.
+				</p>
+				<input
+					pInputText
+					[(ngModel)]="manualToken"
+					placeholder="Paste WPP Open token"
+					type="password"
+					class="w-full"
+				/>
+			</div>
+			<ng-template pTemplate="footer">
+				<p-button
+					label="Cancel"
+					severity="secondary"
+					[text]="true"
+					(onClick)="showTokenDialog = false"
+				/>
+				<p-button
+					label="Run"
+					icon="pi pi-play"
+					(onClick)="executeRun(manualToken)"
+					[disabled]="!manualToken"
+				/>
+			</ng-template>
+		</p-dialog>
 	`,
 })
 export class TaskDetailComponent implements OnInit {
 	readonly router = inject(Router);
 	private readonly route = inject(ActivatedRoute);
 	private readonly service = inject(WppOpenAgentUpdaterService);
+	private readonly wppOpenService = inject(WppOpenService);
 	private readonly messageService = inject(MessageService);
+	private readonly confirmationService = inject(ConfirmationService);
 	private readonly destroyRef = inject(DestroyRef);
 
 	task = signal<UpdaterTask | null>(null);
 	runs = signal<TaskRun[]>([]);
 	loadingRuns = signal(true);
+	runningTask = signal(false);
+
+	showTokenDialog = false;
+	manualToken = '';
 
 	private taskId = '';
 
@@ -207,14 +285,45 @@ export class TaskDetailComponent implements OnInit {
 	}
 
 	onRun(): void {
-		const token = prompt('Enter your WPP Open token:');
-		if (!token) return;
+		this.confirmationService.confirm({
+			message: `Run task "${this.task()?.name}" now? This will sync files to the agent's knowledge base.`,
+			header: 'Confirm Run',
+			icon: 'pi pi-play',
+			accept: () => this.acquireTokenAndRun(),
+		});
+	}
+
+	private async acquireTokenAndRun(): Promise<void> {
+		this.runningTask.set(true);
+		try {
+			const token = await this.wppOpenService.getAccessToken();
+			if (token) {
+				this.executeRun(token as string);
+			} else {
+				this.runningTask.set(false);
+				this.showTokenFallback();
+			}
+		} catch {
+			this.runningTask.set(false);
+			this.showTokenFallback();
+		}
+	}
+
+	private showTokenFallback(): void {
+		this.manualToken = '';
+		this.showTokenDialog = true;
+	}
+
+	executeRun(token: string): void {
+		this.showTokenDialog = false;
+		this.runningTask.set(true);
 
 		this.service
 			.triggerRun(this.taskId, token)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: () => {
+					this.runningTask.set(false);
 					this.messageService.add({
 						severity: 'success',
 						summary: 'Run Started',
@@ -224,6 +333,7 @@ export class TaskDetailComponent implements OnInit {
 					this.loadTask();
 				},
 				error: (err) => {
+					this.runningTask.set(false);
 					this.messageService.add({
 						severity: 'error',
 						summary: 'Error',
