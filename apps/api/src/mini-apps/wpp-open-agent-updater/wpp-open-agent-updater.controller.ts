@@ -21,6 +21,7 @@ import { WppOpenAgentService } from './services/wpp-open-agent.service';
 import { CreateTaskDto } from './dtos/create-task.dto';
 import { UpdateTaskDto } from './dtos/update-task.dto';
 import { TriggerRunDto } from './dtos/trigger-run.dto';
+import { WppOpenOsContext } from './types/wpp-open.types';
 
 /**
  * Request type with authenticated user
@@ -97,6 +98,7 @@ export class WppOpenAgentUpdaterController {
 			req.user.id,
 			orgId,
 			dto.wppOpenToken,
+			dto.osContext,
 		);
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, run);
 	}
@@ -121,6 +123,45 @@ export class WppOpenAgentUpdaterController {
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, info);
 	}
 
+	@Post('agents/config')
+	async getAgentConfig(
+		@CurrentOrg() _orgId: string,
+		@Body()
+		body: {
+			projectId: string;
+			agentId: string;
+			wppOpenToken: string;
+			osContext?: WppOpenOsContext;
+		},
+	) {
+		if (!body.wppOpenToken || !body.projectId || !body.agentId) {
+			throw new BadRequestException(
+				'wppOpenToken, projectId, and agentId are required',
+			);
+		}
+
+		const config = await this.wppOpenAgentService.getAgentConfig(
+			body.wppOpenToken,
+			body.projectId,
+			body.agentId,
+			body.osContext,
+		);
+
+		const files = config.files || [];
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, {
+			id: config.id,
+			name: config.name,
+			fileCount: files.length,
+			files: files.map((f) => ({
+				fileName: 'fileName' in f ? f.fileName : undefined,
+				contentLength: 'content' in f ? f.content?.length || 0 : 0,
+				hasPersistent: 'persistentFileLocation' in f,
+				hasTemporary: 'temporaryFileLocation' in f,
+			})),
+			rawKeys: Object.keys(config),
+		});
+	}
+
 	@Post('agents')
 	async listAgents(
 		@CurrentOrg() _orgId: string,
@@ -128,7 +169,7 @@ export class WppOpenAgentUpdaterController {
 		body: {
 			projectId?: string;
 			wppOpenToken: string;
-			osContext?: Record<string, unknown>;
+			osContext?: WppOpenOsContext;
 		},
 	) {
 		if (!body.wppOpenToken) {
@@ -141,7 +182,7 @@ export class WppOpenAgentUpdaterController {
 		if (body.osContext && !projectId) {
 			projectId = await this.wppOpenAgentService.resolveProjectId(
 				body.wppOpenToken,
-				body.osContext as any,
+				body.osContext,
 			);
 		}
 
@@ -154,7 +195,7 @@ export class WppOpenAgentUpdaterController {
 		const agents = await this.wppOpenAgentService.listAgents(
 			body.wppOpenToken,
 			projectId,
-			body.osContext as any,
+			body.osContext,
 		);
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, {
 			agents,

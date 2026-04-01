@@ -34,16 +34,14 @@ import {
 	template: `
 		<div class="p-4">
 			@if (run()) {
-				<div
-					class="flex justify-content-between align-items-center mb-4"
-				>
+				<div class="flex justify-between items-center mb-4">
 					<div>
 						<h2 class="m-0">Run Details</h2>
 						<p class="text-color-secondary mt-1 mb-0">
 							Started: {{ run()!.createdAt | date: 'medium' }}
 						</p>
 					</div>
-					<div class="flex gap-2 align-items-center">
+					<div class="flex gap-2 items-center">
 						<p-tag
 							[value]="run()!.status"
 							[severity]="getRunStatusSeverity(run()!.status)"
@@ -58,67 +56,55 @@ import {
 				</div>
 
 				<!-- Summary Cards -->
-				<div class="grid mb-4">
-					<div class="col-12 md:col-3">
-						<p-card>
-							<div class="text-center">
-								<div
-									class="text-3xl font-bold"
-									style="color: var(--p-primary-color)"
-								>
-									{{ run()!.filesFound }}
-								</div>
-								<div class="text-color-secondary mt-1">
-									Files Found
-								</div>
+				<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+					<p-card>
+						<div class="text-center">
+							<div
+								class="text-3xl font-bold"
+								style="color: var(--p-primary-color)"
+							>
+								{{ run()!.filesFound }}
 							</div>
-						</p-card>
-					</div>
-					<div class="col-12 md:col-3">
-						<p-card>
-							<div class="text-center">
-								<div
-									class="text-3xl font-bold"
-									style="color: var(--p-green-500)"
-								>
-									{{ run()!.filesProcessed }}
-								</div>
-								<div class="text-color-secondary mt-1">
-									Processed
-								</div>
+							<div class="text-color-secondary mt-1">
+								Files Found
 							</div>
-						</p-card>
-					</div>
-					<div class="col-12 md:col-3">
-						<p-card>
-							<div class="text-center">
-								<div
-									class="text-3xl font-bold"
-									style="color: var(--p-red-500)"
-								>
-									{{ run()!.filesFailed }}
-								</div>
-								<div class="text-color-secondary mt-1">
-									Failed
-								</div>
+						</div>
+					</p-card>
+					<p-card>
+						<div class="text-center">
+							<div
+								class="text-3xl font-bold"
+								style="color: var(--p-green-500)"
+							>
+								{{ run()!.filesProcessed }}
 							</div>
-						</p-card>
-					</div>
-					<div class="col-12 md:col-3">
-						<p-card>
-							<div class="text-center">
-								<div
-									class="text-3xl font-bold"
-									style="color: var(--p-yellow-500)"
-								>
-									{{ run()!.filesSkipped }}
-								</div>
-								<div class="text-color-secondary mt-1">
-									Skipped
-								</div>
+							<div class="text-color-secondary mt-1">
+								Processed
 							</div>
-						</p-card>
-					</div>
+						</div>
+					</p-card>
+					<p-card>
+						<div class="text-center">
+							<div
+								class="text-3xl font-bold"
+								style="color: var(--p-red-500)"
+							>
+								{{ run()!.filesFailed }}
+							</div>
+							<div class="text-color-secondary mt-1">Failed</div>
+						</div>
+					</p-card>
+					<p-card>
+						<div class="text-center">
+							<div
+								class="text-3xl font-bold"
+								style="color: var(--p-yellow-500)"
+							>
+								{{ run()!.filesSkipped }}
+							</div>
+							<div class="text-color-secondary mt-1">Skipped</div>
+						</div>
+					</p-card>
 				</div>
 
 				@if (run()!.status === 'processing' && run()!.filesFound > 0) {
@@ -127,7 +113,7 @@ import {
 
 				@if (run()!.errorMessage) {
 					<div
-						class="p-3 mb-4 border-round"
+						class="p-3 mb-4 rounded"
 						style="background: var(--p-red-50); color: var(--p-red-700)"
 					>
 						<i class="pi pi-exclamation-triangle mr-2"></i>

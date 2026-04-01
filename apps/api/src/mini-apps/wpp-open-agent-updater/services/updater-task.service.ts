@@ -16,6 +16,7 @@ import {
 import { TaskRun, TaskRunStatus } from '../entities/task-run.entity';
 import { CreateTaskDto } from '../dtos/create-task.dto';
 import { UpdateTaskDto } from '../dtos/update-task.dto';
+import { WppOpenOsContext } from '../types/wpp-open.types';
 
 import { BoxService } from './box.service';
 
@@ -158,6 +159,7 @@ export class UpdaterTaskService {
 		userId: string,
 		orgId: string,
 		wppOpenToken: string,
+		osContext?: WppOpenOsContext,
 	): Promise<TaskRun> {
 		const task = await this.getTask(taskId, orgId);
 
@@ -202,6 +204,7 @@ export class UpdaterTaskService {
 			organizationId: orgId,
 			lastRunAt: task.lastRunAt?.toISOString() || null,
 			wppOpenToken,
+			osContext,
 			fileExtensions: task.fileExtensions,
 			includeSubfolders: task.includeSubfolders,
 		});
