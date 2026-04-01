@@ -49,6 +49,18 @@ export class UpdaterTask {
 	})
 	status: UpdaterTaskStatus;
 
+	@Column({
+		type: 'jsonb',
+		default: () => `'["docx","pdf","pptx","xlsx"]'`,
+	})
+	fileExtensions: string[];
+
+	@Column({ type: 'boolean', default: true })
+	includeSubfolders: boolean;
+
+	@Column({ type: 'varchar', length: 50, default: 'manual' })
+	cadence: string;
+
 	@Column({ type: 'timestamptz', nullable: true })
 	lastRunAt: Date | null;
 

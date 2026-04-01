@@ -52,6 +52,10 @@ export class UpdaterTaskService {
 			boxFolderName: folderInfo.name,
 			wppOpenAgentId: dto.wppOpenAgentId,
 			wppOpenProjectId: dto.wppOpenProjectId,
+			wppOpenAgentName: dto.wppOpenAgentName,
+			fileExtensions: dto.fileExtensions,
+			includeSubfolders: dto.includeSubfolders,
+			cadence: dto.cadence,
 			createdById: userId,
 			organizationId: orgId,
 		});
@@ -110,6 +114,11 @@ export class UpdaterTaskService {
 		}
 
 		if (dto.name !== undefined) task.name = dto.name;
+		if (dto.fileExtensions !== undefined)
+			task.fileExtensions = dto.fileExtensions;
+		if (dto.includeSubfolders !== undefined)
+			task.includeSubfolders = dto.includeSubfolders;
+		if (dto.cadence !== undefined) task.cadence = dto.cadence;
 
 		return this.taskRepo.save(task);
 	}
@@ -193,6 +202,8 @@ export class UpdaterTaskService {
 			organizationId: orgId,
 			lastRunAt: task.lastRunAt?.toISOString() || null,
 			wppOpenToken,
+			fileExtensions: task.fileExtensions,
+			includeSubfolders: task.includeSubfolders,
 		});
 
 		this.logger.log(`Run triggered: ${savedRun.id} for task ${taskId}`);

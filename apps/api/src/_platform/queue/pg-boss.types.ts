@@ -60,6 +60,10 @@ export interface AgentUpdaterJobData {
 	lastRunAt: string | null;
 	/** User's WPP Open session token */
 	wppOpenToken: string;
+	/** File extensions to include (e.g. ['pdf', 'docx']) */
+	fileExtensions: string[];
+	/** Whether to recurse into subfolders */
+	includeSubfolders: boolean;
 }
 
 /**

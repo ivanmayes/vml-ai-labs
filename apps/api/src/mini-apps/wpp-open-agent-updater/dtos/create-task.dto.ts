@@ -1,4 +1,14 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+	ArrayMinSize,
+	IsArray,
+	IsBoolean,
+	IsIn,
+	IsNotEmpty,
+	IsOptional,
+	IsString,
+	Matches,
+	MaxLength,
+} from 'class-validator';
 
 export class CreateTaskDto {
 	@IsNotEmpty()
@@ -19,9 +29,28 @@ export class CreateTaskDto {
 	@IsNotEmpty()
 	@IsString()
 	@MaxLength(100)
+	@Matches(/^[a-zA-Z0-9-]+$/)
 	wppOpenProjectId: string;
 
-	/** Optional: WPP Open token to resolve agent name during creation */
+	@IsOptional()
+	@IsString()
+	@MaxLength(255)
+	wppOpenAgentName?: string;
+
+	@IsOptional()
+	@IsArray()
+	@ArrayMinSize(1)
+	@IsIn(['docx', 'pdf', 'pptx', 'xlsx'], { each: true })
+	fileExtensions: string[] = ['docx', 'pdf', 'pptx', 'xlsx'];
+
+	@IsOptional()
+	@IsBoolean()
+	includeSubfolders: boolean = true;
+
+	@IsOptional()
+	@IsIn(['manual'])
+	cadence: string = 'manual';
+
 	@IsOptional()
 	@IsString()
 	wppOpenToken?: string;

@@ -76,19 +76,42 @@ export class BoxService {
 	}
 
 	/**
-	 * Recursively list files in a Box folder.
-	 * Optionally filter by modification date for incremental syncs.
+	 * List files in a Box folder, with optional filtering.
 	 *
 	 * @param folderId - Box folder ID to scan
-	 * @param modifiedAfter - Only return files modified after this date
-	 * @returns Array of BoxFile metadata
+	 * @param options - Filtering options
+	 * @param options.modifiedAfter - Only return files modified after this date
+	 * @param options.extensions - File extensions to include (without dots, e.g. ['pdf', 'docx'])
+	 * @param options.includeSubfolders - Whether to recurse into subfolders (default: true)
 	 */
 	async listFolderFiles(
 		folderId: string,
-		modifiedAfter?: Date,
+		options: {
+			modifiedAfter?: Date;
+			extensions?: string[];
+			includeSubfolders?: boolean;
+		} = {},
 	): Promise<BoxFile[]> {
+		const extensionSet = options.extensions?.length
+			? new Set(
+					options.extensions.map((ext) =>
+						ext.startsWith('.')
+							? ext.toLowerCase()
+							: `.${ext.toLowerCase()}`,
+					),
+				)
+			: SUPPORTED_EXTENSIONS;
+		const includeSubfolders = options.includeSubfolders ?? true;
+
 		const files: BoxFile[] = [];
-		await this.scanFolder(folderId, '', files, modifiedAfter);
+		await this.scanFolder(
+			folderId,
+			'',
+			files,
+			options.modifiedAfter,
+			extensionSet,
+			includeSubfolders,
+		);
 		return files;
 	}
 
@@ -109,13 +132,16 @@ export class BoxService {
 	}
 
 	/**
-	 * Recursively scan a folder and its subfolders for supported files.
+	 * Scan a folder for files matching the given criteria.
+	 * Optionally recurses into subfolders.
 	 */
 	private async scanFolder(
 		folderId: string,
 		parentPath: string,
 		results: BoxFile[],
-		modifiedAfter?: Date,
+		modifiedAfter: Date | undefined,
+		extensionSet: Set<string>,
+		includeSubfolders: boolean,
 	): Promise<void> {
 		const client = this.getClient();
 		let offset = 0;
@@ -143,19 +169,21 @@ export class BoxService {
 
 			for (const entry of entries) {
 				if (entry.type === 'folder') {
-					subfolders.push({
-						id: entry.id,
-						path: parentPath
-							? `${parentPath}/${entry.name}`
-							: entry.name || '',
-					});
+					if (includeSubfolders) {
+						subfolders.push({
+							id: entry.id,
+							path: parentPath
+								? `${parentPath}/${entry.name}`
+								: entry.name || '',
+						});
+					}
 					continue;
 				}
 
 				if (entry.type !== 'file') continue;
 
 				const ext = path.extname(entry.name || '').toLowerCase();
-				if (!SUPPORTED_EXTENSIONS.has(ext)) continue;
+				if (!extensionSet.has(ext)) continue;
 
 				const modifiedAt = (entry as any).modifiedAt
 					? new Date((entry as any).modifiedAt)
@@ -163,7 +191,6 @@ export class BoxService {
 						? new Date((entry as any).modified_at)
 						: new Date();
 
-				// Skip files not modified since last run
 				if (modifiedAfter && modifiedAt <= modifiedAfter) continue;
 
 				results.push({
@@ -180,19 +207,22 @@ export class BoxService {
 			if (entries.length < limit) break;
 		}
 
-		// Recursively scan subfolders with concurrency limit
-		await this.processBatched(
-			subfolders,
-			async (subfolder) => {
-				await this.scanFolder(
-					subfolder.id,
-					subfolder.path,
-					results,
-					modifiedAfter,
-				);
-			},
-			MAX_CONCURRENT,
-		);
+		if (subfolders.length > 0) {
+			await this.processBatched(
+				subfolders,
+				async (subfolder) => {
+					await this.scanFolder(
+						subfolder.id,
+						subfolder.path,
+						results,
+						modifiedAfter,
+						extensionSet,
+						includeSubfolders,
+					);
+				},
+				MAX_CONCURRENT,
+			);
+		}
 	}
 
 	/**

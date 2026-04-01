@@ -7,7 +7,6 @@ import {
 	Param,
 	Post,
 	Put,
-	Query,
 	Req,
 	UseGuards,
 } from '@nestjs/common';
@@ -122,19 +121,19 @@ export class WppOpenAgentUpdaterController {
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, info);
 	}
 
-	@Get('agents')
+	@Post('agents')
 	async listAgents(
-		@Query('projectId') projectId: string,
-		@Query('token') token: string,
+		@CurrentOrg() _orgId: string,
+		@Body() body: { projectId: string; wppOpenToken: string },
 	) {
-		if (!projectId || !token) {
+		if (!body.projectId || !body.wppOpenToken) {
 			throw new BadRequestException(
-				'Both projectId and token query parameters are required',
+				'Both projectId and wppOpenToken are required',
 			);
 		}
 		const agents = await this.wppOpenAgentService.listAgents(
-			token,
-			projectId,
+			body.wppOpenToken,
+			body.projectId,
 		);
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, agents);
 	}

@@ -102,8 +102,15 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 	 * Execute the full run pipeline.
 	 */
 	private async processRun(data: AgentUpdaterJobData): Promise<void> {
-		const { taskRunId, taskId, boxFolderId, lastRunAt, wppOpenToken } =
-			data;
+		const {
+			taskRunId,
+			taskId,
+			boxFolderId,
+			lastRunAt,
+			wppOpenToken,
+			fileExtensions = ['docx', 'pdf', 'pptx', 'xlsx'],
+			includeSubfolders = true,
+		} = data;
 
 		this.logger.log(`Processing run ${taskRunId} for task ${taskId}`);
 
@@ -130,10 +137,16 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			? new Date(new Date(lastRunAt).getTime() - LAST_RUN_BUFFER_MS)
 			: undefined;
 
-		const files = await this.boxService.listFolderFiles(
-			boxFolderId,
-			modifiedAfter,
+		const supportedExtensions = new Set(['docx', 'pdf', 'pptx', 'xlsx']);
+		const safeExtensions = fileExtensions.filter((ext) =>
+			supportedExtensions.has(ext),
 		);
+
+		const files = await this.boxService.listFolderFiles(boxFolderId, {
+			modifiedAfter,
+			extensions: safeExtensions.length > 0 ? safeExtensions : undefined,
+			includeSubfolders,
+		});
 
 		this.logger.log(
 			`Found ${files.length} files to process for run ${taskRunId}`,
@@ -265,8 +278,10 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					: null,
 		});
 
-		// 8. Update task's lastRunAt
-		await this.taskRepo.update(taskId, { lastRunAt: new Date() });
+		// 8. Update task's lastRunAt only on successful completion
+		if (finalStatus === TaskRunStatus.COMPLETED) {
+			await this.taskRepo.update(taskId, { lastRunAt: new Date() });
+		}
 
 		this.logger.log(
 			`Run ${taskRunId} completed: ${processed} processed, ${failed} failed`,
