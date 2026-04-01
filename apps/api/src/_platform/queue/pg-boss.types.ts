@@ -60,6 +60,12 @@ export interface AgentUpdaterJobData {
 	lastRunAt: string | null;
 	/** User's WPP Open session token */
 	wppOpenToken: string;
+	/** WPP Open OS context for CS API authentication (hierarchy/project azIds) */
+	osContext?: {
+		hierarchy?: { azId?: string; mapping?: Record<string, unknown> };
+		project?: { azId?: string; id?: string; name?: string };
+		tenant?: { azId?: string; id?: string; name?: string };
+	};
 	/** File extensions to include (e.g. ['pdf', 'docx']) */
 	fileExtensions: string[];
 	/** Whether to recurse into subfolders */

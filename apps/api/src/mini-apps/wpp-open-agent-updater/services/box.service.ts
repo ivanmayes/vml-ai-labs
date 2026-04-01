@@ -91,7 +91,7 @@ export class BoxService {
 			extensions?: string[];
 			includeSubfolders?: boolean;
 		} = {},
-	): Promise<BoxFile[]> {
+	): Promise<{ files: BoxFile[]; totalSeen: number; skippedByDate: number }> {
 		const extensionSet = options.extensions?.length
 			? new Set(
 					options.extensions.map((ext) =>
@@ -104,6 +104,7 @@ export class BoxService {
 		const includeSubfolders = options.includeSubfolders ?? true;
 
 		const files: BoxFile[] = [];
+		const counters = { totalSeen: 0, skippedByDate: 0 };
 		await this.scanFolder(
 			folderId,
 			'',
@@ -111,8 +112,16 @@ export class BoxService {
 			options.modifiedAfter,
 			extensionSet,
 			includeSubfolders,
+			counters,
 		);
-		return files;
+		this.logger.log(
+			`Box folder ${folderId}: ${counters.totalSeen} total files, ${files.length} new/modified, ${counters.skippedByDate} skipped by date (modifiedAfter: ${options.modifiedAfter?.toISOString() || 'none'})`,
+		);
+		return {
+			files,
+			totalSeen: counters.totalSeen,
+			skippedByDate: counters.skippedByDate,
+		};
 	}
 
 	/**
@@ -142,6 +151,7 @@ export class BoxService {
 		modifiedAfter: Date | undefined,
 		extensionSet: Set<string>,
 		includeSubfolders: boolean,
+		counters: { totalSeen: number; skippedByDate: number },
 	): Promise<void> {
 		const client = this.getClient();
 		let offset = 0;
@@ -185,13 +195,42 @@ export class BoxService {
 				const ext = path.extname(entry.name || '').toLowerCase();
 				if (!extensionSet.has(ext)) continue;
 
-				const modifiedAt = (entry as any).modifiedAt
-					? new Date((entry as any).modifiedAt)
-					: (entry as any).modified_at
-						? new Date((entry as any).modified_at)
-						: new Date();
+				counters.totalSeen++;
 
-				if (modifiedAfter && modifiedAt <= modifiedAfter) continue;
+				// Box SDK may return modifiedAt as DateTime object or raw modified_at as string
+				const rawEntry = entry as any;
+				const rawModified =
+					rawEntry.modifiedAt ??
+					rawEntry.modified_at ??
+					rawEntry.content_modified_at;
+				let modifiedAt: Date;
+				if (rawModified instanceof Date) {
+					modifiedAt = rawModified;
+				} else if (typeof rawModified === 'string') {
+					modifiedAt = new Date(rawModified);
+				} else if (
+					rawModified &&
+					typeof rawModified.toString === 'function'
+				) {
+					modifiedAt = new Date(rawModified.toString());
+				} else {
+					this.logger.warn(
+						`No modifiedAt for file ${entry.name} (id: ${entry.id}), including in results`,
+					);
+					modifiedAt = new Date(0);
+				}
+
+				if (isNaN(modifiedAt.getTime())) {
+					this.logger.warn(
+						`Invalid modifiedAt date for file ${entry.name}: ${rawModified}`,
+					);
+					modifiedAt = new Date(0);
+				}
+
+				if (modifiedAfter && modifiedAt <= modifiedAfter) {
+					counters.skippedByDate++;
+					continue;
+				}
 
 				results.push({
 					id: entry.id,
@@ -218,6 +257,7 @@ export class BoxService {
 						modifiedAfter,
 						extensionSet,
 						includeSubfolders,
+						counters,
 					);
 				},
 				MAX_CONCURRENT,

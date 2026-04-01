@@ -134,11 +134,15 @@ export class WppOpenAgentUpdaterService {
 
 	// ── Runs ───────────────────────────────────────────────────
 
-	triggerRun(taskId: string, wppOpenToken: string): Observable<TaskRun> {
+	triggerRun(
+		taskId: string,
+		wppOpenToken: string,
+		osContext?: unknown,
+	): Observable<TaskRun> {
 		return this.http
 			.post<
 				ApiResponse<TaskRun>
-			>(`${this.apiUrl}/tasks/${taskId}/run`, { wppOpenToken })
+			>(`${this.apiUrl}/tasks/${taskId}/run`, { wppOpenToken, osContext })
 			.pipe(map((res) => res.data!));
 	}
 

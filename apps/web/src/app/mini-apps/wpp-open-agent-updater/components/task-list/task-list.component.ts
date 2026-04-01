@@ -266,7 +266,7 @@ export class TaskListComponent implements OnInit {
 		this.showTokenDialog = false;
 
 		this.service
-			.triggerRun(task.id, token)
+			.triggerRun(task.id, token, this.wppOpenService.context)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: () => {

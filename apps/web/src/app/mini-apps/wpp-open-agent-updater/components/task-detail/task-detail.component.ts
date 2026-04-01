@@ -319,7 +319,7 @@ export class TaskDetailComponent implements OnInit {
 		this.runningTask.set(true);
 
 		this.service
-			.triggerRun(this.taskId, token)
+			.triggerRun(this.taskId, token, this.wppOpenService.context)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: () => {

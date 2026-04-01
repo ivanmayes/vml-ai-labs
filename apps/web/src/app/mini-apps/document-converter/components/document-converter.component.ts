@@ -59,9 +59,7 @@ import {
 				(uploadHandler)="onUpload($event)"
 			>
 				<ng-template pTemplate="empty">
-					<div
-						class="flex align-items-center justify-content-center flex-column py-5"
-					>
+					<div class="flex items-center justify-center flex-col py-5">
 						<i
 							class="pi pi-cloud-upload text-4xl text-color-secondary mb-3"
 						></i>
@@ -73,9 +71,7 @@ import {
 			</p-fileUpload>
 
 			<div class="mt-4">
-				<div
-					class="flex justify-content-between align-items-center mb-3"
-				>
+				<div class="flex justify-between items-center mb-3">
 					<h3 class="m-0">Conversion Jobs</h3>
 					<p-button
 						icon="pi pi-refresh"
@@ -86,7 +82,7 @@ import {
 				</div>
 
 				@if (loading()) {
-					<div class="flex justify-content-center p-4">
+					<div class="flex justify-center p-4">
 						<p-progressSpinner strokeWidth="4" />
 					</div>
 				} @else {

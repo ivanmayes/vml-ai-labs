@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 
 import {
@@ -5,6 +7,9 @@ import {
 	WppOpenAgentConfig,
 	WppOpenKnowledgeItem,
 	WppOpenOsContext,
+	CSFileUploadItem,
+	CSFileItem,
+	TransferUploadConfig,
 } from '../types/wpp-open.types';
 
 /** Creative Studio API base */
@@ -63,6 +68,10 @@ export class WppOpenAgentService {
 			headers['Content-Type'] = 'application/json';
 		}
 
+		this.logger.debug(
+			`CS API → ${method} ${path} | Auth: ${headers.Authorization.substring(0, 20)}...`,
+		);
+
 		let response: Response;
 		try {
 			response = await fetch(url, {
@@ -95,6 +104,8 @@ export class WppOpenAgentService {
 			);
 		}
 
+		this.logger.debug(`CS API ← ${method} ${path} → ${response.status}`);
+
 		const json = await response.json();
 
 		if (json === null || json === undefined) {
@@ -105,6 +116,66 @@ export class WppOpenAgentService {
 		}
 
 		return json as T;
+	}
+
+	/**
+	 * Upload content to S3 via the CS Transfer Service.
+	 *
+	 * 1. GET /transfer/upload-config/single/put → signed URL + bucket/key
+	 * 2. PUT content to the signed URL
+	 * 3. Return { bucket, key } as temporaryFileLocation
+	 */
+	async uploadToTransferService(
+		token: string,
+		content: string,
+		contentType = 'text/markdown',
+		osContext?: WppOpenOsContext,
+	): Promise<{ bucket: string; key: string }> {
+		// Step 1: Get upload config (response wrapped in { data: ... })
+		const result = await this.csRequest<{ data: TransferUploadConfig }>(
+			'GET',
+			`/v1/transfer/upload-config/single/put?contentType=${encodeURIComponent(contentType)}`,
+			token,
+			osContext,
+		);
+
+		const config = result?.data;
+		if (
+			!config?.signedUrl ||
+			!config?.temporaryFileLocation?.bucket ||
+			!config?.temporaryFileLocation?.key
+		) {
+			this.logger.error(
+				`Transfer Service invalid response: ${JSON.stringify(result)?.substring(0, 500)}`,
+			);
+			throw new HttpException(
+				'Transfer Service returned invalid upload config',
+				HttpStatus.BAD_GATEWAY,
+			);
+		}
+
+		// Step 2: Upload content to S3 via signed URL
+		const uploadResponse = await fetch(config.signedUrl, {
+			method: 'PUT',
+			headers: { 'Content-Type': contentType },
+			body: content,
+		});
+
+		if (!uploadResponse.ok) {
+			this.logger.error(
+				`Transfer upload failed: ${uploadResponse.status}`,
+			);
+			throw new HttpException(
+				'Failed to upload file to Transfer Service',
+				HttpStatus.BAD_GATEWAY,
+			);
+		}
+
+		this.logger.debug(
+			`Uploaded to Transfer Service: bucket=${config.temporaryFileLocation.bucket}, key=${config.temporaryFileLocation.key} (${content.length} chars)`,
+		);
+
+		return config.temporaryFileLocation;
 	}
 
 	/**
@@ -216,10 +287,14 @@ export class WppOpenAgentService {
 	}
 
 	/**
-	 * Upsert knowledge documents into an agent's config.
+	 * Upsert knowledge documents into an agent's files.
 	 *
-	 * Fetches the current config, merges knowledge items
-	 * (update existing by title, add new), then PUTs the updated config.
+	 * The CS API stores agent knowledge as `files` (S3-backed objects),
+	 * not a separate `knowledge` field. The flow:
+	 * 1. Upload each document to S3 via the Transfer Service
+	 * 2. Build CSFileUploadItem objects with temporaryFileLocation
+	 * 3. Merge with existing files (upsert by fileName)
+	 * 4. PUT agent config with updated files array
 	 */
 	async upsertKnowledge(
 		token: string,
@@ -228,7 +303,7 @@ export class WppOpenAgentService {
 		documents: WppOpenKnowledgeItem[],
 		osContext?: WppOpenOsContext,
 	): Promise<void> {
-		// Get current config
+		// 1. Get current config
 		const config = await this.getAgentConfig(
 			token,
 			projectId,
@@ -236,23 +311,61 @@ export class WppOpenAgentService {
 			osContext,
 		);
 
-		// Merge knowledge: update existing by title, add new
-		const existingKnowledge = config.knowledge || [];
-		const knowledgeMap = new Map<string, WppOpenKnowledgeItem>();
+		const existingFiles = (config.files || []) as CSFileItem[];
+		this.logger.log(
+			`Agent has ${existingFiles.length} existing files: ${existingFiles.map((f) => f.fileName).join(', ') || 'none'}`,
+		);
 
-		// Index existing by title
-		for (const item of existingKnowledge) {
-			knowledgeMap.set(item.title, item);
-		}
-
-		// Upsert new documents
+		// 2. Upload each document to S3 via Transfer Service
+		const uploadedFiles: CSFileUploadItem[] = [];
 		for (const doc of documents) {
-			knowledgeMap.set(doc.title, doc);
+			const fileName = doc.title.endsWith('.md')
+				? doc.title
+				: `${doc.title}.md`;
+
+			const location = await this.uploadToTransferService(
+				token,
+				doc.content,
+				'text/markdown',
+				osContext,
+			);
+
+			uploadedFiles.push({
+				uid: randomUUID(),
+				temporaryFileLocation: {
+					bucket: location.bucket,
+					key: location.key,
+					metadata: {
+						fileSizeInBytes: Buffer.byteLength(doc.content, 'utf8'),
+					},
+				},
+				// Set optimizedFileLocation to same as temp so the backend
+				// can read the content during updateS3Config
+				optimizedFileLocation: {
+					bucket: location.bucket,
+					key: location.key,
+				},
+				fileName,
+				content: doc.content,
+				status: 'done',
+			});
+
+			this.logger.log(`Uploaded "${fileName}" to Transfer Service`);
 		}
 
-		config.knowledge = Array.from(knowledgeMap.values());
+		// 3. Merge: keep existing files that aren't being replaced, add new uploads
+		const newFileNames = new Set(uploadedFiles.map((f) => f.fileName));
+		const retainedFiles = existingFiles.filter(
+			(f) => !newFileNames.has(f.fileName || ''),
+		);
 
-		// Update the agent config
+		config.files = [...retainedFiles, ...uploadedFiles];
+
+		this.logger.log(
+			`Updating agent with ${config.files.length} total files (${retainedFiles.length} retained, ${uploadedFiles.length} new/updated)`,
+		);
+
+		// 4. PUT the updated config
 		await this.updateAgentConfig(
 			token,
 			projectId,
@@ -262,7 +375,7 @@ export class WppOpenAgentService {
 		);
 
 		this.logger.log(
-			`Upserted ${documents.length} knowledge docs into agent ${agentId}`,
+			`Upserted ${documents.length} files into agent ${agentId}`,
 		);
 	}
 }

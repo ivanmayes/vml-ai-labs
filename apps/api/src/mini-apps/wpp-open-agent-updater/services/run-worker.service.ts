@@ -108,6 +108,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			boxFolderId,
 			lastRunAt,
 			wppOpenToken,
+			osContext,
 			fileExtensions = ['docx', 'pdf', 'pptx', 'xlsx'],
 			includeSubfolders = true,
 		} = data;
@@ -121,14 +122,24 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		});
 
 		// 2. Validate WPP Open token before doing any work
+		this.logger.log(
+			`Validating WPP Open token for project ${data.wppOpenProjectId} (hasOsContext: ${!!osContext})`,
+		);
 		try {
-			await this.wppOpenAgentService.listAgents(
+			const agents = await this.wppOpenAgentService.listAgents(
 				wppOpenToken,
 				data.wppOpenProjectId,
+				osContext,
+			);
+			this.logger.log(
+				`Token valid — found ${agents.length} agents for project ${data.wppOpenProjectId}`,
 			);
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : 'Unknown error';
+			this.logger.error(
+				`Token validation failed for project ${data.wppOpenProjectId}: ${message}`,
+			);
 			throw new Error(`WPP Open token validation failed: ${message}`);
 		}
 
@@ -142,22 +153,28 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			supportedExtensions.has(ext),
 		);
 
-		const files = await this.boxService.listFolderFiles(boxFolderId, {
-			modifiedAfter,
-			extensions: safeExtensions.length > 0 ? safeExtensions : undefined,
-			includeSubfolders,
-		});
+		const { files, totalSeen, skippedByDate } =
+			await this.boxService.listFolderFiles(boxFolderId, {
+				modifiedAfter,
+				extensions:
+					safeExtensions.length > 0 ? safeExtensions : undefined,
+				includeSubfolders,
+			});
 
 		this.logger.log(
-			`Found ${files.length} files to process for run ${taskRunId}`,
+			`Found ${totalSeen} total files, ${files.length} new/modified, ${skippedByDate} unchanged for run ${taskRunId}`,
 		);
 
-		await this.runRepo.update(taskRunId, { filesFound: files.length });
+		await this.runRepo.update(taskRunId, {
+			filesFound: files.length,
+			filesSkipped: skippedByDate,
+		});
 
 		if (files.length === 0) {
 			await this.runRepo.update(taskRunId, {
 				status: TaskRunStatus.COMPLETED,
 				completedAt: new Date(),
+				filesSkipped: skippedByDate,
 			});
 			await this.taskRepo.update(taskId, { lastRunAt: new Date() });
 			return;
@@ -218,6 +235,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					data.wppOpenProjectId,
 					data.wppOpenAgentId,
 					knowledgeDocs,
+					osContext,
 				);
 				this.logger.log(
 					`Upserted ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId}`,
