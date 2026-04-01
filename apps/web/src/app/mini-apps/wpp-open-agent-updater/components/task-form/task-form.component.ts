@@ -355,12 +355,26 @@ export class TaskFormComponent implements OnInit {
 					return;
 				}
 
+				// Pass osContext for project ID resolution on the backend
+				let osContext: unknown;
+				try {
+					osContext = this.wppOpenService.context;
+				} catch {
+					// Not in iframe
+				}
+
 				this.service
-					.listAgents(projectId, token)
+					.listAgents(token, { osContext })
 					.pipe(takeUntilDestroyed(this.destroyRef))
 					.subscribe({
-						next: (agents) => {
-							this.agents.set(agents);
+						next: (result) => {
+							this.agents.set(result.agents);
+							// Update project ID with the resolved CS project ID
+							if (result.resolvedProjectId) {
+								this.form.patchValue({
+									wppOpenProjectId: result.resolvedProjectId,
+								});
+							}
 							this.loadingAgents.set(false);
 						},
 						error: () => {

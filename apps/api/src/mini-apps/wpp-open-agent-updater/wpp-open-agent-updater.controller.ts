@@ -124,17 +124,41 @@ export class WppOpenAgentUpdaterController {
 	@Post('agents')
 	async listAgents(
 		@CurrentOrg() _orgId: string,
-		@Body() body: { projectId: string; wppOpenToken: string },
+		@Body()
+		body: {
+			projectId?: string;
+			wppOpenToken: string;
+			osContext?: Record<string, unknown>;
+		},
 	) {
-		if (!body.projectId || !body.wppOpenToken) {
-			throw new BadRequestException(
-				'Both projectId and wppOpenToken are required',
+		if (!body.wppOpenToken) {
+			throw new BadRequestException('wppOpenToken is required');
+		}
+
+		let projectId = body.projectId;
+
+		// If osContext is provided, resolve the CS internal project ID
+		if (body.osContext && !projectId) {
+			projectId = await this.wppOpenAgentService.resolveProjectId(
+				body.wppOpenToken,
+				body.osContext as any,
 			);
 		}
+
+		if (!projectId) {
+			throw new BadRequestException(
+				'Either projectId or osContext is required to list agents',
+			);
+		}
+
 		const agents = await this.wppOpenAgentService.listAgents(
 			body.wppOpenToken,
-			body.projectId,
+			projectId,
+			body.osContext as any,
 		);
-		return new ResponseEnvelope(ResponseStatus.Success, undefined, agents);
+		return new ResponseEnvelope(ResponseStatus.Success, undefined, {
+			agents,
+			resolvedProjectId: projectId,
+		});
 	}
 }
