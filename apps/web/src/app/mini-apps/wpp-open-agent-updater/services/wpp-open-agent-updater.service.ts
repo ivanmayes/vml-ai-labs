@@ -13,6 +13,9 @@ export interface UpdaterTask {
 	wppOpenAgentId: string;
 	wppOpenAgentName?: string;
 	wppOpenProjectId: string;
+	fileExtensions: string[];
+	includeSubfolders: boolean;
+	cadence: string;
 	status: 'active' | 'paused' | 'archived';
 	lastRunAt: string | null;
 	createdAt: string;
@@ -84,8 +87,12 @@ export class WppOpenAgentUpdaterService {
 		name: string;
 		boxFolderId: string;
 		wppOpenAgentId: string;
+		wppOpenAgentName?: string;
 		wppOpenProjectId: string;
 		wppOpenToken?: string;
+		fileExtensions?: string[];
+		includeSubfolders?: boolean;
+		cadence?: string;
 	}): Observable<UpdaterTask> {
 		return this.http
 			.post<ApiResponse<UpdaterTask>>(`${this.apiUrl}/tasks`, data)
@@ -106,7 +113,13 @@ export class WppOpenAgentUpdaterService {
 
 	updateTask(
 		id: string,
-		data: { name?: string; status?: string },
+		data: {
+			name?: string;
+			status?: string;
+			fileExtensions?: string[];
+			includeSubfolders?: boolean;
+			cadence?: string;
+		},
 	): Observable<UpdaterTask> {
 		return this.http
 			.put<ApiResponse<UpdaterTask>>(`${this.apiUrl}/tasks/${id}`, data)
@@ -153,9 +166,10 @@ export class WppOpenAgentUpdaterService {
 
 	listAgents(projectId: string, token: string): Observable<WppOpenAgent[]> {
 		return this.http
-			.get<
-				ApiResponse<WppOpenAgent[]>
-			>(`${this.apiUrl}/agents?projectId=${projectId}&token=${token}`)
+			.post<ApiResponse<WppOpenAgent[]>>(`${this.apiUrl}/agents`, {
+				projectId,
+				wppOpenToken: token,
+			})
 			.pipe(map((res) => res.data!));
 	}
 }

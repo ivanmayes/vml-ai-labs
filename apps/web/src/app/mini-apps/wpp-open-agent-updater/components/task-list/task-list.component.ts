@@ -1,13 +1,18 @@
 import { Component, signal, inject, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
+import { WppOpenService } from '../../../../_core/services/wpp-open/wpp-open.service';
 import {
 	WppOpenAgentUpdaterService,
 	UpdaterTask,
@@ -16,12 +21,23 @@ import {
 @Component({
 	selector: 'app-wpp-open-agent-updater-task-list',
 	standalone: true,
-	imports: [CommonModule, TableModule, TagModule, ButtonModule, ToastModule],
-	providers: [MessageService],
+	imports: [
+		CommonModule,
+		FormsModule,
+		TableModule,
+		TagModule,
+		ButtonModule,
+		ToastModule,
+		DialogModule,
+		InputTextModule,
+		ConfirmDialogModule,
+	],
+	providers: [MessageService, ConfirmationService],
 	template: `
 		<p-toast />
+		<p-confirmDialog />
 		<div class="p-4">
-			<div class="flex justify-content-between align-items-center mb-4">
+			<div class="flex justify-between items-center mb-4">
 				<div>
 					<h2 class="m-0">WPP Open Agent Updater</h2>
 					<p class="text-color-secondary mt-1">
@@ -140,16 +156,58 @@ import {
 				</ng-template>
 			</p-table>
 		</div>
+
+		<!-- Token fallback dialog for standalone dev mode -->
+		<p-dialog
+			header="Enter WPP Open Token"
+			[(visible)]="showTokenDialog"
+			[modal]="true"
+			[style]="{ width: '450px' }"
+		>
+			<div class="flex flex-col gap-3">
+				<p class="text-color-secondary m-0">
+					Could not obtain token automatically. Enter your WPP Open
+					token to run "{{ pendingRunTask()?.name }}".
+				</p>
+				<input
+					pInputText
+					[(ngModel)]="manualToken"
+					placeholder="Paste WPP Open token"
+					type="password"
+					class="w-full"
+				/>
+			</div>
+			<ng-template pTemplate="footer">
+				<p-button
+					label="Cancel"
+					severity="secondary"
+					[text]="true"
+					(onClick)="showTokenDialog = false"
+				/>
+				<p-button
+					label="Run"
+					icon="pi pi-play"
+					(onClick)="executeRun(pendingRunTask()!, manualToken)"
+					[disabled]="!manualToken"
+				/>
+			</ng-template>
+		</p-dialog>
 	`,
 })
 export class TaskListComponent implements OnInit {
 	readonly router = inject(Router);
 	private readonly service = inject(WppOpenAgentUpdaterService);
+	private readonly wppOpenService = inject(WppOpenService);
 	private readonly messageService = inject(MessageService);
+	private readonly confirmationService = inject(ConfirmationService);
 	private readonly destroyRef = inject(DestroyRef);
 
 	tasks = signal<UpdaterTask[]>([]);
 	loading = signal(true);
+	pendingRunTask = signal<UpdaterTask | null>(null);
+
+	showTokenDialog = false;
+	manualToken = '';
 
 	ngOnInit(): void {
 		this.loadTasks();
@@ -177,9 +235,35 @@ export class TaskListComponent implements OnInit {
 	}
 
 	onRun(task: UpdaterTask): void {
-		// TODO: Prompt for WPP Open token or get from session
-		const token = prompt('Enter your WPP Open token:');
-		if (!token) return;
+		this.confirmationService.confirm({
+			message: `Run task "${task.name}" now? This will sync files to the agent's knowledge base.`,
+			header: 'Confirm Run',
+			icon: 'pi pi-play',
+			accept: () => this.acquireTokenAndRun(task),
+		});
+	}
+
+	private async acquireTokenAndRun(task: UpdaterTask): Promise<void> {
+		try {
+			const token = await this.wppOpenService.getAccessToken();
+			if (token) {
+				this.executeRun(task, token as string);
+			} else {
+				this.showTokenFallback(task);
+			}
+		} catch {
+			this.showTokenFallback(task);
+		}
+	}
+
+	private showTokenFallback(task: UpdaterTask): void {
+		this.pendingRunTask.set(task);
+		this.manualToken = '';
+		this.showTokenDialog = true;
+	}
+
+	executeRun(task: UpdaterTask, token: string): void {
+		this.showTokenDialog = false;
 
 		this.service
 			.triggerRun(task.id, token)
