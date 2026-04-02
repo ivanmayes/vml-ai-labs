@@ -115,6 +115,15 @@ const CADENCE_OPTIONS = [{ label: 'Manual', value: 'manual' }];
 								formControlName="wppOpenProjectId"
 								placeholder="Project ID from WPP Open"
 							/>
+							@if (
+								missingProjectContext() &&
+								!form.get('wppOpenProjectId')?.value
+							) {
+								<p-message
+									severity="info"
+									text="No project detected. Launch this app from within a WPP Open project to auto-populate this field, or paste the Project ID manually."
+								/>
+							}
 						</div>
 
 						<!-- WPP Open Agent -->
@@ -223,6 +232,7 @@ export class TaskFormComponent implements OnInit {
 	readonly cadenceOptions = CADENCE_OPTIONS;
 
 	isEdit = signal(false);
+	missingProjectContext = signal(false);
 	taskId = signal<string | null>(null);
 	saving = signal(false);
 	validatingFolder = signal(false);
@@ -259,6 +269,8 @@ export class TaskFormComponent implements OnInit {
 			const projectId = this.wppOpenService.context?.project?.id;
 			if (projectId) {
 				this.form.patchValue({ wppOpenProjectId: projectId });
+			} else {
+				this.missingProjectContext.set(true);
 			}
 		} catch {
 			// Not in iframe — leave blank for manual entry
