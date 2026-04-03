@@ -1,6 +1,25 @@
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
+// Event Hint Schema — user-defined interactions to execute on pages
+// ---------------------------------------------------------------------------
+
+export const EventHintSchema = z.object({
+	action: z.enum(['click', 'hover', 'fill', 'fillSubmit', 'wait', 'remove']),
+	selector: z.string().max(500).optional(),
+	count: z.number().int().min(1).max(100).optional(),
+	value: z.string().max(1000).optional(),
+	waitAfter: z.number().int().min(0).max(30000).optional(),
+	seq: z.number().int().min(0).optional(),
+	snapshot: z.enum(['before', 'after', 'both', 'never']).optional(),
+	device: z.enum(['smartphone', 'tablet', 'desktop', 'all']).optional(),
+	siteEntry: z.boolean().optional(),
+	label: z.string().max(100).optional(),
+});
+
+export type EventHint = z.infer<typeof EventHintSchema>;
+
+// ---------------------------------------------------------------------------
 // SQS Message Schema — validated with zod on every invocation
 // ---------------------------------------------------------------------------
 
@@ -18,6 +37,10 @@ export const PageWorkMessageSchema = z.object({
 	viewports: z.array(z.number().int().min(1)).min(1),
 	seedHostname: z.string().min(1),
 	s3Prefix: z.string().min(1),
+	/** Resolved event hints for this specific page */
+	hints: z.array(EventHintSchema).optional(),
+	/** S3 key for serialized session state (cookies + localStorage) */
+	sessionStateS3Key: z.string().optional(),
 });
 
 export type PageWorkMessage = z.infer<typeof PageWorkMessageSchema>;
@@ -33,6 +56,12 @@ export interface ScreenshotRecord {
 	s3Key: string;
 	/** S3 object key for the WebP thumbnail */
 	thumbnailS3Key?: string;
+	/** Human-readable label from the hint that produced this screenshot */
+	hintLabel?: string;
+	/** Index of the hint in the resolved hints array */
+	hintIndex?: number;
+	/** Whether this screenshot is a baseline, before-hint, or after-hint capture */
+	snapshotTiming?: 'baseline' | 'before' | 'after';
 }
 
 // ---------------------------------------------------------------------------
@@ -50,6 +79,8 @@ export interface CallbackPayload {
 	/** Links discovered on this page (same-hostname, not download URLs) */
 	discoveredUrls: string[];
 	depth: number;
+	/** S3 key for serialized session state (set when siteEntry hints capture auth) */
+	sessionStateS3Key?: string;
 }
 
 // ---------------------------------------------------------------------------

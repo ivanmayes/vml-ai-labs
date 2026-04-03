@@ -13,6 +13,7 @@ import { User } from '../../../user/user.entity';
 import { Organization } from '../../../organization/organization.entity';
 import { JobStatus, canTransition } from '../types/job-status.enum';
 import { ScrapeError } from '../types/scrape-error.types';
+import { HintConfig } from '../types/event-hint.types';
 import { InvalidStatusTransitionError } from '../../../_platform/errors/domain.errors';
 
 /**
@@ -47,6 +48,12 @@ export class ScrapeJob {
 
 	@Column({ type: 'jsonb', default: () => "'[1920]'" })
 	viewports: number[];
+
+	@Column({ type: 'jsonb', nullable: true })
+	hints: HintConfig | null = null;
+
+	@Column({ type: 'varchar', nullable: true, name: 'session_state_s3_key' })
+	sessionStateS3Key: string | null = null;
 
 	@Column({
 		type: 'enum',

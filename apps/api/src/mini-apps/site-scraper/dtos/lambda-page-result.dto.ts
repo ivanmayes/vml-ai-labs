@@ -44,6 +44,32 @@ export class ScreenshotResultDto {
 	@IsString()
 	@MaxLength(1024)
 	thumbnailS3Key?: string;
+
+	@ApiPropertyOptional({
+		description: 'Human-readable label from the hint that produced this screenshot',
+		example: 'Expand FAQ accordion',
+	})
+	@IsOptional()
+	@IsString()
+	@MaxLength(100)
+	hintLabel?: string;
+
+	@ApiPropertyOptional({
+		description: 'Index of the hint in the resolved hints array',
+		example: 0,
+	})
+	@IsOptional()
+	@IsInt()
+	@Min(0)
+	hintIndex?: number;
+
+	@ApiPropertyOptional({
+		description: 'Whether this screenshot is a baseline, before-hint, or after-hint capture',
+		example: 'after',
+	})
+	@IsOptional()
+	@IsIn(['baseline', 'before', 'after'])
+	snapshotTiming?: string;
 }
 
 /**
@@ -125,4 +151,13 @@ export class LambdaPageResultDto {
 	@IsInt()
 	@Min(0)
 	depth: number;
+
+	@ApiPropertyOptional({
+		description: 'S3 key for serialized session state (set when siteEntry hints capture auth)',
+		example: 'site-scraper/abc-123/session-state.json',
+	})
+	@IsOptional()
+	@IsString()
+	@MaxLength(1024)
+	sessionStateS3Key?: string;
 }
