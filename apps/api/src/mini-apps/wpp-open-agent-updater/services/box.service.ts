@@ -27,7 +27,7 @@ export class BoxService {
 		const clientSecret = process.env.BOX_CLIENT_SECRET;
 		const enterpriseId = process.env.BOX_ENTERPRISE_ID;
 		const jwtKeyId = process.env.BOX_PUBLIC_KEY_ID;
-		const privateKey = process.env.BOX_PRIVATE_KEY;
+		const privateKey = process.env.BOX_PRIVATE_KEY?.replace(/\\n/g, '\n');
 		const passphrase = process.env.BOX_PASSPHRASE;
 
 		if (
