@@ -9,7 +9,7 @@ import { BoxFile, BoxFolderInfo } from '../types/box.types';
 const SUPPORTED_EXTENSIONS = new Set(['.docx', '.pdf', '.pptx', '.xlsx']);
 
 /** Max concurrent Box API calls to respect rate limits */
-const MAX_CONCURRENT = 8;
+const MAX_CONCURRENT = 3;
 
 @Injectable()
 export class BoxService {
@@ -286,9 +286,9 @@ export class BoxService {
 				}
 			}
 
-			// Small delay between batches to respect rate limits
+			// Delay between batches to respect Box rate limits
 			if (i + concurrency < items.length) {
-				await new Promise((resolve) => setTimeout(resolve, 100));
+				await new Promise((resolve) => setTimeout(resolve, 500));
 			}
 		}
 	}

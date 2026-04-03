@@ -113,7 +113,9 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			includeSubfolders = true,
 		} = data;
 
-		this.logger.log(`Processing run ${taskRunId} for task ${taskId}`);
+		this.logger.log(
+			`[run:${taskRunId}] Starting run for task ${taskId} | folder: ${boxFolderId} | extensions: ${fileExtensions.join(',')} | subfolders: ${includeSubfolders}`,
+		);
 
 		// 1. Update run status to processing
 		await this.runRepo.update(taskRunId, {
@@ -123,7 +125,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 
 		// 2. Validate WPP Open token before doing any work
 		this.logger.log(
-			`Validating WPP Open token for project ${data.wppOpenProjectId} (hasOsContext: ${!!osContext})`,
+			`[run:${taskRunId}] Validating WPP Open token for project ${data.wppOpenProjectId}`,
 		);
 		try {
 			const agents = await this.wppOpenAgentService.listAgents(
@@ -132,13 +134,13 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				osContext,
 			);
 			this.logger.log(
-				`Token valid — found ${agents.length} agents for project ${data.wppOpenProjectId}`,
+				`[run:${taskRunId}] Token valid — found ${agents.length} agents`,
 			);
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : 'Unknown error';
 			this.logger.error(
-				`Token validation failed for project ${data.wppOpenProjectId}: ${message}`,
+				`[run:${taskRunId}] Token validation failed: ${message}`,
 			);
 			throw new Error(`WPP Open token validation failed: ${message}`);
 		}
@@ -162,7 +164,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			});
 
 		this.logger.log(
-			`Found ${totalSeen} total files, ${files.length} new/modified, ${skippedByDate} unchanged for run ${taskRunId}`,
+			`[run:${taskRunId}] Box scan complete: ${totalSeen} total, ${files.length} new/modified, ${skippedByDate} skipped by date`,
 		);
 
 		await this.runRepo.update(taskRunId, {
@@ -197,16 +199,37 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		let failed = 0;
 		let skipped = 0;
 		const knowledgeDocs: WppOpenKnowledgeItem[] = [];
+		const totalFiles = runFiles.length;
+		const totalBatches = Math.ceil(totalFiles / FILE_CONCURRENCY);
+
+		this.logger.log(
+			`[run:${taskRunId}] Starting file processing: ${totalFiles} files in ${totalBatches} batches (concurrency: ${FILE_CONCURRENCY})`,
+		);
 
 		for (let i = 0; i < runFiles.length; i += FILE_CONCURRENCY) {
-			if (this.isShuttingDown) break;
+			if (this.isShuttingDown) {
+				this.logger.warn(
+					`[run:${taskRunId}] Shutdown requested, stopping at file ${i}/${totalFiles}`,
+				);
+				break;
+			}
 
+			const batchNum = Math.floor(i / FILE_CONCURRENCY) + 1;
 			const batch = runFiles.slice(i, i + FILE_CONCURRENCY);
 			const batchFiles = files.slice(i, i + FILE_CONCURRENCY);
 
+			this.logger.log(
+				`[run:${taskRunId}] Batch ${batchNum}/${totalBatches} — files ${i + 1}-${Math.min(i + FILE_CONCURRENCY, totalFiles)}/${totalFiles} | progress: ${converted} converted, ${failed} failed, ${skipped} skipped`,
+			);
+
 			const results = await Promise.allSettled(
 				batch.map((runFile, idx) =>
-					this.processFile(runFile, batchFiles[idx], knowledgeDocs),
+					this.processFile(
+						runFile,
+						batchFiles[idx],
+						knowledgeDocs,
+						taskRunId,
+					),
 				),
 			);
 
@@ -221,14 +244,24 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					}
 				} else {
 					failed++;
+					this.logger.error(
+						`[run:${taskRunId}] Unexpected batch rejection: ${result.reason}`,
+					);
 				}
 			}
 		}
+
+		this.logger.log(
+			`[run:${taskRunId}] File processing complete: ${converted} converted, ${failed} failed, ${skipped} skipped, ${knowledgeDocs.length} docs ready for upsert`,
+		);
 
 		// 6. Upsert knowledge into WPP Open agent (batch all docs at once)
 		let upsertError: string | null = null;
 		let processed = 0;
 		if (knowledgeDocs.length > 0) {
+			this.logger.log(
+				`[run:${taskRunId}] Upserting ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId} (total content: ${Math.round(knowledgeDocs.reduce((sum, d) => sum + d.content.length, 0) / 1024)}KB)`,
+			);
 			try {
 				await this.wppOpenAgentService.upsertKnowledge(
 					wppOpenToken,
@@ -238,7 +271,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					osContext,
 				);
 				this.logger.log(
-					`Upserted ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId}`,
+					`[run:${taskRunId}] Upsert successful — ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId}`,
 				);
 				processed = converted;
 
@@ -258,8 +291,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				upsertError =
 					error instanceof Error ? error.message : 'Unknown error';
 				this.logger.error(
-					`Failed to upsert knowledge for run ${taskRunId}:`,
-					error,
+					`[run:${taskRunId}] Upsert FAILED: ${upsertError}`,
 				);
 				failed += converted;
 
@@ -302,7 +334,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		}
 
 		this.logger.log(
-			`Run ${taskRunId} completed: ${processed} processed, ${failed} failed`,
+			`[run:${taskRunId}] Run ${finalStatus}: ${processed} processed, ${failed} failed, ${skipped} skipped`,
 		);
 	}
 
@@ -318,10 +350,15 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		runFile: TaskRunFile,
 		fileInfo: { id: string; name: string; size: number; extension: string },
 		knowledgeDocs: WppOpenKnowledgeItem[],
+		taskRunId: string,
 	): Promise<'converted' | 'skipped' | 'failed'> {
+		const fileLabel = `${fileInfo.name} (${(fileInfo.size / 1024 / 1024).toFixed(1)}MB)`;
 		try {
 			// Size check
 			if (fileInfo.size > MAX_FILE_SIZE) {
+				this.logger.warn(
+					`[run:${taskRunId}] SKIP ${fileLabel} — exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+				);
 				await this.runFileRepo.update(runFile.id, {
 					status: TaskRunFileStatus.FAILED,
 					errorMessage: `File too large (${Math.round(fileInfo.size / 1024 / 1024)}MB exceeds 50MB limit)`,
@@ -331,10 +368,14 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			}
 
 			// Download
+			this.logger.log(`[run:${taskRunId}] Downloading ${fileLabel}`);
 			await this.runFileRepo.update(runFile.id, {
 				status: TaskRunFileStatus.DOWNLOADING,
 			});
 			const buffer = await this.boxService.downloadFile(fileInfo.id);
+			this.logger.log(
+				`[run:${taskRunId}] Downloaded ${fileInfo.name} (${buffer.length} bytes)`,
+			);
 
 			// Convert (status stays at CONVERTING until batch upsert resolves)
 			await this.runFileRepo.update(runFile.id, {
@@ -343,6 +384,9 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			const result = await this.converterFactory.convert(
 				buffer,
 				fileInfo.extension,
+			);
+			this.logger.log(
+				`[run:${taskRunId}] Converted ${fileInfo.name} → ${result.content.length} chars`,
 			);
 
 			knowledgeDocs.push({
@@ -356,7 +400,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			const message =
 				error instanceof Error ? error.message : 'Unknown error';
 			this.logger.error(
-				`Failed to process file ${fileInfo.name}: ${message}`,
+				`[run:${taskRunId}] FAILED ${fileLabel}: ${message}`,
 			);
 			await this.runFileRepo.update(runFile.id, {
 				status: TaskRunFileStatus.FAILED,
