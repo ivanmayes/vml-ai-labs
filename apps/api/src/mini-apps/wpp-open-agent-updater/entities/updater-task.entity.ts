@@ -42,6 +42,19 @@ export class UpdaterTask {
 	@Column({ type: 'varchar', length: 100 })
 	wppOpenProjectId: string;
 
+	/**
+	 * The CS-internal project id that owns the picked agent — what the worker
+	 * uses for `getAgentConfig` / `updateAgentConfig`. Resolved from the
+	 * user's `osContext` at task save time. Can differ from `wppOpenProjectId`
+	 * (the user-facing scope) when CS's `listAgents` returns agents under a
+	 * broader scope than `getAgentConfig` accepts.
+	 *
+	 * Nullable for backwards-compatibility with rows created before this
+	 * column existed; the worker falls back to `wppOpenProjectId` when null.
+	 */
+	@Column({ type: 'varchar', length: 100, nullable: true })
+	wppOpenAgentProjectId: string | null;
+
 	@Column({
 		type: 'enum',
 		enum: UpdaterTaskStatus,

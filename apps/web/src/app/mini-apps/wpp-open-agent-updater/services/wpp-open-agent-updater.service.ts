@@ -90,6 +90,7 @@ export class WppOpenAgentUpdaterService {
 		wppOpenAgentName?: string;
 		wppOpenProjectId: string;
 		wppOpenToken?: string;
+		osContext?: unknown;
 		fileExtensions?: string[];
 		includeSubfolders?: boolean;
 		cadence?: string;
@@ -122,6 +123,8 @@ export class WppOpenAgentUpdaterService {
 			wppOpenProjectId?: string;
 			wppOpenAgentId?: string;
 			wppOpenAgentName?: string;
+			wppOpenToken?: string;
+			osContext?: unknown;
 		},
 	): Observable<UpdaterTask> {
 		return this.http
@@ -189,6 +192,32 @@ export class WppOpenAgentUpdaterService {
 				wppOpenToken: token,
 				osContext: options.osContext,
 			})
+			.pipe(map((res) => res.data!));
+	}
+
+	/**
+	 * Lightweight (project, agent) pair check via the existing
+	 * `/agents/config` endpoint. Surfaces the typed
+	 * `ACCESS_LAYER_AGENT_CONFIG_DOES_NOT_BELONG_TO_PROJECT` error when CS
+	 * considers the pair inconsistent — used by the form to warn the user
+	 * BEFORE save, instead of letting the run discover it later.
+	 */
+	getAgentConfig(
+		token: string,
+		projectId: string,
+		agentId: string,
+		osContext?: unknown,
+	): Observable<{ id: string; name: string; fileCount: number }> {
+		return this.http
+			.post<ApiResponse<{ id: string; name: string; fileCount: number }>>(
+				`${this.apiUrl}/agents/config`,
+				{
+					wppOpenToken: token,
+					projectId,
+					agentId,
+					osContext,
+				},
+			)
 			.pipe(map((res) => res.data!));
 	}
 }

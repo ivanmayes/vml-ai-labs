@@ -49,12 +49,21 @@ export class UpdaterTaskService {
 			dto.boxFolderId,
 		);
 
+		// Resolve the agent's CS-internal owning project (best-effort). Worker
+		// uses this for getAgentConfig because CS's listAgents is loose-scoped
+		// while getAgentConfig is strict-scoped.
+		const wppOpenAgentProjectId = await this.resolveAgentProjectId(
+			dto.wppOpenToken,
+			dto.osContext as WppOpenOsContext | undefined,
+		);
+
 		const task = this.taskRepo.create({
 			name: dto.name,
 			boxFolderId: dto.boxFolderId,
 			boxFolderName: folderInfo.name,
 			wppOpenAgentId: dto.wppOpenAgentId,
 			wppOpenProjectId: dto.wppOpenProjectId,
+			wppOpenAgentProjectId,
 			wppOpenAgentName: dto.wppOpenAgentName,
 			fileExtensions: dto.fileExtensions,
 			includeSubfolders: dto.includeSubfolders,
@@ -64,8 +73,36 @@ export class UpdaterTaskService {
 		});
 
 		const saved = await this.taskRepo.save(task);
-		this.logger.log(`Task created: ${saved.id} (${saved.name})`);
+		this.logger.log(
+			`Task created: ${saved.id} (${saved.name}) | agentProject: ${wppOpenAgentProjectId ?? '(unresolved — worker will fall back to wppOpenProjectId)'}`,
+		);
 		return saved;
+	}
+
+	/**
+	 * Resolve the CS-internal owning project for the agent picker's current
+	 * osContext. Returns `null` on any failure — saving the task should not
+	 * be blocked by a transient resolution error; the worker falls back to
+	 * `wppOpenProjectId`.
+	 */
+	private async resolveAgentProjectId(
+		token: string | undefined,
+		osContext: WppOpenOsContext | undefined,
+	): Promise<string | null> {
+		if (!token || !osContext) return null;
+		try {
+			return await this.wppOpenAgentService.resolveProjectId(
+				token,
+				osContext,
+			);
+		} catch (error) {
+			this.logger.warn(
+				`Agent project resolution failed (will fall back to wppOpenProjectId): ${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			);
+			return null;
+		}
 	}
 
 	/**
@@ -122,12 +159,34 @@ export class UpdaterTaskService {
 		if (dto.includeSubfolders !== undefined)
 			task.includeSubfolders = dto.includeSubfolders;
 		if (dto.cadence !== undefined) task.cadence = dto.cadence;
+
+		// Re-pointing project / agent: re-resolve the agent's owning project
+		// from the user's current osContext so the worker stops using the
+		// stale value. Only re-resolve when the user is actually changing
+		// project or agent — name-only updates leave the resolution alone.
+		const projectChanged =
+			dto.wppOpenProjectId !== undefined &&
+			dto.wppOpenProjectId !== task.wppOpenProjectId;
+		const agentChanged =
+			dto.wppOpenAgentId !== undefined &&
+			dto.wppOpenAgentId !== task.wppOpenAgentId;
+
 		if (dto.wppOpenProjectId !== undefined)
 			task.wppOpenProjectId = dto.wppOpenProjectId;
 		if (dto.wppOpenAgentId !== undefined)
 			task.wppOpenAgentId = dto.wppOpenAgentId;
 		if (dto.wppOpenAgentName !== undefined)
 			task.wppOpenAgentName = dto.wppOpenAgentName;
+
+		if (projectChanged || agentChanged) {
+			task.wppOpenAgentProjectId = await this.resolveAgentProjectId(
+				dto.wppOpenToken,
+				dto.osContext as WppOpenOsContext | undefined,
+			);
+			this.logger.log(
+				`Task ${id} re-pointed | new agentProject: ${task.wppOpenAgentProjectId ?? '(unresolved)'}`,
+			);
+		}
 
 		return this.taskRepo.save(task);
 	}
@@ -219,6 +278,7 @@ export class UpdaterTaskService {
 			boxFolderId: task.boxFolderId,
 			wppOpenAgentId: task.wppOpenAgentId,
 			wppOpenProjectId: task.wppOpenProjectId,
+			wppOpenAgentProjectId: task.wppOpenAgentProjectId,
 			userId,
 			organizationId: orgId,
 			lastRunAt: task.lastRunAt?.toISOString() || null,

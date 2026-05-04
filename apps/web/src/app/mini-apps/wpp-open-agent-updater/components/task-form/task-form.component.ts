@@ -162,6 +162,12 @@ const CADENCE_OPTIONS = [{ label: 'Manual', value: 'manual' }];
 									aria-label="Reload agents"
 								/>
 							</div>
+							@if (agentMismatch()) {
+								<p-message
+									severity="warn"
+									text="The selected agent does not belong to the saved project. Pick a different agent from the dropdown for this project, or change the project ID."
+								/>
+							}
 						</div>
 
 						<!-- File Extensions -->
@@ -248,6 +254,11 @@ export class TaskFormComponent implements OnInit {
 	// permission error — i.e. the saved project isn't reachable from the
 	// current OS context. Drives the workspace-mismatch banner.
 	projectInaccessible = signal(false);
+	// True when the picked agent doesn't belong to the form's project per
+	// CS's strict `getAgentConfig` check. Drives an inline warning under
+	// the agent dropdown.
+	agentMismatch = signal(false);
+	validatingAgent = signal(false);
 	folderInfo = signal<BoxFolderInfo | null>(null);
 	agents = signal<WppOpenAgent[]>([]);
 
@@ -272,6 +283,62 @@ export class TaskFormComponent implements OnInit {
 		}
 
 		this.setupReactiveAgentReload();
+		this.setupAgentPickValidation();
+	}
+
+	private setupAgentPickValidation(): void {
+		this.form
+			.get('wppOpenAgentId')!
+			.valueChanges.pipe(
+				debounceTime(300),
+				distinctUntilChanged(),
+				takeUntilDestroyed(this.destroyRef),
+			)
+			.subscribe((agentId: string) => {
+				this.agentMismatch.set(false);
+				if (!agentId) return;
+				const projectId = this.form.get('wppOpenProjectId')?.value;
+				if (!projectId) return;
+				this.validateAgentPair(projectId, agentId);
+			});
+	}
+
+	private async validateAgentPair(
+		projectId: string,
+		agentId: string,
+	): Promise<void> {
+		const token = await this.getToken();
+		if (!token) return;
+		let osContext: unknown;
+		try {
+			osContext = this.wppOpenService.context;
+		} catch {
+			// Not in iframe
+		}
+
+		this.validatingAgent.set(true);
+		this.service
+			.getAgentConfig(token, projectId, agentId, osContext)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: () => {
+					this.agentMismatch.set(false);
+					this.validatingAgent.set(false);
+				},
+				error: (err) => {
+					this.validatingAgent.set(false);
+					const code = err?.error?.code ?? err?.error?.error?.code;
+					if (
+						err?.status === 400 &&
+						code ===
+							'ACCESS_LAYER_AGENT_CONFIG_DOES_NOT_BELONG_TO_PROJECT'
+					) {
+						this.agentMismatch.set(true);
+					}
+					// Other errors (network, transient 5xx) silently dropped —
+					// the worker will surface them at run time.
+				},
+			});
 	}
 
 	private autoPopulateFromOsContext(): void {
@@ -437,7 +504,7 @@ export class TaskFormComponent implements OnInit {
 		}
 	}
 
-	onSubmit(): void {
+	async onSubmit(): Promise<void> {
 		if (this.form.invalid) return;
 
 		this.saving.set(true);
@@ -446,6 +513,18 @@ export class TaskFormComponent implements OnInit {
 		const selectedAgent = this.agents().find(
 			(a) => a.id === value.wppOpenAgentId,
 		);
+
+		// osContext + token are sent so the backend can resolve and persist
+		// the agent's CS-internal owning project (`wppOpenAgentProjectId`).
+		// Best-effort: if either is unavailable (standalone dev mode), the
+		// backend stores null and the worker falls back to wppOpenProjectId.
+		const wppOpenToken = (await this.getToken()) ?? undefined;
+		let osContext: unknown;
+		try {
+			osContext = this.wppOpenService.context;
+		} catch {
+			// Not in iframe
+		}
 
 		const request$ = this.isEdit()
 			? this.service.updateTask(this.taskId()!, {
@@ -456,6 +535,8 @@ export class TaskFormComponent implements OnInit {
 					wppOpenProjectId: value.wppOpenProjectId,
 					wppOpenAgentId: value.wppOpenAgentId,
 					wppOpenAgentName: selectedAgent?.name,
+					wppOpenToken,
+					osContext,
 				})
 			: this.service.createTask({
 					name: value.name,
@@ -466,6 +547,8 @@ export class TaskFormComponent implements OnInit {
 					fileExtensions: value.fileExtensions,
 					includeSubfolders: value.includeSubfolders,
 					cadence: value.cadence,
+					wppOpenToken,
+					osContext,
 				});
 
 		request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({

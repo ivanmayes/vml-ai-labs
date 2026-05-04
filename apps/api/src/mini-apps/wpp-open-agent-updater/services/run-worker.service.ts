@@ -23,6 +23,7 @@ import { BoxService } from './box.service';
 import {
 	WppOpenAgentService,
 	WppOpenPermissionError,
+	WppOpenAgentMismatchError,
 } from './wpp-open-agent.service';
 
 /** Max file size: 150MB */
@@ -54,14 +55,45 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 
 	/**
 	 * Map a thrown error to the message persisted on the run row. Handles the
-	 * permission case explicitly so the user sees a self-service explanation
-	 * instead of "WPP Open API error: 403".
+	 * typed cases explicitly so the user sees a self-service explanation
+	 * instead of "WPP Open API error: 4xx".
 	 */
 	static toRunErrorMessage(error: unknown): string {
-		if (error instanceof WppOpenPermissionError) {
+		if (
+			error instanceof WppOpenPermissionError ||
+			error instanceof WppOpenAgentMismatchError
+		) {
 			return error.message;
 		}
 		return error instanceof Error ? error.message : 'Unknown error';
+	}
+
+	/**
+	 * Pre-upload errors (`getAgentConfig`, project access denied) mean no file
+	 * was actually uploaded — the run aborted before the write step. Per-file
+	 * rows get a different message so the UI tells the truth: "we never tried
+	 * this file, it'll be retried next run" rather than "upsert failed".
+	 *
+	 * Post-upload errors (`updateAgentConfig`, transfer-service failures) get
+	 * the existing "Knowledge upsert failed" message — by that point we may
+	 * have side effects on WPP Open's side and the failure is real.
+	 */
+	static isPreUploadFailure(error: unknown): boolean {
+		return (
+			error instanceof WppOpenPermissionError ||
+			error instanceof WppOpenAgentMismatchError
+		);
+	}
+
+	static toFileErrorMessage(error: unknown): string {
+		if (RunWorkerService.isPreUploadFailure(error)) {
+			const reason =
+				error instanceof Error ? error.message : 'Unknown error';
+			return `Run aborted before upload (${reason}). File preserved for next run.`;
+		}
+		const upsertError =
+			error instanceof Error ? error.message : 'Unknown error';
+		return `Knowledge upsert failed: ${upsertError}`;
 	}
 
 	async onModuleInit(): Promise<void> {
@@ -273,17 +305,28 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			`[run:${taskRunId}] File processing complete: ${converted} converted, ${failed} failed, ${skipped} skipped, ${knowledgeDocs.length} docs ready for upsert`,
 		);
 
-		// 6. Upsert knowledge into WPP Open agent (batch all docs at once)
+		// 6. Upsert knowledge into WPP Open agent (batch all docs at once).
+		// Use wppOpenAgentProjectId when available — that is the strict
+		// CS-internal project the agent actually belongs to. Falls back to
+		// wppOpenProjectId for legacy tasks created before that column existed.
+		const upsertProjectId =
+			data.wppOpenAgentProjectId || data.wppOpenProjectId;
 		let upsertError: string | null = null;
+		let upsertErrorRaw: unknown = null;
 		let processed = 0;
 		if (knowledgeDocs.length > 0) {
 			this.logger.log(
-				`[run:${taskRunId}] Upserting ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId} (total content: ${Math.round(knowledgeDocs.reduce((sum, d) => sum + d.content.length, 0) / 1024)}KB)`,
+				`[run:${taskRunId}] Upserting ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId} (project: ${upsertProjectId}${
+					data.wppOpenAgentProjectId &&
+					data.wppOpenAgentProjectId !== data.wppOpenProjectId
+						? ` resolved from ${data.wppOpenProjectId}`
+						: ''
+				}; total content: ${Math.round(knowledgeDocs.reduce((sum, d) => sum + d.content.length, 0) / 1024)}KB)`,
 			);
 			try {
 				await this.wppOpenAgentService.upsertKnowledge(
 					wppOpenToken,
-					data.wppOpenProjectId,
+					upsertProjectId,
 					data.wppOpenAgentId,
 					knowledgeDocs,
 					osContext,
@@ -306,10 +349,14 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					})
 					.execute();
 			} catch (error) {
+				upsertErrorRaw = error;
 				upsertError =
 					error instanceof Error ? error.message : 'Unknown error';
+				const preUpload = RunWorkerService.isPreUploadFailure(error);
 				this.logger.error(
-					`[run:${taskRunId}] Upsert FAILED: ${upsertError}`,
+					`[run:${taskRunId}] Upsert FAILED ${
+						preUpload ? '(pre-upload)' : '(during upload)'
+					}: ${upsertError}`,
 				);
 				failed += converted;
 
@@ -318,7 +365,8 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					.update(TaskRunFile)
 					.set({
 						status: TaskRunFileStatus.FAILED,
-						errorMessage: `Knowledge upsert failed: ${upsertError}`,
+						errorMessage:
+							RunWorkerService.toFileErrorMessage(error),
 					})
 					.where('taskRunId = :taskRunId', { taskRunId })
 					.andWhere('status = :status', {
@@ -340,8 +388,8 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			filesSkipped: skipped,
 			errorMessage:
 				finalStatus === TaskRunStatus.FAILED
-					? upsertError
-						? `Knowledge upsert failed: ${upsertError}`
+					? upsertErrorRaw
+						? RunWorkerService.toRunErrorMessage(upsertErrorRaw)
 						: 'No files were successfully processed'
 					: null,
 		});

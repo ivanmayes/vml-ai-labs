@@ -54,4 +54,11 @@ export class CreateTaskDto {
 	@IsOptional()
 	@IsString()
 	wppOpenToken?: string;
+
+	// osContext is forwarded by the frontend so the backend can resolve the
+	// CS-internal owning project for the picked agent and persist it as
+	// `wppOpenAgentProjectId`. Validated loosely — anything resembling the
+	// upstream shape is accepted; the resolution call itself is the gate.
+	@IsOptional()
+	osContext?: unknown;
 }

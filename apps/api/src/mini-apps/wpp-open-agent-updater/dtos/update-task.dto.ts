@@ -51,4 +51,14 @@ export class UpdateTaskDto {
 	@IsString()
 	@MaxLength(255)
 	wppOpenAgentName?: string;
+
+	// Same shape as on CreateTaskDto — when re-pointing project/agent we
+	// re-resolve the CS-internal owning project from the user's current
+	// osContext and update `wppOpenAgentProjectId`.
+	@IsOptional()
+	@IsString()
+	wppOpenToken?: string;
+
+	@IsOptional()
+	osContext?: unknown;
 }

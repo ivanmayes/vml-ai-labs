@@ -30,6 +30,16 @@ export const CS_PERMISSION_ERROR_CODE =
 	'ACCESS_LAYER_MISSING_PERMISSIONS_TO_EXTERNAL_PROJECT';
 
 /**
+ * CS error code returned when the agent config exists but is owned by a
+ * different project than the one the request scoped to. CS's `listAgents`
+ * endpoint can return agents under a broader scope than the strict
+ * `getAgentConfig` allows, which is how a saved (project, agent) pair on a
+ * task can become inconsistent in production.
+ */
+export const CS_AGENT_MISMATCH_ERROR_CODE =
+	'ACCESS_LAYER_AGENT_CONFIG_DOES_NOT_BELONG_TO_PROJECT';
+
+/**
  * Thrown when the CS API rejects with `CS_PERMISSION_ERROR_CODE`. Lets the
  * worker, run-row writer, and `triggerRun` pre-flight produce a self-service
  * error message instead of a generic "WPP Open API error: 403".
@@ -63,6 +73,41 @@ export class WppOpenPermissionError extends HttpException {
 		this.message = WppOpenPermissionError.MESSAGE;
 		this.name = 'WppOpenPermissionError';
 		this.projectId = projectId;
+	}
+}
+
+/**
+ * Thrown when CS rejects with `CS_AGENT_MISMATCH_ERROR_CODE` — the agent
+ * exists, but is owned by a project other than the one we sent. The
+ * canonical fix is for the user to re-point the task to a (project, agent)
+ * pair that CS considers consistent.
+ */
+export class WppOpenAgentMismatchError extends HttpException {
+	static readonly MESSAGE =
+		'The saved WPP Open agent does not belong to the saved project. ' +
+		'Open the task in Edit, pick an agent from the dropdown for this ' +
+		'project, and save. No files were uploaded — they will be retried ' +
+		'on the next run.';
+
+	readonly code = CS_AGENT_MISMATCH_ERROR_CODE;
+	readonly projectId?: string;
+	readonly agentId?: string;
+
+	constructor(projectId?: string, agentId?: string) {
+		super(
+			{
+				statusCode: HttpStatus.BAD_REQUEST,
+				code: CS_AGENT_MISMATCH_ERROR_CODE,
+				message: WppOpenAgentMismatchError.MESSAGE,
+				projectId,
+				agentId,
+			},
+			HttpStatus.BAD_REQUEST,
+		);
+		this.message = WppOpenAgentMismatchError.MESSAGE;
+		this.name = 'WppOpenAgentMismatchError';
+		this.projectId = projectId;
+		this.agentId = agentId;
 	}
 }
 
@@ -142,8 +187,8 @@ export class WppOpenAgentService {
 				`CS API error: ${method} ${path} → ${response.status}: ${errorText}`,
 			);
 
-			// Detect the missing-project-access case so callers can map it to
-			// a clear UX. Anything else falls through to the generic HttpException.
+			// Detect typed CS error codes so callers can map them to clear UX.
+			// Anything else falls through to the generic HttpException.
 			if (
 				response.status === 403 &&
 				errorText.includes(CS_PERMISSION_ERROR_CODE)
@@ -151,6 +196,20 @@ export class WppOpenAgentService {
 				const projectIdMatch = path.match(/projectId=([^&]+)/);
 				throw new WppOpenPermissionError(
 					projectIdMatch ? projectIdMatch[1] : undefined,
+				);
+			}
+
+			if (
+				response.status === 400 &&
+				errorText.includes(CS_AGENT_MISMATCH_ERROR_CODE)
+			) {
+				// Path shape:  /v1/agent-configs/<projectId>/results/<agentId>
+				const m = path.match(
+					/\/agent-configs\/([^/]+)\/results\/([^/?#]+)/,
+				);
+				throw new WppOpenAgentMismatchError(
+					m ? m[1] : undefined,
+					m ? m[2] : undefined,
 				);
 			}
 
