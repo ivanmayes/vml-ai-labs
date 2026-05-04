@@ -367,7 +367,10 @@ export class TaskFormComponent implements OnInit {
 					return;
 				}
 
-				// Pass osContext for project ID resolution on the backend
+				// Always send the form's projectId so the backend uses what the
+				// user (or the saved task) actually picked. osContext stays for
+				// header construction and as a create-mode fallback when the
+				// form has no projectId yet.
 				let osContext: unknown;
 				try {
 					osContext = this.wppOpenService.context;
@@ -376,17 +379,15 @@ export class TaskFormComponent implements OnInit {
 				}
 
 				this.service
-					.listAgents(token, { osContext })
+					.listAgents(token, { projectId, osContext })
 					.pipe(takeUntilDestroyed(this.destroyRef))
 					.subscribe({
 						next: (result) => {
 							this.agents.set(result.agents);
-							// Update project ID with the resolved CS project ID
-							if (result.resolvedProjectId) {
-								this.form.patchValue({
-									wppOpenProjectId: result.resolvedProjectId,
-								});
-							}
+							// Do NOT overwrite the form's wppOpenProjectId with
+							// result.resolvedProjectId — it masks the actual saved value
+							// and made workspace mismatches invisible. Backend persistence
+							// of the resolved id happens at create time, not here.
 							this.loadingAgents.set(false);
 						},
 						error: () => {
