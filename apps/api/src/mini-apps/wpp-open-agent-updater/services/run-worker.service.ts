@@ -61,7 +61,7 @@ const FILE_CONCURRENCY = 2;
  * but the per-file fileName-keyed merge in `upsertKnowledge` makes
  * repeated calls correct: existing files not in the chunk are preserved.
  */
-const UPSERT_CHUNK_SIZE = 50;
+const UPSERT_CHUNK_SIZE = 10;
 
 @Injectable()
 export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
