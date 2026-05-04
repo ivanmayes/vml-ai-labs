@@ -32,8 +32,17 @@ const MAX_FILE_SIZE = 150 * 1024 * 1024;
 /** Buffer before lastRunAt to avoid missing files (5 minutes) */
 const LAST_RUN_BUFFER_MS = 5 * 60 * 1000;
 
-/** Max concurrent file processing within a single run */
-const FILE_CONCURRENCY = 4;
+/**
+ * Max concurrent file processing within a single run.
+ *
+ * Each in-flight file holds a download buffer (up to MAX_FILE_SIZE) plus
+ * conversion working memory. On a Standard-1X dyno (512MB) at MAX_FILE_SIZE
+ * 150MB, a concurrency of 2 keeps the worst-case peak under ~350MB and
+ * leaves headroom for Nest, pg-boss, and the merged knowledge-doc array
+ * that grows over the course of the run. Earlier runs at concurrency 4
+ * sustained R14 memory-quota errors after long file processing.
+ */
+const FILE_CONCURRENCY = 2;
 
 @Injectable()
 export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
