@@ -17,7 +17,10 @@ import {
 	TaskRunFileStatus,
 } from '../entities/task-run-file.entity';
 import { UpdaterTask } from '../entities/updater-task.entity';
-import { WppOpenKnowledgeItem } from '../types/wpp-open.types';
+import {
+	WppOpenKnowledgeItem,
+	WppOpenOsContext,
+} from '../types/wpp-open.types';
 
 import { BoxService } from './box.service';
 import {
@@ -43,6 +46,22 @@ const LAST_RUN_BUFFER_MS = 5 * 60 * 1000;
  * sustained R14 memory-quota errors after long file processing.
  */
 const FILE_CONCURRENCY = 2;
+
+/**
+ * Max docs to accumulate in memory before flushing to WPP Open via
+ * `upsertKnowledge`. The worker used to convert ALL files first and upsert
+ * once at the end — for a 1000+ file folder that meant the in-memory
+ * `knowledgeDocs` array (each entry holds the converted content) plus the
+ * Box download/convert buffers plus Nest framework overhead exceeded the
+ * Standard-1X dyno's 512MB and triggered sustained R14 errors.
+ *
+ * Chunked upsert flushes every N converted docs, freeing the accumulator
+ * and bounding peak memory regardless of folder size. Each flush costs
+ * ~3-4 extra round-trips (getAgentConfig + N uploads + updateAgentConfig)
+ * but the per-file fileName-keyed merge in `upsertKnowledge` makes
+ * repeated calls correct: existing files not in the chunk are preserved.
+ */
+const UPSERT_CHUNK_SIZE = 50;
 
 @Injectable()
 export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
@@ -275,16 +294,30 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		);
 		await this.runFileRepo.save(runFiles);
 
-		// 5. Process files with concurrency limit
+		// 5. Process files with concurrency limit + chunked upsert.
+		// Memory profile: peak holds <= UPSERT_CHUNK_SIZE converted docs +
+		// FILE_CONCURRENCY in-flight download buffers. Bounded regardless of
+		// folder size (used to grow with the whole run).
 		let converted = 0;
 		let failed = 0;
 		let skipped = 0;
+		let processed = 0;
+		let upsertErrorRaw: unknown = null;
+		let aborted = false;
 		const knowledgeDocs: WppOpenKnowledgeItem[] = [];
+		const chunkRunFileIds: string[] = [];
+		const upsertProjectId =
+			data.wppOpenAgentProjectId || data.wppOpenProjectId;
 		const totalFiles = runFiles.length;
 		const totalBatches = Math.ceil(totalFiles / FILE_CONCURRENCY);
 
 		this.logger.log(
-			`[run:${taskRunId}] Starting file processing: ${totalFiles} files in ${totalBatches} batches (concurrency: ${FILE_CONCURRENCY})`,
+			`[run:${taskRunId}] Starting file processing: ${totalFiles} files in ${totalBatches} batches (concurrency: ${FILE_CONCURRENCY}, upsert chunk: ${UPSERT_CHUNK_SIZE})${
+				data.wppOpenAgentProjectId &&
+				data.wppOpenAgentProjectId !== data.wppOpenProjectId
+					? ` | upsert project: ${upsertProjectId} (resolved from ${data.wppOpenProjectId})`
+					: ''
+			}`,
 		);
 
 		for (let i = 0; i < runFiles.length; i += FILE_CONCURRENCY) {
@@ -292,6 +325,12 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				this.logger.warn(
 					`[run:${taskRunId}] Shutdown requested, stopping at file ${i}/${totalFiles}`,
 				);
+				break;
+			}
+			if (aborted) {
+				// A prior chunk-flush failed in a way that means no further
+				// upserts will succeed (typed permission/mismatch error).
+				// Stop processing — the remaining files would just fail.
 				break;
 			}
 
@@ -309,6 +348,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 						runFile,
 						batchFiles[idx],
 						knowledgeDocs,
+						chunkRunFileIds,
 						taskRunId,
 					),
 				),
@@ -330,89 +370,65 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					);
 				}
 			}
+
+			// Flush a chunk as soon as the accumulator is full.
+			if (knowledgeDocs.length >= UPSERT_CHUNK_SIZE) {
+				const flush = await this.flushChunk(
+					taskRunId,
+					knowledgeDocs,
+					chunkRunFileIds,
+					upsertProjectId,
+					data.wppOpenAgentId,
+					wppOpenToken,
+					osContext,
+				);
+				if (flush.ok) {
+					processed += flush.docsFlushed;
+				} else {
+					upsertErrorRaw = flush.error;
+					failed = RunWorkerService.failedCountAfterUpsertError(
+						failed,
+						flush.docsFlushed,
+						flush.error,
+					);
+					aborted = true;
+				}
+				// Free memory regardless of outcome — the chunk's files have
+				// already been row-updated by flushChunk, so we don't need
+				// to retain the docs.
+				knowledgeDocs.length = 0;
+				chunkRunFileIds.length = 0;
+			}
+		}
+
+		// Flush the trailing partial chunk (if any and not aborted).
+		if (!aborted && knowledgeDocs.length > 0) {
+			const flush = await this.flushChunk(
+				taskRunId,
+				knowledgeDocs,
+				chunkRunFileIds,
+				upsertProjectId,
+				data.wppOpenAgentId,
+				wppOpenToken,
+				osContext,
+			);
+			if (flush.ok) {
+				processed += flush.docsFlushed;
+			} else {
+				upsertErrorRaw = flush.error;
+				failed = RunWorkerService.failedCountAfterUpsertError(
+					failed,
+					flush.docsFlushed,
+					flush.error,
+				);
+			}
+			knowledgeDocs.length = 0;
+			chunkRunFileIds.length = 0;
 		}
 
 		this.logger.log(
-			`[run:${taskRunId}] File processing complete: ${converted} converted, ${failed} failed, ${skipped} skipped, ${knowledgeDocs.length} docs ready for upsert`,
+			`[run:${taskRunId}] File processing complete: ${converted} converted, ${processed} uploaded, ${failed} failed, ${skipped} skipped`,
 		);
-
-		// 6. Upsert knowledge into WPP Open agent (batch all docs at once).
-		// Use wppOpenAgentProjectId when available — that is the strict
-		// CS-internal project the agent actually belongs to. Falls back to
-		// wppOpenProjectId for legacy tasks created before that column existed.
-		const upsertProjectId =
-			data.wppOpenAgentProjectId || data.wppOpenProjectId;
-		let upsertError: string | null = null;
-		let upsertErrorRaw: unknown = null;
-		let processed = 0;
-		if (knowledgeDocs.length > 0) {
-			this.logger.log(
-				`[run:${taskRunId}] Upserting ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId} (project: ${upsertProjectId}${
-					data.wppOpenAgentProjectId &&
-					data.wppOpenAgentProjectId !== data.wppOpenProjectId
-						? ` resolved from ${data.wppOpenProjectId}`
-						: ''
-				}; total content: ${Math.round(knowledgeDocs.reduce((sum, d) => sum + d.content.length, 0) / 1024)}KB)`,
-			);
-			try {
-				await this.wppOpenAgentService.upsertKnowledge(
-					wppOpenToken,
-					upsertProjectId,
-					data.wppOpenAgentId,
-					knowledgeDocs,
-					osContext,
-				);
-				this.logger.log(
-					`[run:${taskRunId}] Upsert successful — ${knowledgeDocs.length} docs into agent ${data.wppOpenAgentId}`,
-				);
-				processed = converted;
-
-				await this.runFileRepo
-					.createQueryBuilder()
-					.update(TaskRunFile)
-					.set({
-						status: TaskRunFileStatus.COMPLETED,
-						processedAt: new Date(),
-					})
-					.where('taskRunId = :taskRunId', { taskRunId })
-					.andWhere('status = :status', {
-						status: TaskRunFileStatus.CONVERTING,
-					})
-					.execute();
-			} catch (error) {
-				upsertErrorRaw = error;
-				upsertError =
-					error instanceof Error ? error.message : 'Unknown error';
-				const preUpload = RunWorkerService.isPreUploadFailure(error);
-				this.logger.error(
-					`[run:${taskRunId}] Upsert FAILED ${
-						preUpload ? '(pre-upload)' : '(during upload)'
-					}: ${upsertError}`,
-				);
-				// See `failedCountAfterUpsertError` for the rationale: pre-upload
-				// failures don't count converted files as failed; post-upload
-				// failures do.
-				failed = RunWorkerService.failedCountAfterUpsertError(
-					failed,
-					converted,
-					error,
-				);
-
-				await this.runFileRepo
-					.createQueryBuilder()
-					.update(TaskRunFile)
-					.set({
-						status: TaskRunFileStatus.FAILED,
-						errorMessage:
-							RunWorkerService.toFileErrorMessage(error),
-					})
-					.where('taskRunId = :taskRunId', { taskRunId })
-					.andWhere('status = :status', {
-						status: TaskRunFileStatus.CONVERTING,
-					})
-					.execute();
-			}
-		}
 
 		// 7. Finalize run
 		const finalStatus =
@@ -446,14 +462,19 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 	 * Process a single file: download, convert, collect for knowledge upsert.
 	 * Returns 'converted', 'skipped', or 'failed'.
 	 *
-	 * Files that complete conversion are left at CONVERTING status.
-	 * The caller is responsible for marking them COMPLETED or FAILED
-	 * after the batch upsert to WPP Open succeeds or fails.
+	 * Files that complete conversion are left at CONVERTING status. The caller
+	 * (the chunk-flush logic) is responsible for marking them COMPLETED or
+	 * FAILED after the chunked upsert to WPP Open succeeds or fails. The
+	 * caller tracks which runFile rows belong to the current chunk via
+	 * `chunkRunFileIds` — pushed alongside `knowledgeDocs` so the two arrays
+	 * stay aligned and a chunk flush can target exactly the rows it just
+	 * uploaded.
 	 */
 	private async processFile(
 		runFile: TaskRunFile,
 		fileInfo: { id: string; name: string; size: number; extension: string },
 		knowledgeDocs: WppOpenKnowledgeItem[],
+		chunkRunFileIds: string[],
 		taskRunId: string,
 	): Promise<'converted' | 'skipped' | 'failed'> {
 		const fileLabel = `${fileInfo.name} (${(fileInfo.size / 1024 / 1024).toFixed(1)}MB)`;
@@ -498,6 +519,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				content: result.content,
 				source: `box://${fileInfo.id}`,
 			});
+			chunkRunFileIds.push(runFile.id);
 
 			return 'converted';
 		} catch (error) {
@@ -512,6 +534,82 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				processedAt: new Date(),
 			});
 			return 'failed';
+		}
+	}
+
+	/**
+	 * Upload a chunk of converted docs to WPP Open and update the matching
+	 * per-file rows. Splitting upserts into chunks bounds peak memory by
+	 * letting the worker free `knowledgeDocs` mid-run instead of holding
+	 * every converted doc until the very end.
+	 *
+	 * On success: marks the chunk's runFile rows COMPLETED.
+	 * On failure: marks them FAILED with a phase-aware message
+	 * (`toFileErrorMessage` distinguishes pre-upload from upload errors).
+	 *
+	 * `docsFlushed` is returned so callers can update the run-level
+	 * `processed` / `failed` counters with the right delta.
+	 */
+	private async flushChunk(
+		taskRunId: string,
+		docs: WppOpenKnowledgeItem[],
+		chunkRunFileIds: string[],
+		upsertProjectId: string,
+		agentId: string,
+		wppOpenToken: string,
+		osContext: WppOpenOsContext | undefined,
+	): Promise<
+		| { ok: true; docsFlushed: number }
+		| { ok: false; docsFlushed: number; error: unknown }
+	> {
+		if (docs.length === 0) return { ok: true, docsFlushed: 0 };
+		const docsCount = docs.length;
+		const contentKB = Math.round(
+			docs.reduce((sum, d) => sum + d.content.length, 0) / 1024,
+		);
+		this.logger.log(
+			`[run:${taskRunId}] Flushing chunk: ${docsCount} docs into agent ${agentId} (project: ${upsertProjectId}; ${contentKB}KB)`,
+		);
+		try {
+			await this.wppOpenAgentService.upsertKnowledge(
+				wppOpenToken,
+				upsertProjectId,
+				agentId,
+				docs,
+				osContext,
+			);
+			this.logger.log(
+				`[run:${taskRunId}] Chunk upsert OK — ${docsCount} docs uploaded`,
+			);
+			await this.runFileRepo
+				.createQueryBuilder()
+				.update(TaskRunFile)
+				.set({
+					status: TaskRunFileStatus.COMPLETED,
+					processedAt: new Date(),
+				})
+				.where('id IN (:...ids)', { ids: chunkRunFileIds })
+				.execute();
+			return { ok: true, docsFlushed: docsCount };
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : 'Unknown error';
+			const preUpload = RunWorkerService.isPreUploadFailure(error);
+			this.logger.error(
+				`[run:${taskRunId}] Chunk upsert FAILED ${
+					preUpload ? '(pre-upload)' : '(during upload)'
+				}: ${message}`,
+			);
+			await this.runFileRepo
+				.createQueryBuilder()
+				.update(TaskRunFile)
+				.set({
+					status: TaskRunFileStatus.FAILED,
+					errorMessage: RunWorkerService.toFileErrorMessage(error),
+				})
+				.where('id IN (:...ids)', { ids: chunkRunFileIds })
+				.execute();
+			return { ok: false, docsFlushed: docsCount, error };
 		}
 	}
 
