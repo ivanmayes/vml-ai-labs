@@ -50,8 +50,13 @@ export interface AgentUpdaterJobData {
 	boxFolderId: string;
 	/** WPP Open agent to update */
 	wppOpenAgentId: string;
-	/** WPP Open project context */
+	/** WPP Open project context (user-facing scope, used for listAgents) */
 	wppOpenProjectId: string;
+	/**
+	 * The CS-internal owning project for the agent — used for getAgentConfig
+	 * and updateAgentConfig. Falls back to `wppOpenProjectId` when null.
+	 */
+	wppOpenAgentProjectId?: string | null;
 	/** User who triggered the run */
 	userId: string;
 	/** Organization context */

@@ -17,6 +17,54 @@ export class BoxService {
 	private client: BoxClient | null = null;
 
 	/**
+	 * Parse the Box SDK's `modifiedAt` field into a real `Date`.
+	 *
+	 * The Box TS SDK returns `modifiedAt` as a `DateTimeWrapper { value: Date }`
+	 * (see `node_modules/box-typescript-sdk-gen/lib/internal/utils.js`). Older
+	 * raw responses can also surface as a string in `modified_at` /
+	 * `content_modified_at`. Anything else falls back to epoch 0 with a warning
+	 * so the file still passes the date filter and gets reprocessed.
+	 *
+	 * Exposed as `static` so it can be unit-tested without instantiating the
+	 * Box SDK client.
+	 */
+	static parseModifiedAt(
+		rawModified: unknown,
+		fileName: string,
+		fileId: string,
+		logger: Pick<Logger, 'warn'>,
+	): Date {
+		let modifiedAt: Date;
+		if (rawModified instanceof Date) {
+			modifiedAt = rawModified;
+		} else if (
+			rawModified &&
+			typeof rawModified === 'object' &&
+			(rawModified as { value?: unknown }).value instanceof Date
+		) {
+			modifiedAt = (rawModified as { value: Date }).value;
+		} else if (typeof rawModified === 'string') {
+			modifiedAt = new Date(rawModified);
+		} else {
+			logger.warn(
+				`No modifiedAt for file ${fileName} (id: ${fileId}), including in results`,
+			);
+			return new Date(0);
+		}
+
+		if (isNaN(modifiedAt.getTime())) {
+			logger.warn(
+				`Invalid modifiedAt date for file ${fileName}: ${String(
+					rawModified,
+				)}`,
+			);
+			return new Date(0);
+		}
+
+		return modifiedAt;
+	}
+
+	/**
 	 * Get or create the authenticated Box SDK client.
 	 * Uses JWT/Enterprise authentication via env vars.
 	 */
@@ -197,35 +245,17 @@ export class BoxService {
 
 				counters.totalSeen++;
 
-				// Box SDK may return modifiedAt as DateTime object or raw modified_at as string
 				const rawEntry = entry as any;
 				const rawModified =
 					rawEntry.modifiedAt ??
 					rawEntry.modified_at ??
 					rawEntry.content_modified_at;
-				let modifiedAt: Date;
-				if (rawModified instanceof Date) {
-					modifiedAt = rawModified;
-				} else if (typeof rawModified === 'string') {
-					modifiedAt = new Date(rawModified);
-				} else if (
-					rawModified &&
-					typeof rawModified.toString === 'function'
-				) {
-					modifiedAt = new Date(rawModified.toString());
-				} else {
-					this.logger.warn(
-						`No modifiedAt for file ${entry.name} (id: ${entry.id}), including in results`,
-					);
-					modifiedAt = new Date(0);
-				}
-
-				if (isNaN(modifiedAt.getTime())) {
-					this.logger.warn(
-						`Invalid modifiedAt date for file ${entry.name}: ${rawModified}`,
-					);
-					modifiedAt = new Date(0);
-				}
+				const modifiedAt = BoxService.parseModifiedAt(
+					rawModified,
+					entry.name || '',
+					entry.id,
+					this.logger,
+				);
 
 				if (modifiedAfter && modifiedAt <= modifiedAfter) {
 					counters.skippedByDate++;

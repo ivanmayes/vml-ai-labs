@@ -109,6 +109,12 @@ const CADENCE_OPTIONS = [{ label: 'Manual', value: 'manual' }];
 							<label for="wppOpenProjectId"
 								>WPP Open Project ID</label
 							>
+							@if (projectInaccessible()) {
+								<p-message
+									severity="warn"
+									text="This task's saved project is not accessible from your current workspace. Re-point the task to a project here, or open the task in a workspace where you have access to the saved project."
+								/>
+							}
 							<input
 								pInputText
 								id="wppOpenProjectId"
@@ -156,6 +162,12 @@ const CADENCE_OPTIONS = [{ label: 'Manual', value: 'manual' }];
 									aria-label="Reload agents"
 								/>
 							</div>
+							@if (agentMismatch()) {
+								<p-message
+									severity="warn"
+									text="The selected agent does not belong to the saved project. Pick a different agent from the dropdown for this project, or change the project ID."
+								/>
+							}
 						</div>
 
 						<!-- File Extensions -->
@@ -238,6 +250,15 @@ export class TaskFormComponent implements OnInit {
 	validatingFolder = signal(false);
 	loadingAgents = signal(false);
 	agentLoadError = signal<string | null>(null);
+	// True when the most recent loadAgents() call returned the typed
+	// permission error — i.e. the saved project isn't reachable from the
+	// current OS context. Drives the workspace-mismatch banner.
+	projectInaccessible = signal(false);
+	// True when the picked agent doesn't belong to the form's project per
+	// CS's strict `getAgentConfig` check. Drives an inline warning under
+	// the agent dropdown.
+	agentMismatch = signal(false);
+	validatingAgent = signal(false);
 	folderInfo = signal<BoxFolderInfo | null>(null);
 	agents = signal<WppOpenAgent[]>([]);
 
@@ -262,6 +283,75 @@ export class TaskFormComponent implements OnInit {
 		}
 
 		this.setupReactiveAgentReload();
+		this.setupAgentPickValidation();
+	}
+
+	// Monotonic sequence used to drop stale validation responses. Without it,
+	// rapid agent picks could let an older request overwrite the result of a
+	// newer one (e.g. pick A → pick B → A's response arrives last and decides
+	// the banner state).
+	private validateSeq = 0;
+
+	private setupAgentPickValidation(): void {
+		this.form
+			.get('wppOpenAgentId')!
+			.valueChanges.pipe(
+				debounceTime(300),
+				distinctUntilChanged(),
+				takeUntilDestroyed(this.destroyRef),
+			)
+			.subscribe((agentId: string) => {
+				// Bump the sequence on every emission so any in-flight
+				// validation from a prior pick will be ignored when its
+				// response arrives.
+				this.validateSeq++;
+				this.agentMismatch.set(false);
+				if (!agentId) return;
+				const projectId = this.form.get('wppOpenProjectId')?.value;
+				if (!projectId) return;
+				this.validateAgentPair(this.validateSeq, projectId, agentId);
+			});
+	}
+
+	private async validateAgentPair(
+		seq: number,
+		projectId: string,
+		agentId: string,
+	): Promise<void> {
+		const token = await this.getToken();
+		if (seq !== this.validateSeq || !token) return;
+		let osContext: unknown;
+		try {
+			osContext = this.wppOpenService.context;
+		} catch {
+			// Not in iframe
+		}
+
+		this.validatingAgent.set(true);
+		this.service
+			.getAgentConfig(token, projectId, agentId, osContext)
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: () => {
+					if (seq !== this.validateSeq) return;
+					this.agentMismatch.set(false);
+					this.validatingAgent.set(false);
+				},
+				error: (err) => {
+					if (seq !== this.validateSeq) return;
+					this.validatingAgent.set(false);
+					const code = err?.error?.code ?? err?.error?.error?.code;
+					if (
+						err?.status === 400 &&
+						code ===
+							'ACCESS_LAYER_AGENT_CONFIG_DOES_NOT_BELONG_TO_PROJECT'
+					) {
+						this.agentMismatch.set(true);
+					}
+					// Other errors (network, transient 5xx) silently dropped —
+					// the worker will surface them at run time.
+				},
+			});
 	}
 
 	private autoPopulateFromOsContext(): void {
@@ -277,6 +367,13 @@ export class TaskFormComponent implements OnInit {
 		}
 	}
 
+	// One-shot suppression: when loadTask patches the form on Edit open, the
+	// project field's valueChanges fires and the reactive-reload would
+	// otherwise clear the saved agent. We want the saved agent to remain
+	// selected. The flag tells the next reactive-reload tick to skip the
+	// clear and just re-populate the agent list.
+	private suppressAgentClearOnce = false;
+
 	private setupReactiveAgentReload(): void {
 		this.form
 			.get('wppOpenProjectId')!
@@ -287,6 +384,11 @@ export class TaskFormComponent implements OnInit {
 				takeUntilDestroyed(this.destroyRef),
 			)
 			.subscribe(() => {
+				if (this.suppressAgentClearOnce) {
+					this.suppressAgentClearOnce = false;
+					this.loadAgents();
+					return;
+				}
 				this.form.patchValue({ wppOpenAgentId: '' });
 				this.agents.set([]);
 				this.loadAgents();
@@ -299,6 +401,10 @@ export class TaskFormComponent implements OnInit {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (task) => {
+					// Tell the next reactive-reload to keep the saved agent
+					// instead of clearing it (the project hasn't changed —
+					// it just got populated for the first time).
+					this.suppressAgentClearOnce = true;
 					this.form.patchValue({
 						name: task.name,
 						boxFolderId: task.boxFolderId,
@@ -309,10 +415,10 @@ export class TaskFormComponent implements OnInit {
 						cadence: task.cadence,
 					});
 
-					// Disable core fields in edit mode
+					// Box folder is the task's identity and is immutable.
+					// Project + agent stay editable so a task can be re-pointed
+					// to a different agent or workspace.
 					this.form.get('boxFolderId')!.disable();
-					this.form.get('wppOpenProjectId')!.disable();
-					this.form.get('wppOpenAgentId')!.disable();
 				},
 				error: () => {
 					this.messageService.add({
@@ -356,6 +462,7 @@ export class TaskFormComponent implements OnInit {
 
 		this.loadingAgents.set(true);
 		this.agentLoadError.set(null);
+		this.projectInaccessible.set(false);
 
 		this.getToken()
 			.then((token) => {
@@ -367,7 +474,10 @@ export class TaskFormComponent implements OnInit {
 					return;
 				}
 
-				// Pass osContext for project ID resolution on the backend
+				// Always send the form's projectId so the backend uses what the
+				// user (or the saved task) actually picked. osContext stays for
+				// header construction and as a create-mode fallback when the
+				// form has no projectId yet.
 				let osContext: unknown;
 				try {
 					osContext = this.wppOpenService.context;
@@ -376,24 +486,35 @@ export class TaskFormComponent implements OnInit {
 				}
 
 				this.service
-					.listAgents(token, { osContext })
+					.listAgents(token, { projectId, osContext })
 					.pipe(takeUntilDestroyed(this.destroyRef))
 					.subscribe({
 						next: (result) => {
 							this.agents.set(result.agents);
-							// Update project ID with the resolved CS project ID
-							if (result.resolvedProjectId) {
-								this.form.patchValue({
-									wppOpenProjectId: result.resolvedProjectId,
-								});
-							}
+							// Do NOT overwrite the form's wppOpenProjectId with
+							// result.resolvedProjectId — it masks the actual saved value
+							// and made workspace mismatches invisible. Backend persistence
+							// of the resolved id happens at create time, not here.
 							this.loadingAgents.set(false);
 						},
-						error: () => {
+						error: (err) => {
 							this.loadingAgents.set(false);
-							this.agentLoadError.set(
-								'Failed to load agents. Check project ID and try again.',
-							);
+							// 403 with the access-layer code means the saved project
+							// isn't reachable from this workspace. The error response
+							// body carries `code: ACCESS_LAYER_MISSING_PERMISSIONS_TO_EXTERNAL_PROJECT`.
+							const code =
+								err?.error?.code ?? err?.error?.error?.code;
+							if (
+								err?.status === 403 &&
+								code ===
+									'ACCESS_LAYER_MISSING_PERMISSIONS_TO_EXTERNAL_PROJECT'
+							) {
+								this.projectInaccessible.set(true);
+							} else {
+								this.agentLoadError.set(
+									'Failed to load agents. Check project ID and try again.',
+								);
+							}
 						},
 					});
 			})
@@ -412,7 +533,7 @@ export class TaskFormComponent implements OnInit {
 		}
 	}
 
-	onSubmit(): void {
+	async onSubmit(): Promise<void> {
 		if (this.form.invalid) return;
 
 		this.saving.set(true);
@@ -422,12 +543,29 @@ export class TaskFormComponent implements OnInit {
 			(a) => a.id === value.wppOpenAgentId,
 		);
 
+		// osContext + token are sent so the backend can resolve and persist
+		// the agent's CS-internal owning project (`wppOpenAgentProjectId`).
+		// Best-effort: if either is unavailable (standalone dev mode), the
+		// backend stores null and the worker falls back to wppOpenProjectId.
+		const wppOpenToken = (await this.getToken()) ?? undefined;
+		let osContext: unknown;
+		try {
+			osContext = this.wppOpenService.context;
+		} catch {
+			// Not in iframe
+		}
+
 		const request$ = this.isEdit()
 			? this.service.updateTask(this.taskId()!, {
 					name: value.name,
 					fileExtensions: value.fileExtensions,
 					includeSubfolders: value.includeSubfolders,
 					cadence: value.cadence,
+					wppOpenProjectId: value.wppOpenProjectId,
+					wppOpenAgentId: value.wppOpenAgentId,
+					wppOpenAgentName: selectedAgent?.name,
+					wppOpenToken,
+					osContext,
 				})
 			: this.service.createTask({
 					name: value.name,
@@ -438,6 +576,8 @@ export class TaskFormComponent implements OnInit {
 					fileExtensions: value.fileExtensions,
 					includeSubfolders: value.includeSubfolders,
 					cadence: value.cadence,
+					wppOpenToken,
+					osContext,
 				});
 
 		request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
