@@ -497,7 +497,23 @@ export class WppOpenAgentService {
 			`Agent has ${existingFiles.length} existing files: ${existingFiles.map((f) => f.fileName).join(', ') || 'none'}`,
 		);
 
-		// 2. Upload each document to S3 via Transfer Service
+		// 2. Upload each document to S3 via Transfer Service.
+		//
+		// IMPORTANT: do NOT include `content: doc.content` on the file
+		// objects we send to CS. CS stores the agent config as a single
+		// DynamoDB item (400KB hard limit), and the `content` field on
+		// every file gets persisted into that item — see
+		// Unite/packages/agentconfig-core/src/db/update-prepare-params.ts
+		// (file fields are spread into `updatedData.files` and put as-is).
+		// Once cumulative content crosses ~400KB, CS rejects every PUT
+		// with "Item size has exceeded the maximum allowed size".
+		//
+		// CS's own pipeline reads file content from `optimizedFileLocation`
+		// when it builds the S3 config file (see
+		// Unite/packages/agentconfig-core/src/files/s3-operations.ts —
+		// `updateS3Config` / `createAndUploadS3Config`). Sending `content`
+		// in the PUT is redundant: agentexec consumes the S3 config, not
+		// the DynamoDB item.
 		const uploadedFiles: CSFileUploadItem[] = [];
 		for (const doc of documents) {
 			const fileName = doc.title.endsWith('.md')
@@ -521,24 +537,32 @@ export class WppOpenAgentService {
 					},
 				},
 				// Set optimizedFileLocation to same as temp so the backend
-				// can read the content during updateS3Config
+				// can read the content during updateS3Config.
 				optimizedFileLocation: {
 					bucket: location.bucket,
 					key: location.key,
 				},
 				fileName,
-				content: doc.content,
 				status: 'done',
 			});
 
 			this.logger.log(`Uploaded "${fileName}" to Transfer Service`);
 		}
 
-		// 3. Merge: keep existing files that aren't being replaced, add new uploads
+		// 3. Merge: keep existing files that aren't being replaced, add new uploads.
+		// Strip `content` from retained files too — CS's GET response includes
+		// content for legacy reasons, but echoing it back to PUT just re-stores
+		// it in the DynamoDB item and contributes to the 400KB cap.
 		const newFileNames = new Set(uploadedFiles.map((f) => f.fileName));
-		const retainedFiles = existingFiles.filter(
-			(f) => !newFileNames.has(f.fileName || ''),
-		);
+		const retainedFiles = existingFiles
+			.filter((f) => !newFileNames.has(f.fileName || ''))
+			.map((f) => {
+				if (!('content' in f)) return f;
+				const { content: _content, ...rest } = f as CSFileItem & {
+					content?: string;
+				};
+				return rest as CSFileItem;
+			});
 
 		config.files = [...retainedFiles, ...uploadedFiles];
 

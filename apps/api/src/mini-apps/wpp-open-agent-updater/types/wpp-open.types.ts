@@ -61,8 +61,11 @@ export interface CSFileUploadItem {
 	temporaryFileLocation: CSFileLocation;
 	optimizedFileLocation?: CSFileLocation;
 	fileName: string;
-	content: string;
 	status: 'done';
+	// `content` intentionally omitted — see comments in
+	// `WppOpenAgentService.upsertKnowledge`. CS's DynamoDB item has a 400KB
+	// cap and stores everything we send on each file; CS reads content
+	// from S3 (`optimizedFileLocation`) when it builds the S3 config file.
 }
 
 /**
