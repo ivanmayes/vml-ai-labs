@@ -6,6 +6,7 @@ import {
 	IsIn,
 	IsOptional,
 	IsString,
+	Matches,
 	MaxLength,
 } from 'class-validator';
 
@@ -41,10 +42,13 @@ export class UpdateTaskDto {
 
 	@IsOptional()
 	@IsString()
+	@MaxLength(100)
+	@Matches(/^[a-zA-Z0-9-]+$/)
 	wppOpenProjectId?: string;
 
 	@IsOptional()
 	@IsString()
+	@MaxLength(100)
 	wppOpenAgentId?: string;
 
 	@IsOptional()

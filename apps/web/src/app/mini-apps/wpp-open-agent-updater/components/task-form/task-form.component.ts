@@ -286,6 +286,12 @@ export class TaskFormComponent implements OnInit {
 		this.setupAgentPickValidation();
 	}
 
+	// Monotonic sequence used to drop stale validation responses. Without it,
+	// rapid agent picks could let an older request overwrite the result of a
+	// newer one (e.g. pick A → pick B → A's response arrives last and decides
+	// the banner state).
+	private validateSeq = 0;
+
 	private setupAgentPickValidation(): void {
 		this.form
 			.get('wppOpenAgentId')!
@@ -295,20 +301,25 @@ export class TaskFormComponent implements OnInit {
 				takeUntilDestroyed(this.destroyRef),
 			)
 			.subscribe((agentId: string) => {
+				// Bump the sequence on every emission so any in-flight
+				// validation from a prior pick will be ignored when its
+				// response arrives.
+				this.validateSeq++;
 				this.agentMismatch.set(false);
 				if (!agentId) return;
 				const projectId = this.form.get('wppOpenProjectId')?.value;
 				if (!projectId) return;
-				this.validateAgentPair(projectId, agentId);
+				this.validateAgentPair(this.validateSeq, projectId, agentId);
 			});
 	}
 
 	private async validateAgentPair(
+		seq: number,
 		projectId: string,
 		agentId: string,
 	): Promise<void> {
 		const token = await this.getToken();
-		if (!token) return;
+		if (seq !== this.validateSeq || !token) return;
 		let osContext: unknown;
 		try {
 			osContext = this.wppOpenService.context;
@@ -322,10 +333,12 @@ export class TaskFormComponent implements OnInit {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: () => {
+					if (seq !== this.validateSeq) return;
 					this.agentMismatch.set(false);
 					this.validatingAgent.set(false);
 				},
 				error: (err) => {
+					if (seq !== this.validateSeq) return;
 					this.validatingAgent.set(false);
 					const code = err?.error?.code ?? err?.error?.error?.code;
 					if (
@@ -354,6 +367,13 @@ export class TaskFormComponent implements OnInit {
 		}
 	}
 
+	// One-shot suppression: when loadTask patches the form on Edit open, the
+	// project field's valueChanges fires and the reactive-reload would
+	// otherwise clear the saved agent. We want the saved agent to remain
+	// selected. The flag tells the next reactive-reload tick to skip the
+	// clear and just re-populate the agent list.
+	private suppressAgentClearOnce = false;
+
 	private setupReactiveAgentReload(): void {
 		this.form
 			.get('wppOpenProjectId')!
@@ -364,6 +384,11 @@ export class TaskFormComponent implements OnInit {
 				takeUntilDestroyed(this.destroyRef),
 			)
 			.subscribe(() => {
+				if (this.suppressAgentClearOnce) {
+					this.suppressAgentClearOnce = false;
+					this.loadAgents();
+					return;
+				}
 				this.form.patchValue({ wppOpenAgentId: '' });
 				this.agents.set([]);
 				this.loadAgents();
@@ -376,6 +401,10 @@ export class TaskFormComponent implements OnInit {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (task) => {
+					// Tell the next reactive-reload to keep the saved agent
+					// instead of clearing it (the project hasn't changed —
+					// it just got populated for the first time).
+					this.suppressAgentClearOnce = true;
 					this.form.patchValue({
 						name: task.name,
 						boxFolderId: task.boxFolderId,

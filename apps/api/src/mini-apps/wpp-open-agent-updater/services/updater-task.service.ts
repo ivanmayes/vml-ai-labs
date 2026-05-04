@@ -179,12 +179,23 @@ export class UpdaterTaskService {
 			task.wppOpenAgentName = dto.wppOpenAgentName;
 
 		if (projectChanged || agentChanged) {
-			task.wppOpenAgentProjectId = await this.resolveAgentProjectId(
-				dto.wppOpenToken,
-				dto.osContext as WppOpenOsContext | undefined,
-			);
+			if (dto.wppOpenToken && dto.osContext) {
+				// Caller supplied auth context — re-resolve. Whatever
+				// resolveAgentProjectId returns (string or null) is the new
+				// authoritative value.
+				task.wppOpenAgentProjectId = await this.resolveAgentProjectId(
+					dto.wppOpenToken,
+					dto.osContext as WppOpenOsContext | undefined,
+				);
+			} else {
+				// Caller didn't send auth context (CLI, programmatic update).
+				// Any prior resolution is now stale — null it so the worker
+				// falls back to the new wppOpenProjectId rather than
+				// confidently using a wrong CS-internal id.
+				task.wppOpenAgentProjectId = null;
+			}
 			this.logger.log(
-				`Task ${id} re-pointed | new agentProject: ${task.wppOpenAgentProjectId ?? '(unresolved)'}`,
+				`Task ${id} re-pointed | new agentProject: ${task.wppOpenAgentProjectId ?? '(unresolved — worker will fall back to wppOpenProjectId)'}`,
 			);
 		}
 
@@ -250,14 +261,25 @@ export class UpdaterTaskService {
 			);
 		}
 
-		// Pre-flight: confirm the user can actually access the saved project
-		// before queuing a job. Catches the workspace-mismatch case
-		// synchronously so the UI can show an actionable error instead of a
-		// queued run that 403s seconds later. WppOpenPermissionError is itself
-		// an HttpException(403), so it bubbles up unchanged.
+		// Pre-flight: catch failure modes the worker would hit *before*
+		// queuing a job. Both typed errors are HttpExceptions, so they
+		// bubble up unchanged and the UI gets an actionable message.
+		//
+		//   listAgents(wppOpenProjectId)  — workspace/project access (403)
+		//   getAgentConfig(agentProjectId, agentId) — strict pair check (400)
+		//
+		// The two checks intentionally use different projectIds: CS treats
+		// listAgents loosely (broader scope) and getAgentConfig strictly,
+		// which is exactly the inconsistency this validates against.
 		await this.wppOpenAgentService.listAgents(
 			wppOpenToken,
 			task.wppOpenProjectId,
+			osContext,
+		);
+		await this.wppOpenAgentService.getAgentConfig(
+			wppOpenToken,
+			task.wppOpenAgentProjectId || task.wppOpenProjectId,
+			task.wppOpenAgentId,
 			osContext,
 		);
 

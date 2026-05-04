@@ -358,7 +358,15 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 						preUpload ? '(pre-upload)' : '(during upload)'
 					}: ${upsertError}`,
 				);
-				failed += converted;
+				// Pre-upload failure: the converted files were never attempted
+				// (no upload happened) and Box's lastRunAt cursor will not
+				// advance, so they'll be picked up on the next run. Don't
+				// double-count them as failures in the run aggregate; the
+				// per-file rows carry the "preserved for next run" message.
+				// Post-upload failure: count them — we tried, it broke.
+				if (!preUpload) {
+					failed += converted;
+				}
 
 				await this.runFileRepo
 					.createQueryBuilder()
