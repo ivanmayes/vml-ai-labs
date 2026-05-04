@@ -421,6 +421,10 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 					flush.docsFlushed,
 					flush.error,
 				);
+				// Trailing-flush failure means the run did not fully complete
+				// either — propagate so finalization picks the right status
+				// and skips advancing lastRunAt.
+				aborted = true;
 			}
 			knowledgeDocs.length = 0;
 			chunkRunFileIds.length = 0;
@@ -430,9 +434,18 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			`[run:${taskRunId}] File processing complete: ${converted} converted, ${processed} uploaded, ${failed} failed, ${skipped} skipped`,
 		);
 
-		// 7. Finalize run
+		// 7. Finalize run.
+		// "Ran to completion" = every file was attempted and the upsert
+		// pipeline didn't abort. Partial-success runs (chunk-flush failed
+		// mid-way, or dyno shutdown interrupted) get FAILED so lastRunAt
+		// stays put and the next run re-attempts the un-tried files.
+		// Files that DID succeed remain in WPP Open's knowledge base; the
+		// next run idempotently re-uploads them (merge by fileName).
+		const ranToCompletion = !aborted && !this.isShuttingDown;
 		const finalStatus =
-			processed > 0 ? TaskRunStatus.COMPLETED : TaskRunStatus.FAILED;
+			ranToCompletion && processed > 0
+				? TaskRunStatus.COMPLETED
+				: TaskRunStatus.FAILED;
 
 		await this.runRepo.update(taskRunId, {
 			status: finalStatus,
