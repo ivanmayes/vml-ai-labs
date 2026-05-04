@@ -389,11 +389,17 @@ export class TaskFormComponent implements OnInit {
 	private autoPopulateFromOsContext(): void {
 		try {
 			const projectId = this.wppOpenService.context?.project?.id;
-			if (projectId) {
-				this.form.patchValue({ wppOpenProjectId: projectId });
-			} else {
+			if (!projectId) {
 				this.missingProjectContext.set(true);
+				return;
 			}
+			// `osContext.project.id` is the WPP Open *workspace* UUID — CS's
+			// `listAgents` endpoint rejects that with PROJECT_NOT_FOUND. The
+			// CS-internal projectId is what we actually need. Trigger a
+			// listAgents call with no projectId (osContext only); the backend
+			// resolves and returns `resolvedProjectId`, which loadAgents'
+			// response handler patches into the form.
+			this.loadAgents();
 		} catch {
 			// Not in iframe — leave blank for manual entry
 		}
@@ -489,8 +495,23 @@ export class TaskFormComponent implements OnInit {
 	}
 
 	loadAgents(): void {
-		const projectId = this.form.get('wppOpenProjectId')?.value;
-		if (!projectId) return;
+		const formProjectId = this.form.get('wppOpenProjectId')?.value;
+
+		// Read osContext early — needed both as the create-mode fallback
+		// (when the form has no projectId yet) and for the header builder
+		// in every call.
+		let osContext: unknown;
+		try {
+			osContext = this.wppOpenService.context;
+		} catch {
+			// Not in iframe
+		}
+
+		// In create mode the form's projectId starts empty — the backend
+		// resolves osContext to a CS-internal id and returns it as
+		// `resolvedProjectId`. We rely on that path here. If neither
+		// projectId nor osContext is available, there's nothing to do.
+		if (!formProjectId && !osContext) return;
 
 		this.loadingAgents.set(true);
 		this.agentLoadError.set(null);
@@ -506,27 +527,28 @@ export class TaskFormComponent implements OnInit {
 					return;
 				}
 
-				// Always send the form's projectId so the backend uses what the
-				// user (or the saved task) actually picked. osContext stays for
-				// header construction and as a create-mode fallback when the
-				// form has no projectId yet.
-				let osContext: unknown;
-				try {
-					osContext = this.wppOpenService.context;
-				} catch {
-					// Not in iframe
-				}
-
 				this.service
-					.listAgents(token, { projectId, osContext })
+					.listAgents(token, {
+						projectId: formProjectId || undefined,
+						osContext,
+					})
 					.pipe(takeUntilDestroyed(this.destroyRef))
 					.subscribe({
 						next: (result) => {
 							this.agents.set(result.agents);
-							// Do NOT overwrite the form's wppOpenProjectId with
-							// result.resolvedProjectId — it masks the actual saved value
-							// and made workspace mismatches invisible. Backend persistence
-							// of the resolved id happens at create time, not here.
+							// Safe-overwrite: only patch when the form was
+							// EMPTY (create-mode auto-populate path). Edit-mode
+							// loads the saved CS-internal id from the task and
+							// must NOT be silently swapped (the U3 trap).
+							if (!formProjectId && result.resolvedProjectId) {
+								this.form.patchValue(
+									{
+										wppOpenProjectId:
+											result.resolvedProjectId,
+									},
+									{ emitEvent: false },
+								);
+							}
 							this.loadingAgents.set(false);
 						},
 						error: (err) => {
