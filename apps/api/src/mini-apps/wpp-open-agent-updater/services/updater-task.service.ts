@@ -49,13 +49,22 @@ export class UpdaterTaskService {
 			dto.boxFolderId,
 		);
 
-		// Resolve the agent's CS-internal owning project (best-effort). Worker
-		// uses this for getAgentConfig because CS's listAgents is loose-scoped
-		// while getAgentConfig is strict-scoped.
-		const wppOpenAgentProjectId = await this.resolveAgentProjectId(
-			dto.wppOpenToken,
-			dto.osContext as WppOpenOsContext | undefined,
-		);
+		// Capture the agent's CS-internal owning project. Worker uses this
+		// for getAgentConfig because CS's listAgents is loose-scoped while
+		// getAgentConfig is strict-scoped.
+		//
+		// Preference order:
+		//   1. Explicit `dto.wppOpenAgentProjectId` from the frontend (when
+		//      CS surfaced it on the listAgents response). This is correct
+		//      regardless of which workspace the user is currently in.
+		//   2. Fall back to resolving from the user's osContext — only
+		//      correct when the user IS in the agent's home workspace.
+		const wppOpenAgentProjectId =
+			dto.wppOpenAgentProjectId ??
+			(await this.resolveAgentProjectId(
+				dto.wppOpenToken,
+				dto.osContext as WppOpenOsContext | undefined,
+			));
 
 		const task = this.taskRepo.create({
 			name: dto.name,
@@ -179,10 +188,16 @@ export class UpdaterTaskService {
 			task.wppOpenAgentName = dto.wppOpenAgentName;
 
 		if (projectChanged || agentChanged) {
-			if (dto.wppOpenToken && dto.osContext) {
+			if (dto.wppOpenAgentProjectId !== undefined) {
+				// Frontend already knows the agent's owning project (from CS's
+				// listAgents response). Use it directly — works regardless
+				// of which workspace the user is currently in.
+				task.wppOpenAgentProjectId = dto.wppOpenAgentProjectId;
+			} else if (dto.wppOpenToken && dto.osContext) {
 				// Caller supplied auth context — re-resolve. Whatever
 				// resolveAgentProjectId returns (string or null) is the new
-				// authoritative value.
+				// authoritative value. Only correct when the user IS in the
+				// agent's home workspace.
 				task.wppOpenAgentProjectId = await this.resolveAgentProjectId(
 					dto.wppOpenToken,
 					dto.osContext as WppOpenOsContext | undefined,

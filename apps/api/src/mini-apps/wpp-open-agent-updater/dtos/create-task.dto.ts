@@ -61,4 +61,12 @@ export class CreateTaskDto {
 	// upstream shape is accepted; the resolution call itself is the gate.
 	@IsOptional()
 	osContext?: unknown;
+
+	// If CS surfaces the agent's owning project on the listAgents response,
+	// the frontend forwards it directly so the backend doesn't have to (and
+	// often can't, when the user is in a different workspace) re-resolve.
+	@IsOptional()
+	@IsString()
+	@MaxLength(100)
+	wppOpenAgentProjectId?: string;
 }

@@ -65,4 +65,12 @@ export class UpdateTaskDto {
 
 	@IsOptional()
 	osContext?: unknown;
+
+	// Frontend may already know the agent's owning project from the
+	// `listAgents` response. When supplied, the service uses it directly
+	// instead of falling back to osContext-based resolution.
+	@IsOptional()
+	@IsString()
+	@MaxLength(100)
+	wppOpenAgentProjectId?: string;
 }

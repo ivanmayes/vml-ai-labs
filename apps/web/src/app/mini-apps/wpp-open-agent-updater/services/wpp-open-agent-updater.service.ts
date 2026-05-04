@@ -65,6 +65,13 @@ export interface WppOpenAgent {
 	name: string;
 	description?: string;
 	category?: string;
+	/**
+	 * The CS-internal project that owns this agent, when CS surfaces it on
+	 * the `listAgents` response. Used by the form to persist the agent's
+	 * actual owning project on save so runs work from any workspace that
+	 * can list the agent.
+	 */
+	projectId?: string;
 }
 
 interface ApiResponse<T> {
@@ -89,6 +96,7 @@ export class WppOpenAgentUpdaterService {
 		wppOpenAgentId: string;
 		wppOpenAgentName?: string;
 		wppOpenProjectId: string;
+		wppOpenAgentProjectId?: string;
 		wppOpenToken?: string;
 		osContext?: unknown;
 		fileExtensions?: string[];
@@ -123,6 +131,7 @@ export class WppOpenAgentUpdaterService {
 			wppOpenProjectId?: string;
 			wppOpenAgentId?: string;
 			wppOpenAgentName?: string;
+			wppOpenAgentProjectId?: string;
 			wppOpenToken?: string;
 			osContext?: unknown;
 		},

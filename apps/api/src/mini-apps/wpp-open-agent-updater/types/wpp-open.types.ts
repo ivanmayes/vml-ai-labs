@@ -6,6 +6,13 @@ export interface WppOpenAgent {
 	name: string;
 	description?: string;
 	category?: string;
+	/**
+	 * The CS-internal project that owns this agent. Captured from the
+	 * `listAgents` response when CS includes it. Carrying it through to
+	 * the task save lets the user re-point an agent regardless of which
+	 * workspace they're currently in.
+	 */
+	projectId?: string;
 }
 
 /**

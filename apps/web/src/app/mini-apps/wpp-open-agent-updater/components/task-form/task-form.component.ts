@@ -307,7 +307,14 @@ export class TaskFormComponent implements OnInit {
 				this.validateSeq++;
 				this.agentMismatch.set(false);
 				if (!agentId) return;
-				const projectId = this.form.get('wppOpenProjectId')?.value;
+				// Prefer the agent's own owning project (when CS surfaces it
+				// on the listAgents response) — that's what getAgentConfig
+				// will accept. Fall back to the form's project for legacy
+				// flows where the agent record didn't carry it.
+				const picked = this.agents().find((a) => a.id === agentId);
+				const projectId =
+					picked?.projectId ??
+					this.form.get('wppOpenProjectId')?.value;
 				if (!projectId) return;
 				this.validateAgentPair(this.validateSeq, projectId, agentId);
 			});
@@ -555,6 +562,12 @@ export class TaskFormComponent implements OnInit {
 			// Not in iframe
 		}
 
+		// If CS gave us the agent's owning project on `listAgents`, send it
+		// directly. The backend prefers it over its own osContext-resolution
+		// fallback so the saved value reflects WHERE THE AGENT LIVES, not
+		// where the user happens to be when saving.
+		const wppOpenAgentProjectId = selectedAgent?.projectId;
+
 		const request$ = this.isEdit()
 			? this.service.updateTask(this.taskId()!, {
 					name: value.name,
@@ -564,6 +577,7 @@ export class TaskFormComponent implements OnInit {
 					wppOpenProjectId: value.wppOpenProjectId,
 					wppOpenAgentId: value.wppOpenAgentId,
 					wppOpenAgentName: selectedAgent?.name,
+					wppOpenAgentProjectId,
 					wppOpenToken,
 					osContext,
 				})
@@ -573,6 +587,7 @@ export class TaskFormComponent implements OnInit {
 					wppOpenAgentId: value.wppOpenAgentId,
 					wppOpenAgentName: selectedAgent?.name,
 					wppOpenProjectId: value.wppOpenProjectId,
+					wppOpenAgentProjectId,
 					fileExtensions: value.fileExtensions,
 					includeSubfolders: value.includeSubfolders,
 					cadence: value.cadence,

@@ -320,6 +320,13 @@ export class WppOpenAgentService {
 
 	/**
 	 * List available agents for a project.
+	 *
+	 * CS's `listAgents` is loose-scoped — it returns agents owned by other
+	 * (sibling) projects under the same broader scope. To let the user
+	 * re-point an agent without first switching to the agent's home
+	 * workspace, we capture the agent's actual owning `projectId` from the
+	 * response when CS surfaces it. The field name is read defensively
+	 * across plausible CS conventions.
 	 */
 	async listAgents(
 		token: string,
@@ -328,20 +335,74 @@ export class WppOpenAgentService {
 	): Promise<WppOpenAgent[]> {
 		const params = new URLSearchParams({ projectId });
 		const result = await this.csRequest<{
-			data: {
-				id: string;
-				name: string;
-				description?: string;
-				category?: string;
-			}[];
+			data: Record<string, unknown>[];
 		}>('GET', `/v1/aihub/agents?${params}`, token, osContext);
 
-		return (result.data || []).map((agent) => ({
-			id: agent.id,
-			name: agent.name,
-			description: agent.description,
-			category: agent.category,
+		const agents = result.data || [];
+
+		// One-time DEBUG snapshot so we can confirm the response shape in
+		// production logs without re-deploying. Prints once per process,
+		// only the first agent's keys (no values, no PII).
+		if (agents.length > 0 && !WppOpenAgentService.loggedListAgentsShape) {
+			WppOpenAgentService.loggedListAgentsShape = true;
+			this.logger.debug(
+				`listAgents response shape (first entry keys): ${Object.keys(
+					agents[0],
+				).join(', ')}`,
+			);
+		}
+
+		return agents.map((agent) => ({
+			id: String(agent.id ?? ''),
+			name: String(agent.name ?? ''),
+			description:
+				typeof agent.description === 'string'
+					? agent.description
+					: undefined,
+			category:
+				typeof agent.category === 'string' ? agent.category : undefined,
+			projectId: WppOpenAgentService.extractAgentProjectId(agent),
 		}));
+	}
+
+	/**
+	 * Print-once flag for the listAgents response shape, used to surface CS's
+	 * actual agent fields in production logs without spamming.
+	 */
+	private static loggedListAgentsShape = false;
+
+	/**
+	 * Read the agent's owning project from a `listAgents` entry, trying a few
+	 * plausible CS field names. Returns `undefined` if none match — callers
+	 * fall back to resolving from osContext (legacy behavior).
+	 */
+	private static extractAgentProjectId(
+		agent: Record<string, unknown>,
+	): string | undefined {
+		const candidates = [
+			'projectId',
+			'project_id',
+			'parentProjectId',
+			'parent_project_id',
+			'ownerProjectId',
+			'owner_project_id',
+		];
+		for (const key of candidates) {
+			const value = agent[key];
+			if (typeof value === 'string' && value.length > 0) {
+				return value;
+			}
+		}
+		// Some CS responses nest a project object: { project: { id: '...' } }
+		const project = agent['project'];
+		if (
+			project &&
+			typeof project === 'object' &&
+			typeof (project as { id?: unknown }).id === 'string'
+		) {
+			return (project as { id: string }).id;
+		}
+		return undefined;
 	}
 
 	/**

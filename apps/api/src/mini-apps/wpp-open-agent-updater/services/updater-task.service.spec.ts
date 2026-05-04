@@ -222,6 +222,31 @@ describe('UpdaterTaskService.updateTask', () => {
 		expect(updated.wppOpenAgentProjectId).toBe('AGENT-OWNING');
 	});
 
+	it('prefers dto.wppOpenAgentProjectId from the frontend over osContext resolution', async () => {
+		// When the frontend sends an explicit owning-project (because CS
+		// surfaced it on listAgents), the service must use it directly and
+		// NOT call resolveProjectId — that's the whole point: works from
+		// any workspace.
+		const resolveProjectIdImpl = jest
+			.fn()
+			.mockResolvedValue('would-be-wrong');
+		const { service } = makeService({ resolveProjectIdImpl });
+
+		const updated = await service.updateTask(
+			'task-id',
+			{
+				wppOpenAgentId: 'new-agent',
+				wppOpenAgentProjectId: 'EXPLICIT-FROM-LIST-AGENTS',
+				wppOpenToken: 'tok',
+				osContext: osContext as unknown,
+			},
+			'org-id',
+		);
+
+		expect(resolveProjectIdImpl).not.toHaveBeenCalled();
+		expect(updated.wppOpenAgentProjectId).toBe('EXPLICIT-FROM-LIST-AGENTS');
+	});
+
 	it('rejects updates on archived tasks', async () => {
 		const archived = makeTask({ status: UpdaterTaskStatus.ARCHIVED });
 		const { service } = makeService({ task: archived });
