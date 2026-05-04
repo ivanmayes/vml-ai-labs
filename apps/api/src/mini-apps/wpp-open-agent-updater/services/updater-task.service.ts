@@ -187,13 +187,17 @@ export class UpdaterTaskService {
 		if (dto.wppOpenAgentName !== undefined)
 			task.wppOpenAgentName = dto.wppOpenAgentName;
 
-		if (projectChanged || agentChanged) {
-			if (dto.wppOpenAgentProjectId !== undefined) {
-				// Frontend already knows the agent's owning project (from CS's
-				// listAgents response). Use it directly — works regardless
-				// of which workspace the user is currently in.
-				task.wppOpenAgentProjectId = dto.wppOpenAgentProjectId;
-			} else if (dto.wppOpenToken && dto.osContext) {
+		// An explicit dto.wppOpenAgentProjectId is authoritative — apply it
+		// even when project/agent didn't change. Lets a user re-save the
+		// same agent to fix a previously-stored stale value (which is exactly
+		// what happens after the v59→v60 chain of fixes).
+		if (dto.wppOpenAgentProjectId !== undefined) {
+			task.wppOpenAgentProjectId = dto.wppOpenAgentProjectId;
+			this.logger.log(
+				`Task ${id} agentProject set explicitly: ${dto.wppOpenAgentProjectId}`,
+			);
+		} else if (projectChanged || agentChanged) {
+			if (dto.wppOpenToken && dto.osContext) {
 				// Caller supplied auth context — re-resolve. Whatever
 				// resolveAgentProjectId returns (string or null) is the new
 				// authoritative value. Only correct when the user IS in the

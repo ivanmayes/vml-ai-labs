@@ -163,10 +163,17 @@ const CADENCE_OPTIONS = [{ label: 'Manual', value: 'manual' }];
 								/>
 							</div>
 							@if (agentMismatch()) {
-								<p-message
-									severity="warn"
-									text="The selected agent does not belong to the saved project. Pick a different agent from the dropdown for this project, or change the project ID."
-								/>
+								@if (agentMismatchReason() === 'no-access') {
+									<p-message
+										severity="warn"
+										text="The selected agent's home project isn't accessible from your current workspace. Switch to a workspace that grants access to that project, or pick a different agent."
+									/>
+								} @else {
+									<p-message
+										severity="warn"
+										text="The selected agent does not belong to the saved project. Pick a different agent from the dropdown for this project, or change the project ID."
+									/>
+								}
 							}
 						</div>
 
@@ -254,10 +261,14 @@ export class TaskFormComponent implements OnInit {
 	// permission error — i.e. the saved project isn't reachable from the
 	// current OS context. Drives the workspace-mismatch banner.
 	projectInaccessible = signal(false);
-	// True when the picked agent doesn't belong to the form's project per
-	// CS's strict `getAgentConfig` check. Drives an inline warning under
-	// the agent dropdown.
+	// True when the picked agent fails CS's strict pair check (either
+	// because the agent doesn't belong to the project we sent, or because
+	// the user lacks access to the agent's home project from the current
+	// workspace). Drives an inline warning under the agent dropdown.
 	agentMismatch = signal(false);
+	// Distinguishes the two failure modes for messaging — both block a
+	// successful run, but the remediation is different.
+	agentMismatchReason = signal<'mismatch' | 'no-access' | null>(null);
 	validatingAgent = signal(false);
 	folderInfo = signal<BoxFolderInfo | null>(null);
 	agents = signal<WppOpenAgent[]>([]);
@@ -306,6 +317,7 @@ export class TaskFormComponent implements OnInit {
 				// response arrives.
 				this.validateSeq++;
 				this.agentMismatch.set(false);
+				this.agentMismatchReason.set(null);
 				if (!agentId) return;
 				// Prefer the agent's own owning project (when CS surfaces it
 				// on the listAgents response) — that's what getAgentConfig
@@ -342,6 +354,7 @@ export class TaskFormComponent implements OnInit {
 				next: () => {
 					if (seq !== this.validateSeq) return;
 					this.agentMismatch.set(false);
+					this.agentMismatchReason.set(null);
 					this.validatingAgent.set(false);
 				},
 				error: (err) => {
@@ -354,6 +367,18 @@ export class TaskFormComponent implements OnInit {
 							'ACCESS_LAYER_AGENT_CONFIG_DOES_NOT_BELONG_TO_PROJECT'
 					) {
 						this.agentMismatch.set(true);
+						this.agentMismatchReason.set('mismatch');
+					} else if (
+						err?.status === 403 &&
+						code ===
+							'ACCESS_LAYER_MISSING_PERMISSIONS_TO_EXTERNAL_PROJECT'
+					) {
+						// User picked an agent whose home project they
+						// don't have access to from the current workspace.
+						// CS returned this exact code; surface it instead
+						// of letting the run discover it later.
+						this.agentMismatch.set(true);
+						this.agentMismatchReason.set('no-access');
 					}
 					// Other errors (network, transient 5xx) silently dropped —
 					// the worker will surface them at run time.
