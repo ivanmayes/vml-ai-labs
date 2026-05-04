@@ -4,6 +4,7 @@ import {
 	NotFoundException,
 	ConflictException,
 	BadRequestException,
+	ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -19,6 +20,10 @@ import { UpdateTaskDto } from '../dtos/update-task.dto';
 import { WppOpenOsContext } from '../types/wpp-open.types';
 
 import { BoxService } from './box.service';
+import {
+	WppOpenAgentService,
+	WppOpenPermissionError,
+} from './wpp-open-agent.service';
 
 @Injectable()
 export class UpdaterTaskService {
@@ -31,6 +36,7 @@ export class UpdaterTaskService {
 		private readonly runRepo: Repository<TaskRun>,
 		private readonly boxService: BoxService,
 		private readonly pgBossService: PgBossService,
+		private readonly wppOpenAgentService: WppOpenAgentService,
 	) {}
 
 	/**
@@ -187,6 +193,23 @@ export class UpdaterTaskService {
 			throw new ConflictException(
 				`Task already has an active run: ${activeRun.id} (${activeRun.status})`,
 			);
+		}
+
+		// Pre-flight: confirm the user can actually access the saved project
+		// before queuing a job. Catches the workspace-mismatch case
+		// synchronously so the UI can show an actionable error instead of a
+		// queued run that 403s seconds later.
+		try {
+			await this.wppOpenAgentService.listAgents(
+				wppOpenToken,
+				task.wppOpenProjectId,
+				osContext,
+			);
+		} catch (error) {
+			if (error instanceof WppOpenPermissionError) {
+				throw new ForbiddenException(error.message);
+			}
+			throw error;
 		}
 
 		// Create the run record

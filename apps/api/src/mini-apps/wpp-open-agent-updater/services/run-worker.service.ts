@@ -20,7 +20,10 @@ import { UpdaterTask } from '../entities/updater-task.entity';
 import { WppOpenKnowledgeItem } from '../types/wpp-open.types';
 
 import { BoxService } from './box.service';
-import { WppOpenAgentService } from './wpp-open-agent.service';
+import {
+	WppOpenAgentService,
+	WppOpenPermissionError,
+} from './wpp-open-agent.service';
 
 /** Max file size: 150MB */
 const MAX_FILE_SIZE = 150 * 1024 * 1024;
@@ -48,6 +51,18 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		private readonly wppOpenAgentService: WppOpenAgentService,
 		private readonly converterFactory: ConverterFactory,
 	) {}
+
+	/**
+	 * Map a thrown error to the message persisted on the run row. Handles the
+	 * permission case explicitly so the user sees a self-service explanation
+	 * instead of "WPP Open API error: 403".
+	 */
+	static toRunErrorMessage(error: unknown): string {
+		if (error instanceof WppOpenPermissionError) {
+			return error.message;
+		}
+		return error instanceof Error ? error.message : 'Unknown error';
+	}
 
 	async onModuleInit(): Promise<void> {
 		await this.pgBossService.workAgentUpdaterQueue(
@@ -84,9 +99,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				try {
 					await this.failRun(
 						job.data.taskRunId,
-						error instanceof Error
-							? error.message
-							: 'Unknown error',
+						RunWorkerService.toRunErrorMessage(error),
 					);
 				} catch (failError) {
 					this.logger.error(
@@ -142,6 +155,11 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			this.logger.error(
 				`[run:${taskRunId}] Token validation failed: ${message}`,
 			);
+			// Preserve the typed permission error so the run row gets the
+			// human message; otherwise wrap as a generic token failure.
+			if (error instanceof WppOpenPermissionError) {
+				throw error;
+			}
 			throw new Error(`WPP Open token validation failed: ${message}`);
 		}
 

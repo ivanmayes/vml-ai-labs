@@ -21,6 +21,34 @@ const CF_HEADERS = {
 	Referer: 'https://open-web-cs.wpp.ai/',
 };
 
+/**
+ * CS error code returned when the requesting user does not have access to the
+ * external (OPEN_PROJECT) project being queried. Distinct from a plain auth
+ * failure: the token is valid, the project is just not in scope.
+ */
+export const CS_PERMISSION_ERROR_CODE =
+	'ACCESS_LAYER_MISSING_PERMISSIONS_TO_EXTERNAL_PROJECT';
+
+/**
+ * Thrown when the CS API rejects with `CS_PERMISSION_ERROR_CODE`. Lets the
+ * worker, run-row writer, and `triggerRun` pre-flight produce a self-service
+ * error message instead of a generic "WPP Open API error: 403".
+ */
+export class WppOpenPermissionError extends Error {
+	readonly code = CS_PERMISSION_ERROR_CODE;
+	readonly projectId?: string;
+
+	constructor(projectId?: string) {
+		super(
+			'Saved WPP Open project is not accessible from your current ' +
+				'workspace. Open the task in a workspace where you have access ' +
+				'to that project, or re-point the task to a project here.',
+		);
+		this.name = 'WppOpenPermissionError';
+		this.projectId = projectId;
+	}
+}
+
 @Injectable()
 export class WppOpenAgentService {
 	private readonly logger = new Logger(WppOpenAgentService.name);
@@ -96,6 +124,19 @@ export class WppOpenAgentService {
 			this.logger.error(
 				`CS API error: ${method} ${path} → ${response.status}: ${errorText}`,
 			);
+
+			// Detect the missing-project-access case so callers can map it to
+			// a clear UX. Anything else falls through to the generic HttpException.
+			if (
+				response.status === 403 &&
+				errorText.includes(CS_PERMISSION_ERROR_CODE)
+			) {
+				const projectIdMatch = path.match(/projectId=([^&]+)/);
+				throw new WppOpenPermissionError(
+					projectIdMatch ? projectIdMatch[1] : undefined,
+				);
+			}
+
 			throw new HttpException(
 				`WPP Open API error: ${response.status}`,
 				response.status >= 500
