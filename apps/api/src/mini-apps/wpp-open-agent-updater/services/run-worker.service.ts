@@ -96,6 +96,28 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		return `Knowledge upsert failed: ${upsertError}`;
 	}
 
+	/**
+	 * Compute the new `filesFailed` aggregate after an upsert failure.
+	 *
+	 * Pre-upload failure (typed errors): the converted-but-not-yet-uploaded
+	 * files are NOT counted as failures. Per-file rows already say "preserved
+	 * for next run" and Box's lastRunAt cursor doesn't advance, so the next
+	 * run will re-attempt them. Counting them as failures would scare the
+	 * user with a misleading topline number.
+	 *
+	 * Post-upload failure (anything else): the upload was attempted and
+	 * broke; count the converted files as failed.
+	 */
+	static failedCountAfterUpsertError(
+		failedSoFar: number,
+		converted: number,
+		error: unknown,
+	): number {
+		return RunWorkerService.isPreUploadFailure(error)
+			? failedSoFar
+			: failedSoFar + converted;
+	}
+
 	async onModuleInit(): Promise<void> {
 		await this.pgBossService.workAgentUpdaterQueue(
 			(jobs) => this.handleJobs(jobs),
@@ -358,15 +380,14 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 						preUpload ? '(pre-upload)' : '(during upload)'
 					}: ${upsertError}`,
 				);
-				// Pre-upload failure: the converted files were never attempted
-				// (no upload happened) and Box's lastRunAt cursor will not
-				// advance, so they'll be picked up on the next run. Don't
-				// double-count them as failures in the run aggregate; the
-				// per-file rows carry the "preserved for next run" message.
-				// Post-upload failure: count them — we tried, it broke.
-				if (!preUpload) {
-					failed += converted;
-				}
+				// See `failedCountAfterUpsertError` for the rationale: pre-upload
+				// failures don't count converted files as failed; post-upload
+				// failures do.
+				failed = RunWorkerService.failedCountAfterUpsertError(
+					failed,
+					converted,
+					error,
+				);
 
 				await this.runFileRepo
 					.createQueryBuilder()

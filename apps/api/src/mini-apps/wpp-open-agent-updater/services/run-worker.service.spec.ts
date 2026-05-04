@@ -73,3 +73,44 @@ describe('RunWorkerService.isPreUploadFailure', () => {
 		);
 	});
 });
+
+describe('RunWorkerService.failedCountAfterUpsertError', () => {
+	it('does not count converted files as failed on pre-upload (mismatch) error', () => {
+		const result = RunWorkerService.failedCountAfterUpsertError(
+			4,
+			1006,
+			new WppOpenAgentMismatchError(),
+		);
+		// Mirrors the production scenario: 4 process failures, 1006 converted,
+		// pre-upload mismatch — aggregate stays at 4, per-file rows say
+		// "preserved for next run".
+		expect(result).toBe(4);
+	});
+
+	it('does not count converted files as failed on pre-upload (permission) error', () => {
+		const result = RunWorkerService.failedCountAfterUpsertError(
+			0,
+			500,
+			new WppOpenPermissionError(),
+		);
+		expect(result).toBe(0);
+	});
+
+	it('counts converted files as failed on post-upload (real) error', () => {
+		const result = RunWorkerService.failedCountAfterUpsertError(
+			4,
+			1006,
+			new Error('S3 timeout during PUT'),
+		);
+		expect(result).toBe(1010);
+	});
+
+	it('counts converted files as failed on non-Error throwables (defensive)', () => {
+		const result = RunWorkerService.failedCountAfterUpsertError(
+			0,
+			3,
+			'weird string',
+		);
+		expect(result).toBe(3);
+	});
+});
