@@ -380,6 +380,9 @@ export class WppOpenAgentService {
 		agent: Record<string, unknown>,
 	): string | undefined {
 		const candidates = [
+			// CS's actual field name (confirmed via the one-time shape log
+			// in production: agents come back with `agentProjectId`).
+			'agentProjectId',
 			'projectId',
 			'project_id',
 			'parentProjectId',
