@@ -1,7 +1,7 @@
 ---
 title: "feat: WPP Open Agent Updater — polish (delta-sync fix, agent re-pointing, workspace-aware UX)"
 type: feat
-status: planned
+status: completed
 date: 2026-05-04
 origin: docs/plans/2026-04-01-001-feat-open-agent-updater-improvements-plan.md
 ---
