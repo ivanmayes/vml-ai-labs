@@ -120,6 +120,12 @@ export class UpdaterTaskService {
 		if (dto.includeSubfolders !== undefined)
 			task.includeSubfolders = dto.includeSubfolders;
 		if (dto.cadence !== undefined) task.cadence = dto.cadence;
+		if (dto.wppOpenProjectId !== undefined)
+			task.wppOpenProjectId = dto.wppOpenProjectId;
+		if (dto.wppOpenAgentId !== undefined)
+			task.wppOpenAgentId = dto.wppOpenAgentId;
+		if (dto.wppOpenAgentName !== undefined)
+			task.wppOpenAgentName = dto.wppOpenAgentName;
 
 		return this.taskRepo.save(task);
 	}

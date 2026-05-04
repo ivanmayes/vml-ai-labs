@@ -309,10 +309,10 @@ export class TaskFormComponent implements OnInit {
 						cadence: task.cadence,
 					});
 
-					// Disable core fields in edit mode
+					// Box folder is the task's identity and is immutable.
+					// Project + agent stay editable so a task can be re-pointed
+					// to a different agent or workspace.
 					this.form.get('boxFolderId')!.disable();
-					this.form.get('wppOpenProjectId')!.disable();
-					this.form.get('wppOpenAgentId')!.disable();
 				},
 				error: () => {
 					this.messageService.add({
@@ -429,6 +429,9 @@ export class TaskFormComponent implements OnInit {
 					fileExtensions: value.fileExtensions,
 					includeSubfolders: value.includeSubfolders,
 					cadence: value.cadence,
+					wppOpenProjectId: value.wppOpenProjectId,
+					wppOpenAgentId: value.wppOpenAgentId,
+					wppOpenAgentName: selectedAgent?.name,
 				})
 			: this.service.createTask({
 					name: value.name,

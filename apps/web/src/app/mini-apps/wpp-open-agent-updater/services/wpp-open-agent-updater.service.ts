@@ -119,6 +119,9 @@ export class WppOpenAgentUpdaterService {
 			fileExtensions?: string[];
 			includeSubfolders?: boolean;
 			cadence?: string;
+			wppOpenProjectId?: string;
+			wppOpenAgentId?: string;
+			wppOpenAgentName?: string;
 		},
 	): Observable<UpdaterTask> {
 		return this.http

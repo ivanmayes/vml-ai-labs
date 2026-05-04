@@ -34,4 +34,21 @@ export class UpdateTaskDto {
 	@IsOptional()
 	@IsIn(['manual'])
 	cadence?: string;
+
+	// Re-pointing the task to a different WPP Open project / agent is allowed
+	// — the original create-time fields are not strictly immutable. boxFolderId
+	// stays immutable: it is the task's true identity.
+
+	@IsOptional()
+	@IsString()
+	wppOpenProjectId?: string;
+
+	@IsOptional()
+	@IsString()
+	wppOpenAgentId?: string;
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(255)
+	wppOpenAgentName?: string;
 }
