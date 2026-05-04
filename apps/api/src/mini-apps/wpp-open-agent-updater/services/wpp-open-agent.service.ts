@@ -33,17 +33,34 @@ export const CS_PERMISSION_ERROR_CODE =
  * Thrown when the CS API rejects with `CS_PERMISSION_ERROR_CODE`. Lets the
  * worker, run-row writer, and `triggerRun` pre-flight produce a self-service
  * error message instead of a generic "WPP Open API error: 403".
+ *
+ * Extends `HttpException` so when the public `/agents` controller path lets
+ * one bubble up, NestJS's default exception filter renders a proper 403 with
+ * the human message instead of a generic 500.
  */
-export class WppOpenPermissionError extends Error {
+export class WppOpenPermissionError extends HttpException {
+	static readonly MESSAGE =
+		'Saved WPP Open project is not accessible from your current ' +
+		'workspace. Open the task in a workspace where you have access ' +
+		'to that project, or re-point the task to a project here.';
+
 	readonly code = CS_PERMISSION_ERROR_CODE;
 	readonly projectId?: string;
 
 	constructor(projectId?: string) {
 		super(
-			'Saved WPP Open project is not accessible from your current ' +
-				'workspace. Open the task in a workspace where you have access ' +
-				'to that project, or re-point the task to a project here.',
+			{
+				statusCode: HttpStatus.FORBIDDEN,
+				code: CS_PERMISSION_ERROR_CODE,
+				message: WppOpenPermissionError.MESSAGE,
+				projectId,
+			},
+			HttpStatus.FORBIDDEN,
 		);
+		// HttpException's default `.message` is "Http Exception" when the
+		// response is an object, so set it explicitly for log readability and
+		// for callers that pull `error.message` directly.
+		this.message = WppOpenPermissionError.MESSAGE;
 		this.name = 'WppOpenPermissionError';
 		this.projectId = projectId;
 	}

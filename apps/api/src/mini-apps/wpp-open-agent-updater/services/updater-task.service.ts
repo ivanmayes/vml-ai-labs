@@ -4,7 +4,6 @@ import {
 	NotFoundException,
 	ConflictException,
 	BadRequestException,
-	ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -20,10 +19,7 @@ import { UpdateTaskDto } from '../dtos/update-task.dto';
 import { WppOpenOsContext } from '../types/wpp-open.types';
 
 import { BoxService } from './box.service';
-import {
-	WppOpenAgentService,
-	WppOpenPermissionError,
-} from './wpp-open-agent.service';
+import { WppOpenAgentService } from './wpp-open-agent.service';
 
 @Injectable()
 export class UpdaterTaskService {
@@ -198,19 +194,13 @@ export class UpdaterTaskService {
 		// Pre-flight: confirm the user can actually access the saved project
 		// before queuing a job. Catches the workspace-mismatch case
 		// synchronously so the UI can show an actionable error instead of a
-		// queued run that 403s seconds later.
-		try {
-			await this.wppOpenAgentService.listAgents(
-				wppOpenToken,
-				task.wppOpenProjectId,
-				osContext,
-			);
-		} catch (error) {
-			if (error instanceof WppOpenPermissionError) {
-				throw new ForbiddenException(error.message);
-			}
-			throw error;
-		}
+		// queued run that 403s seconds later. WppOpenPermissionError is itself
+		// an HttpException(403), so it bubbles up unchanged.
+		await this.wppOpenAgentService.listAgents(
+			wppOpenToken,
+			task.wppOpenProjectId,
+			osContext,
+		);
 
 		// Create the run record
 		const run = this.runRepo.create({

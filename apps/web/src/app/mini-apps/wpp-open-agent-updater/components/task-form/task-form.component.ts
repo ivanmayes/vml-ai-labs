@@ -109,6 +109,12 @@ const CADENCE_OPTIONS = [{ label: 'Manual', value: 'manual' }];
 							<label for="wppOpenProjectId"
 								>WPP Open Project ID</label
 							>
+							@if (projectInaccessible()) {
+								<p-message
+									severity="warn"
+									text="This task's saved project is not accessible from your current workspace. Re-point the task to a project here, or open the task in a workspace where you have access to the saved project."
+								/>
+							}
 							<input
 								pInputText
 								id="wppOpenProjectId"
@@ -238,6 +244,10 @@ export class TaskFormComponent implements OnInit {
 	validatingFolder = signal(false);
 	loadingAgents = signal(false);
 	agentLoadError = signal<string | null>(null);
+	// True when the most recent loadAgents() call returned the typed
+	// permission error — i.e. the saved project isn't reachable from the
+	// current OS context. Drives the workspace-mismatch banner.
+	projectInaccessible = signal(false);
 	folderInfo = signal<BoxFolderInfo | null>(null);
 	agents = signal<WppOpenAgent[]>([]);
 
@@ -356,6 +366,7 @@ export class TaskFormComponent implements OnInit {
 
 		this.loadingAgents.set(true);
 		this.agentLoadError.set(null);
+		this.projectInaccessible.set(false);
 
 		this.getToken()
 			.then((token) => {
@@ -390,11 +401,24 @@ export class TaskFormComponent implements OnInit {
 							// of the resolved id happens at create time, not here.
 							this.loadingAgents.set(false);
 						},
-						error: () => {
+						error: (err) => {
 							this.loadingAgents.set(false);
-							this.agentLoadError.set(
-								'Failed to load agents. Check project ID and try again.',
-							);
+							// 403 with the access-layer code means the saved project
+							// isn't reachable from this workspace. The error response
+							// body carries `code: ACCESS_LAYER_MISSING_PERMISSIONS_TO_EXTERNAL_PROJECT`.
+							const code =
+								err?.error?.code ?? err?.error?.error?.code;
+							if (
+								err?.status === 403 &&
+								code ===
+									'ACCESS_LAYER_MISSING_PERMISSIONS_TO_EXTERNAL_PROJECT'
+							) {
+								this.projectInaccessible.set(true);
+							} else {
+								this.agentLoadError.set(
+									'Failed to load agents. Check project ID and try again.',
+								);
+							}
 						},
 					});
 			})
