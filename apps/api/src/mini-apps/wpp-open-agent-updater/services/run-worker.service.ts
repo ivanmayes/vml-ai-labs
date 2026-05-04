@@ -22,8 +22,8 @@ import { WppOpenKnowledgeItem } from '../types/wpp-open.types';
 import { BoxService } from './box.service';
 import { WppOpenAgentService } from './wpp-open-agent.service';
 
-/** Max file size: 50MB */
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+/** Max file size: 150MB */
+const MAX_FILE_SIZE = 150 * 1024 * 1024;
 
 /** Buffer before lastRunAt to avoid missing files (5 minutes) */
 const LAST_RUN_BUFFER_MS = 5 * 60 * 1000;
@@ -361,7 +361,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				);
 				await this.runFileRepo.update(runFile.id, {
 					status: TaskRunFileStatus.FAILED,
-					errorMessage: `File too large (${Math.round(fileInfo.size / 1024 / 1024)}MB exceeds 50MB limit)`,
+					errorMessage: `File too large (${Math.round(fileInfo.size / 1024 / 1024)}MB exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit)`,
 					processedAt: new Date(),
 				});
 				return 'skipped';
