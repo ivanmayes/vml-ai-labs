@@ -5,6 +5,10 @@ import {
 	UpdaterTaskStatus,
 } from '../entities/updater-task.entity';
 import { TaskRun } from '../entities/task-run.entity';
+import {
+	TaskRunFile,
+	TaskRunFileStatus,
+} from '../entities/task-run-file.entity';
 import { WppOpenOsContext } from '../types/wpp-open.types';
 import { PgBossService } from '../../../_platform/queue/pg-boss.service';
 
@@ -383,5 +387,93 @@ describe('UpdaterTaskService.triggerRun pre-flight', () => {
 			// "use ForbiddenException" requirement without an extra translation.
 			expect((err as ForbiddenException).getStatus()).toBe(403);
 		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// getRun: counter overlay from per-file rows
+// ---------------------------------------------------------------------------
+
+describe('UpdaterTaskService.getRun counter overlay', () => {
+	function makeFile(
+		status: TaskRunFileStatus,
+		overrides: Partial<TaskRunFile> = {},
+	): TaskRunFile {
+		return Object.assign(new TaskRunFile(), {
+			id: `file-${status}-${Math.random()}`,
+			taskRunId: 'run-id',
+			boxFileId: `box-${status}`,
+			fileName: `${status}.pptx`,
+			fileSize: 100,
+			status,
+			errorMessage: null,
+			processedAt: null,
+			createdAt: new Date(),
+			...overrides,
+		});
+	}
+
+	function makeRun(overrides: Partial<TaskRun> = {}): TaskRun {
+		return Object.assign(new TaskRun(), {
+			id: 'run-id',
+			taskId: 'task-id',
+			organizationId: 'org-id',
+			files: [],
+			filesFound: 0,
+			filesProcessed: 0,
+			filesFailed: 0,
+			filesSkipped: 0,
+			...overrides,
+		});
+	}
+
+	it('overlays filesProcessed and filesFailed from per-file rows even when run row says zero', async () => {
+		// Mirrors the production failure: row has filesProcessed=0 because
+		// the worker died before finalize, but per-file rows show the truth.
+		const run = makeRun({
+			filesProcessed: 0,
+			filesFailed: 0,
+			filesSkipped: 0,
+			files: [
+				makeFile(TaskRunFileStatus.COMPLETED),
+				makeFile(TaskRunFileStatus.COMPLETED),
+				makeFile(TaskRunFileStatus.COMPLETED),
+				makeFile(TaskRunFileStatus.FAILED),
+				makeFile(TaskRunFileStatus.FAILED),
+			],
+		});
+
+		const { service } = makeService({
+			findRunImpl: jest.fn().mockResolvedValue(run),
+		});
+
+		const result = await service.getRun('run-id', 'org-id');
+
+		expect(result.filesProcessed).toBe(3);
+		expect(result.filesFailed).toBe(2);
+	});
+
+	it('preserves listing-phase filesSkipped (date filter / prior-completion) on the row', async () => {
+		// The worker stores `skippedByDate + skippedByPriorCompletion +
+		// sizeSkipped` on the row. SKIPPED rows only cover the size-cap
+		// portion, so overlaying from rows would erase the listing-phase
+		// skips. Verify we leave the row's filesSkipped alone.
+		const run = makeRun({
+			filesSkipped: 250, // 200 by date + 50 by prior completion
+			files: [
+				makeFile(TaskRunFileStatus.COMPLETED),
+				makeFile(TaskRunFileStatus.SKIPPED),
+				makeFile(TaskRunFileStatus.SKIPPED),
+			],
+		});
+
+		const { service } = makeService({
+			findRunImpl: jest.fn().mockResolvedValue(run),
+		});
+
+		const result = await service.getRun('run-id', 'org-id');
+
+		expect(result.filesProcessed).toBe(1);
+		expect(result.filesSkipped).toBe(250);
 	});
 });

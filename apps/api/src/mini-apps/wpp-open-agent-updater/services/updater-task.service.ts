@@ -14,6 +14,7 @@ import {
 	UpdaterTaskStatus,
 } from '../entities/updater-task.entity';
 import { TaskRun, TaskRunStatus } from '../entities/task-run.entity';
+import { TaskRunFileStatus } from '../entities/task-run-file.entity';
 import { CreateTaskDto } from '../dtos/create-task.dto';
 import { UpdateTaskDto } from '../dtos/update-task.dto';
 import { WppOpenOsContext } from '../types/wpp-open.types';
@@ -349,6 +350,17 @@ export class UpdaterTaskService {
 
 	/**
 	 * Get a single run with file details.
+	 *
+	 * The persisted counters on the run row drift in two situations:
+	 *   1. Worker dies before finalize (dyno restart, pg-boss expire/retry,
+	 *      uncaught throw → `failRun()` only writes status/errorMessage).
+	 *   2. Older runs predating the mid-flight counter persistence in
+	 *      `RunWorkerService.processRun`.
+	 *
+	 * The per-file rows are the authoritative record of what actually
+	 * happened, so overlay the run-level counts with `COUNT(*) GROUP BY
+	 * status` from `task_run_files`. The topline summary stops lying when
+	 * the in-memory counters were lost.
 	 */
 	async getRun(runId: string, orgId: string): Promise<TaskRun> {
 		const run = await this.runRepo.findOne({
@@ -359,6 +371,18 @@ export class UpdaterTaskService {
 		if (!run) {
 			throw new NotFoundException(`Run ${runId} not found`);
 		}
+
+		// Only overlay processed/failed — those are derivable from rows
+		// alone. `filesSkipped` mixes per-file rows (size-cap skips) with
+		// listing-phase skips (date filter, prior-completion dedupe) that
+		// have no row, so leaving the worker-computed sum on the run row
+		// avoids losing the listing-phase contribution.
+		run.filesProcessed = run.files.filter(
+			(file) => file.status === TaskRunFileStatus.COMPLETED,
+		).length;
+		run.filesFailed = run.files.filter(
+			(file) => file.status === TaskRunFileStatus.FAILED,
+		).length;
 
 		return run;
 	}

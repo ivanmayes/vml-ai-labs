@@ -1,3 +1,5 @@
+import { TaskRunFileStatus } from '../entities/task-run-file.entity';
+
 import { RunWorkerService } from './run-worker.service';
 import {
 	WppOpenPermissionError,
@@ -112,5 +114,65 @@ describe('RunWorkerService.failedCountAfterUpsertError', () => {
 			'weird string',
 		);
 		expect(result).toBe(3);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// processFile: size-cap path emits SKIPPED, not FAILED
+// ---------------------------------------------------------------------------
+
+describe('RunWorkerService.processFile size-cap', () => {
+	function makeService(updateImpl: jest.Mock) {
+		const runFileRepo = { update: updateImpl };
+		// Cast through unknown so we can pass partial repos into the
+		// constructor without re-implementing every dependency.
+		return new RunWorkerService(
+			{} as never,
+			runFileRepo as never,
+			{} as never,
+			{} as never,
+			{} as never,
+			{} as never,
+			{} as never,
+		);
+	}
+
+	it('marks oversized files SKIPPED (not FAILED) and counts them as skipped', async () => {
+		// Calls `processFile` directly through a typed cast — Jest doesn't
+		// expose private members, but the runtime method is callable. This
+		// keeps the test free of the full processRun fixture (Box, queue,
+		// converters, WPP Open) while pinning the user-visible bug:
+		// "file size issues shouldnt be a fail, it should be a skip".
+		const update = jest.fn().mockResolvedValue(undefined);
+		const service = makeService(update);
+
+		const runFile = { id: 'rf-1' };
+		const fileInfo = {
+			id: 'box-1',
+			name: 'huge.pptx',
+			size: 200 * 1024 * 1024, // 200MB > 150MB cap
+			extension: 'pptx',
+		};
+
+		const result = await (
+			service as unknown as {
+				processFile: (
+					runFile: unknown,
+					fileInfo: unknown,
+					docs: unknown[],
+					ids: string[],
+					taskRunId: string,
+				) => Promise<'converted' | 'skipped' | 'failed'>;
+			}
+		).processFile(runFile, fileInfo, [], [], 'run-id');
+
+		expect(result).toBe('skipped');
+		expect(update).toHaveBeenCalledWith(
+			'rf-1',
+			expect.objectContaining({
+				status: TaskRunFileStatus.SKIPPED,
+				errorMessage: expect.stringContaining('File too large'),
+			}),
+		);
 	});
 });

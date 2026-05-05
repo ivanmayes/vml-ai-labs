@@ -239,6 +239,7 @@ export class RunDetailComponent implements OnInit, OnDestroy {
 			case 'uploading':
 				return 'info';
 			case 'pending':
+			case 'skipped':
 				return 'warn';
 			case 'failed':
 				return 'danger';

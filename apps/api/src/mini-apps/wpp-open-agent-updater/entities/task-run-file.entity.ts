@@ -17,6 +17,7 @@ export enum TaskRunFileStatus {
 	UPLOADING = 'uploading',
 	COMPLETED = 'completed',
 	FAILED = 'failed',
+	SKIPPED = 'skipped',
 }
 
 @Entity({ name: 'task_run_files', schema: 'wpp_open_agent_updater' })

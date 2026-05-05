@@ -267,23 +267,46 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			`[run:${taskRunId}] Box scan complete: ${totalSeen} total, ${files.length} new/modified, ${skippedByDate} skipped by date`,
 		);
 
+		// Resume: when a prior run uploaded a file successfully, its row stays
+		// COMPLETED in the DB (CS already has it; the per-file fileName-keyed
+		// merge in `upsertKnowledge` would just re-PUT the same content). If
+		// that prior run aborted before finalize, `lastRunAt` does not
+		// advance, so Box hands us the file again on the next attempt. Skip
+		// the redundant download+convert+upload by filtering against the set
+		// of boxFileIds this task has already finished. The remaining file
+		// count drives `filesFound` so the topline reflects work-to-do.
+		const alreadyCompletedBoxFileIds =
+			await this.collectCompletedBoxFileIds(taskId);
+		const newFiles = files.filter(
+			(file) => !alreadyCompletedBoxFileIds.has(file.id),
+		);
+		const skippedByPriorCompletion = files.length - newFiles.length;
+
+		if (skippedByPriorCompletion > 0) {
+			this.logger.log(
+				`[run:${taskRunId}] Resume filter: ${skippedByPriorCompletion} files already completed in a prior run — skipping`,
+			);
+		}
+
+		const totalSkipped = skippedByDate + skippedByPriorCompletion;
+
 		await this.runRepo.update(taskRunId, {
-			filesFound: files.length,
-			filesSkipped: skippedByDate,
+			filesFound: newFiles.length,
+			filesSkipped: totalSkipped,
 		});
 
-		if (files.length === 0) {
+		if (newFiles.length === 0) {
 			await this.runRepo.update(taskRunId, {
 				status: TaskRunStatus.COMPLETED,
 				completedAt: new Date(),
-				filesSkipped: skippedByDate,
+				filesSkipped: totalSkipped,
 			});
 			await this.taskRepo.update(taskId, { lastRunAt: new Date() });
 			return;
 		}
 
 		// 4. Create TaskRunFile records
-		const runFiles = files.map((file) =>
+		const runFiles = newFiles.map((file) =>
 			this.runFileRepo.create({
 				taskRunId,
 				boxFileId: file.id,
@@ -320,6 +343,8 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			}`,
 		);
 
+		const filesForBatch = newFiles;
+
 		for (let i = 0; i < runFiles.length; i += FILE_CONCURRENCY) {
 			if (this.isShuttingDown) {
 				this.logger.warn(
@@ -336,7 +361,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 
 			const batchNum = Math.floor(i / FILE_CONCURRENCY) + 1;
 			const batch = runFiles.slice(i, i + FILE_CONCURRENCY);
-			const batchFiles = files.slice(i, i + FILE_CONCURRENCY);
+			const batchFiles = filesForBatch.slice(i, i + FILE_CONCURRENCY);
 
 			this.logger.log(
 				`[run:${taskRunId}] Batch ${batchNum}/${totalBatches} — files ${i + 1}-${Math.min(i + FILE_CONCURRENCY, totalFiles)}/${totalFiles} | progress: ${converted} converted, ${failed} failed, ${skipped} skipped`,
@@ -399,6 +424,18 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				knowledgeDocs.length = 0;
 				chunkRunFileIds.length = 0;
 			}
+
+			// Persist running counters after every batch. This is what makes
+			// the run-detail page tell the truth even when the worker dies
+			// mid-flight (dyno restart, pg-boss expireInSeconds retry,
+			// uncaught throw → failRun() which doesn't touch counters).
+			// Without this, `filesProcessed` was 0 on failed runs even when
+			// dozens of file rows were already row-marked COMPLETED.
+			await this.runRepo.update(taskRunId, {
+				filesProcessed: processed,
+				filesFailed: failed,
+				filesSkipped: totalSkipped + skipped,
+			});
 		}
 
 		// Flush the trailing partial chunk (if any and not aborted).
@@ -452,7 +489,11 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			completedAt: new Date(),
 			filesProcessed: processed,
 			filesFailed: failed,
-			filesSkipped: skipped,
+			// `totalSkipped` carries the date-filter and prior-completion
+			// skips from the file-listing phase; `skipped` is the size-cap
+			// skips counted during file processing. Earlier code overwrote
+			// the date count here, hiding it from the run summary.
+			filesSkipped: totalSkipped + skipped,
 			errorMessage:
 				finalStatus === TaskRunStatus.FAILED
 					? upsertErrorRaw
@@ -492,13 +533,16 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 	): Promise<'converted' | 'skipped' | 'failed'> {
 		const fileLabel = `${fileInfo.name} (${(fileInfo.size / 1024 / 1024).toFixed(1)}MB)`;
 		try {
-			// Size check
+			// Size check — exceeds the per-file cap. This is bookkeeping, not
+			// an error: the file will never be processable until it shrinks
+			// or the cap is raised, so it gets `SKIPPED` (not `FAILED`) and
+			// stays out of the user-actionable failures count.
 			if (fileInfo.size > MAX_FILE_SIZE) {
 				this.logger.warn(
 					`[run:${taskRunId}] SKIP ${fileLabel} — exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`,
 				);
 				await this.runFileRepo.update(runFile.id, {
-					status: TaskRunFileStatus.FAILED,
+					status: TaskRunFileStatus.SKIPPED,
 					errorMessage: `File too large (${Math.round(fileInfo.size / 1024 / 1024)}MB exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit)`,
 					processedAt: new Date(),
 				});
@@ -624,6 +668,39 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 				.execute();
 			return { ok: false, docsFlushed: docsCount, error };
 		}
+	}
+
+	/**
+	 * Return the set of `boxFileId`s already COMPLETED for any prior run of
+	 * this task. Used to short-circuit re-processing of files that were
+	 * successfully uploaded in a previous (possibly aborted) run.
+	 *
+	 * The CS API merges agent knowledge by `fileName` on every upsert, so
+	 * re-running would simply re-PUT identical content — wasted Box quota,
+	 * memory, and time on 1000+ file folders. Filtering here lets a retried
+	 * run "pick up where it left off" instead.
+	 *
+	 * Read-only and bounded by the task's prior-COMPLETED count, so the cost
+	 * is negligible compared to the network work it avoids.
+	 */
+	private async collectCompletedBoxFileIds(
+		taskId: string,
+	): Promise<Set<string>> {
+		const rows = await this.runFileRepo
+			.createQueryBuilder('file')
+			.innerJoin(
+				TaskRun,
+				'run',
+				'run.id = file."taskRunId" AND run."taskId" = :taskId',
+				{ taskId },
+			)
+			.select('DISTINCT file."boxFileId"', 'boxFileId')
+			.where('file.status = :status', {
+				status: TaskRunFileStatus.COMPLETED,
+			})
+			.getRawMany<{ boxFileId: string }>();
+
+		return new Set(rows.map((row) => row.boxFileId));
 	}
 
 	/**
