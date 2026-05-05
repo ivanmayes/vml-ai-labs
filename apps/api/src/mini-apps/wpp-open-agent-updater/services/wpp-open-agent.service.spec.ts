@@ -151,3 +151,62 @@ describe('WppOpenAgentService.getAgentConfig (agent mismatch detection)', () => 
 		).rejects.not.toBeInstanceOf(WppOpenAgentMismatchError);
 	});
 });
+
+describe('WppOpenAgentService 5xx error message includes response body', () => {
+	let service: WppOpenAgentService;
+	let originalFetch: typeof fetch;
+
+	beforeEach(() => {
+		service = new WppOpenAgentService();
+		originalFetch = global.fetch;
+	});
+
+	afterEach(() => {
+		global.fetch = originalFetch;
+	});
+
+	it('surfaces a slice of the CS response body in the 500 error message', async () => {
+		// Pre-fix: every 5xx surfaced the same opaque "WPP Open API
+		// error: 500" — diagnosing meant tailing Heroku logs. Now the
+		// run-detail page itself tells the user *why* CS rejected.
+		const errorBody = JSON.stringify({
+			message: 'Item size has exceeded the maximum allowed size',
+			detail: 'agent config exceeds 400KB DynamoDB cap',
+		});
+
+		global.fetch = jest.fn().mockResolvedValue({
+			ok: false,
+			status: 500,
+			text: () => Promise.resolve(errorBody),
+			json: () => Promise.resolve({}),
+		} as unknown as Response);
+
+		try {
+			await service.listAgents('token', 'project-id');
+			fail('expected throw');
+		} catch (err) {
+			expect((err as Error).message).toContain('500');
+			expect((err as Error).message).toContain('Item size has exceeded');
+		}
+	});
+
+	it('truncates very long error bodies to keep the message UI-friendly', async () => {
+		const longBody = 'x'.repeat(2000);
+
+		global.fetch = jest.fn().mockResolvedValue({
+			ok: false,
+			status: 502,
+			text: () => Promise.resolve(longBody),
+			json: () => Promise.resolve({}),
+		} as unknown as Response);
+
+		try {
+			await service.listAgents('token', 'project-id');
+			fail('expected throw');
+		} catch (err) {
+			// Status + truncated body separator ' — ' adds a few chars on
+			// top of the 300-char body slice; allow a small margin.
+			expect((err as Error).message.length).toBeLessThan(400);
+		}
+	});
+});

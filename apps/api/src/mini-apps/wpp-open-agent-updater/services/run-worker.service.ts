@@ -1,4 +1,5 @@
 import {
+	HttpException,
 	Injectable,
 	Logger,
 	OnModuleInit,
@@ -122,6 +123,32 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		const upsertError =
 			error instanceof Error ? error.message : 'Unknown error';
 		return `Knowledge upsert failed: ${upsertError}`;
+	}
+
+	/**
+	 * Decide whether a `flushChunk` upsert failure is worth retrying.
+	 *
+	 * CS occasionally emits transient 5xx (502/503/504, plus the
+	 * occasional 500 that recovers on retry). A single 500 used to abort
+	 * the whole run — wasted work for what's often a multi-second hiccup.
+	 *
+	 * Typed permission/mismatch errors are NOT transient: the user has
+	 * to fix scope, retrying just produces the same response. 4xx is
+	 * also not retried (auth, validation — won't recover with the same
+	 * inputs).
+	 */
+	static isTransientUpsertError(error: unknown): boolean {
+		if (
+			error instanceof WppOpenPermissionError ||
+			error instanceof WppOpenAgentMismatchError
+		) {
+			return false;
+		}
+		if (error instanceof HttpException) {
+			const status = error.getStatus();
+			return status >= 500 && status < 600;
+		}
+		return false;
 	}
 
 	/**
@@ -663,13 +690,44 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			`[run:${taskRunId}] Flushing chunk: ${docsCount} docs into agent ${agentId} (project: ${upsertProjectId}; ${contentKB}KB)`,
 		);
 		try {
-			await this.wppOpenAgentService.upsertKnowledge(
-				wppOpenToken,
-				upsertProjectId,
-				agentId,
-				docs,
-				osContext,
-			);
+			// Retry transient 5xx with exponential backoff. A single CS
+			// hiccup used to abort the entire run; 3 attempts at 2s/4s/8s
+			// covers most transient failures (gateway timeouts, brief
+			// upstream issues, concurrent-write conflicts) without
+			// blowing up runtime.
+			const MAX_RETRIES = 3;
+			let attempt = 0;
+			while (true) {
+				try {
+					await this.wppOpenAgentService.upsertKnowledge(
+						wppOpenToken,
+						upsertProjectId,
+						agentId,
+						docs,
+						osContext,
+					);
+					break;
+				} catch (error) {
+					attempt += 1;
+					if (
+						attempt >= MAX_RETRIES ||
+						!RunWorkerService.isTransientUpsertError(error)
+					) {
+						throw error;
+					}
+					const delayMs = 1000 * 2 ** attempt;
+					this.logger.warn(
+						`[run:${taskRunId}] Chunk upsert transient failure (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delayMs}ms: ${
+							error instanceof Error
+								? error.message
+								: String(error)
+						}`,
+					);
+					await new Promise((resolve) =>
+						setTimeout(resolve, delayMs),
+					);
+				}
+			}
 			this.logger.log(
 				`[run:${taskRunId}] Chunk upsert OK — ${docsCount} docs uploaded`,
 			);

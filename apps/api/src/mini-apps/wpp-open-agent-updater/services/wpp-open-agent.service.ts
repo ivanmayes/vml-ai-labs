@@ -213,8 +213,17 @@ export class WppOpenAgentService {
 				);
 			}
 
+			// Include a truncated slice of the CS response body so the
+			// run-detail page tells the user *why* CS rejected, not just
+			// "5xx". Without this, every transient/permanent failure
+			// surfaced the same opaque message and required tailing
+			// Heroku logs to diagnose.
+			const detail = errorText
+				.replace(/\s+/g, ' ')
+				.trim()
+				.substring(0, 300);
 			throw new HttpException(
-				`WPP Open API error: ${response.status}`,
+				`WPP Open API error: ${response.status}${detail ? ` — ${detail}` : ''}`,
 				response.status >= 500
 					? HttpStatus.BAD_GATEWAY
 					: HttpStatus.BAD_REQUEST,

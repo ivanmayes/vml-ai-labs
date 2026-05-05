@@ -249,8 +249,20 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
 				AGENT_UPDATER_QUEUE,
 				data,
 				{
+					// Prevent pg-boss from re-dispatching this taskRun while
+					// it is still actively running. Without singletonKey,
+					// `expireInSeconds` was treating an active long-running
+					// worker as expired and queuing a second invocation in
+					// parallel — both workers then raced
+					// `updateAgentConfig` for the same agent and produced
+					// 5xx from CS. Same pattern as the site-scraper queue.
+					singletonKey: data.taskRunId,
 					retryLimit: 2,
-					expireInSeconds: 900, // 15 minutes
+					// 4 hours — bounded by realistic max for a 1500-file
+					// folder at concurrency 2 (~3 files/sec including
+					// chunk-flush round-trips). Was 15 minutes which
+					// guaranteed mid-run expiry on any non-trivial folder.
+					expireInSeconds: 14400,
 					retryDelay: 30,
 					retryBackoff: true,
 				},

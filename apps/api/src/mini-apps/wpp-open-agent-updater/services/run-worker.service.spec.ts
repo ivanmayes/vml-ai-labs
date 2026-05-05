@@ -1,3 +1,5 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
+
 import { TaskRunStatus } from '../entities/task-run.entity';
 import { TaskRunFileStatus } from '../entities/task-run-file.entity';
 
@@ -74,6 +76,49 @@ describe('RunWorkerService.isPreUploadFailure', () => {
 		expect(RunWorkerService.isPreUploadFailure(new Error('whatever'))).toBe(
 			false,
 		);
+	});
+});
+
+describe('RunWorkerService.isTransientUpsertError', () => {
+	it('flags 5xx HttpException as transient', () => {
+		const err = new HttpException(
+			'WPP Open API error: 500',
+			HttpStatus.BAD_GATEWAY,
+		);
+		expect(RunWorkerService.isTransientUpsertError(err)).toBe(true);
+	});
+
+	it('flags 502/503/504 as transient', () => {
+		for (const status of [502, 503, 504]) {
+			const err = new HttpException(`upstream`, status);
+			expect(RunWorkerService.isTransientUpsertError(err)).toBe(true);
+		}
+	});
+
+	it('does NOT flag 4xx as transient (auth/validation will not recover)', () => {
+		const err = new HttpException('bad request', HttpStatus.BAD_REQUEST);
+		expect(RunWorkerService.isTransientUpsertError(err)).toBe(false);
+	});
+
+	it('does NOT flag typed permission errors as transient', () => {
+		// User has to fix scope; retrying produces the same response.
+		expect(
+			RunWorkerService.isTransientUpsertError(
+				new WppOpenPermissionError(),
+			),
+		).toBe(false);
+		expect(
+			RunWorkerService.isTransientUpsertError(
+				new WppOpenAgentMismatchError(),
+			),
+		).toBe(false);
+	});
+
+	it('does NOT flag plain Errors as transient (defensive default)', () => {
+		expect(
+			RunWorkerService.isTransientUpsertError(new Error('weird')),
+		).toBe(false);
+		expect(RunWorkerService.isTransientUpsertError('string')).toBe(false);
 	});
 });
 
