@@ -1,3 +1,4 @@
+import { TaskRunStatus } from '../entities/task-run.entity';
 import { TaskRunFileStatus } from '../entities/task-run-file.entity';
 
 import { RunWorkerService } from './run-worker.service';
@@ -73,6 +74,86 @@ describe('RunWorkerService.isPreUploadFailure', () => {
 		expect(RunWorkerService.isPreUploadFailure(new Error('whatever'))).toBe(
 			false,
 		);
+	});
+});
+
+describe('RunWorkerService.computeFinalStatus', () => {
+	it('marks COMPLETED when at least one file uploaded successfully', () => {
+		expect(
+			RunWorkerService.computeFinalStatus({
+				aborted: false,
+				isShuttingDown: false,
+				processed: 5,
+				failed: 0,
+				skipped: 0,
+			}),
+		).toBe(TaskRunStatus.COMPLETED);
+	});
+
+	it('marks COMPLETED for a clean skip-only run (every file size-skipped, no failures)', () => {
+		// Pre-fix: this returned FAILED, lastRunAt did not advance, and the
+		// next run re-listed and re-skipped the same files forever. The fix
+		// recognizes deterministic skipping as a successful evaluation.
+		expect(
+			RunWorkerService.computeFinalStatus({
+				aborted: false,
+				isShuttingDown: false,
+				processed: 0,
+				failed: 0,
+				skipped: 12,
+			}),
+		).toBe(TaskRunStatus.COMPLETED);
+	});
+
+	it('marks FAILED when every file failed (no successes, no clean skip)', () => {
+		expect(
+			RunWorkerService.computeFinalStatus({
+				aborted: false,
+				isShuttingDown: false,
+				processed: 0,
+				failed: 7,
+				skipped: 0,
+			}),
+		).toBe(TaskRunStatus.FAILED);
+	});
+
+	it('marks FAILED when failures exist alongside skips (no clean skip-only)', () => {
+		expect(
+			RunWorkerService.computeFinalStatus({
+				aborted: false,
+				isShuttingDown: false,
+				processed: 0,
+				failed: 3,
+				skipped: 5,
+			}),
+		).toBe(TaskRunStatus.FAILED);
+	});
+
+	it('marks FAILED when aborted, even if some processed', () => {
+		// Mid-flight chunk-flush failure aborts the run; the remaining files
+		// were never tried. lastRunAt must stay put so the next run picks them
+		// up.
+		expect(
+			RunWorkerService.computeFinalStatus({
+				aborted: true,
+				isShuttingDown: false,
+				processed: 30,
+				failed: 10,
+				skipped: 0,
+			}),
+		).toBe(TaskRunStatus.FAILED);
+	});
+
+	it('marks FAILED when shutting down (dyno restart interrupted the run)', () => {
+		expect(
+			RunWorkerService.computeFinalStatus({
+				aborted: false,
+				isShuttingDown: true,
+				processed: 30,
+				failed: 0,
+				skipped: 0,
+			}),
+		).toBe(TaskRunStatus.FAILED);
 	});
 });
 
@@ -174,5 +255,106 @@ describe('RunWorkerService.processFile size-cap', () => {
 				errorMessage: expect.stringContaining('File too large'),
 			}),
 		);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// collectCompletedBoxFileIds: resume filter source-of-truth
+// ---------------------------------------------------------------------------
+
+describe('RunWorkerService.collectCompletedBoxFileIds', () => {
+	it('queries task_run_files joined to task_runs, filters by completed status, and returns a Set of boxFileIds', async () => {
+		// Pin the SQL shape — the resume filter depends on three things:
+		//   (1) join through task_runs on taskId so cross-run completion
+		//       contributes (not just current run);
+		//   (2) WHERE status = 'completed' so failed/skipped rows do not
+		//       accidentally suppress next-run attempts;
+		//   (3) DISTINCT boxFileId so duplicates from multiple runs of the
+		//       same file collapse into one entry.
+		const innerJoin = jest.fn().mockReturnThis();
+		const select = jest.fn().mockReturnThis();
+		const where = jest.fn().mockReturnThis();
+		const getRawMany = jest
+			.fn()
+			.mockResolvedValue([
+				{ boxFileId: 'box-A' },
+				{ boxFileId: 'box-B' },
+			]);
+		const queryBuilder = { innerJoin, select, where, getRawMany };
+
+		const runFileRepo = {
+			createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+		};
+
+		const service = new RunWorkerService(
+			{} as never,
+			runFileRepo as never,
+			{} as never,
+			{} as never,
+			{} as never,
+			{} as never,
+			{} as never,
+		);
+
+		const result = await (
+			service as unknown as {
+				collectCompletedBoxFileIds: (
+					taskId: string,
+				) => Promise<Set<string>>;
+			}
+		).collectCompletedBoxFileIds('task-id');
+
+		expect(result).toBeInstanceOf(Set);
+		expect(result.has('box-A')).toBe(true);
+		expect(result.has('box-B')).toBe(true);
+		expect(result.size).toBe(2);
+
+		// SQL-shape assertions
+		expect(runFileRepo.createQueryBuilder).toHaveBeenCalledWith('file');
+		expect(innerJoin).toHaveBeenCalledWith(
+			expect.anything(),
+			'run',
+			expect.stringContaining('"taskId"'),
+			{ taskId: 'task-id' },
+		);
+		expect(select).toHaveBeenCalledWith(
+			expect.stringMatching(/DISTINCT.*"boxFileId"/),
+			'boxFileId',
+		);
+		expect(where).toHaveBeenCalledWith(
+			'file.status = :status',
+			expect.objectContaining({ status: TaskRunFileStatus.COMPLETED }),
+		);
+	});
+
+	it('returns an empty Set when no prior completions exist', async () => {
+		const queryBuilder = {
+			innerJoin: jest.fn().mockReturnThis(),
+			select: jest.fn().mockReturnThis(),
+			where: jest.fn().mockReturnThis(),
+			getRawMany: jest.fn().mockResolvedValue([]),
+		};
+		const runFileRepo = {
+			createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+		};
+		const service = new RunWorkerService(
+			{} as never,
+			runFileRepo as never,
+			{} as never,
+			{} as never,
+			{} as never,
+			{} as never,
+			{} as never,
+		);
+
+		const result = await (
+			service as unknown as {
+				collectCompletedBoxFileIds: (
+					taskId: string,
+				) => Promise<Set<string>>;
+			}
+		).collectCompletedBoxFileIds('task-id');
+
+		expect(result.size).toBe(0);
 	});
 });

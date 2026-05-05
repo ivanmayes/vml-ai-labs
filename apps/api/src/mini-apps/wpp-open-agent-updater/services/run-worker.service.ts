@@ -125,6 +125,34 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 	}
 
 	/**
+	 * Decide the run's terminal status from the final tallies.
+	 *
+	 * COMPLETED requires either at least one successful upload OR a clean
+	 * skip-only run — every file legitimately deterministic-skipped (size
+	 * cap), no failures, no abort. Everything else is FAILED so
+	 * `lastRunAt` does not advance and the next run retries the un-tried
+	 * files.
+	 *
+	 * Without the skip-only branch, a folder where every file exceeds the
+	 * size cap marks the run FAILED and the next run re-lists+re-skips
+	 * the same files forever.
+	 */
+	static computeFinalStatus(input: {
+		aborted: boolean;
+		isShuttingDown: boolean;
+		processed: number;
+		failed: number;
+		skipped: number;
+	}): TaskRunStatus.COMPLETED | TaskRunStatus.FAILED {
+		const ranToCompletion = !input.aborted && !input.isShuttingDown;
+		const cleanSkipOnly =
+			input.processed === 0 && input.failed === 0 && input.skipped > 0;
+		return ranToCompletion && (input.processed > 0 || cleanSkipOnly)
+			? TaskRunStatus.COMPLETED
+			: TaskRunStatus.FAILED;
+	}
+
+	/**
 	 * Compute the new `filesFailed` aggregate after an upsert failure.
 	 *
 	 * Pre-upload failure (typed errors): the converted-but-not-yet-uploaded
@@ -343,8 +371,6 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 			}`,
 		);
 
-		const filesForBatch = newFiles;
-
 		for (let i = 0; i < runFiles.length; i += FILE_CONCURRENCY) {
 			if (this.isShuttingDown) {
 				this.logger.warn(
@@ -361,7 +387,7 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 
 			const batchNum = Math.floor(i / FILE_CONCURRENCY) + 1;
 			const batch = runFiles.slice(i, i + FILE_CONCURRENCY);
-			const batchFiles = filesForBatch.slice(i, i + FILE_CONCURRENCY);
+			const batchFiles = newFiles.slice(i, i + FILE_CONCURRENCY);
 
 			this.logger.log(
 				`[run:${taskRunId}] Batch ${batchNum}/${totalBatches} — files ${i + 1}-${Math.min(i + FILE_CONCURRENCY, totalFiles)}/${totalFiles} | progress: ${converted} converted, ${failed} failed, ${skipped} skipped`,
@@ -478,11 +504,20 @@ export class RunWorkerService implements OnModuleInit, OnModuleDestroy {
 		// stays put and the next run re-attempts the un-tried files.
 		// Files that DID succeed remain in WPP Open's knowledge base; the
 		// next run idempotently re-uploads them (merge by fileName).
-		const ranToCompletion = !aborted && !this.isShuttingDown;
-		const finalStatus =
-			ranToCompletion && processed > 0
-				? TaskRunStatus.COMPLETED
-				: TaskRunStatus.FAILED;
+		//
+		// COMPLETED requires either at least one upload OR a clean
+		// skip-only run (every file legitimately size-skipped, no
+		// failures). Without the skip-only branch, a folder of all
+		// oversized files marks the run FAILED, lastRunAt does not
+		// advance, and the next run re-lists and re-skips the same
+		// files forever.
+		const finalStatus = RunWorkerService.computeFinalStatus({
+			aborted,
+			isShuttingDown: this.isShuttingDown,
+			processed,
+			failed,
+			skipped,
+		});
 
 		await this.runRepo.update(taskRunId, {
 			status: finalStatus,
