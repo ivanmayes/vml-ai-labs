@@ -100,6 +100,16 @@
 
 						<p-divider />
 
+						<!-- My Account -->
+						<button
+							class="menu-item-button"
+							(click)="navigateToAccount(); userOverlay.hide()"
+							aria-label="Go to My Account"
+						>
+							<i class="pi pi-user"></i>
+							<span>My Account</span>
+						</button>
+
 						<!-- Admin Button (shown only for admins) -->
 						@if (isAdmin()) {
 							<button

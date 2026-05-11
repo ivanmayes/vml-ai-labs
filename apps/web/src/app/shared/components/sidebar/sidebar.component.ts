@@ -54,6 +54,13 @@ export class SidebarComponent {
 	}
 
 	/**
+	 * Navigate to the personal account page (shows WPP Open context).
+	 */
+	navigateToAccount(): void {
+		this.router.navigate(['/account']);
+	}
+
+	/**
 	 * Handle navigation item clicks
 	 * Navigates to the specified route if available
 	 */
