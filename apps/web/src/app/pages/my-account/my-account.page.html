@@ -1,0 +1,158 @@
+<div class="my-account-page">
+	<p-toast></p-toast>
+
+	<h1 class="mb-4">My Account</h1>
+
+	<div class="settings-content">
+		<div class="setting-item">
+			<div class="setting-header">
+				<h3>WPP Open Context</h3>
+				@if (!loading() && inWppOpen()) {
+				<p-tag value="Detected" severity="success"></p-tag>
+				} @if (!loading() && !inWppOpen()) {
+				<p-tag value="Not detected" severity="secondary"></p-tag>
+				}
+			</div>
+			<p class="setting-description mb-3">
+				Values pulled from the parent WPP Open frame on page load. Use
+				the copy buttons to grab any identifier you need.
+			</p>
+
+			@if (loading()) {
+			<div class="field-stack">
+				<p-skeleton width="100%" height="2.5rem"></p-skeleton>
+				<p-skeleton width="100%" height="2.5rem"></p-skeleton>
+				<p-skeleton width="100%" height="2.5rem"></p-skeleton>
+				<p-skeleton width="100%" height="2.5rem"></p-skeleton>
+			</div>
+			} @else if (!inWppOpen()) {
+			<p-message
+				severity="info"
+				text="This page is not running inside WPP Open, so no osContext is available. Open the app via your WPP Open tenant to see the JWT, hierarchy, tenant, and project values."
+			></p-message>
+			@if (errorMessage(); as msg) {
+			<p class="error-text mt-2">{{ msg }}</p>
+			} } @else if (snapshot(); as snap) {
+			<div class="field-stack">
+				<div class="field-row">
+					<label for="jwt">JWT (access token)</label>
+					<div class="input-with-copy">
+						<input
+							pInputText
+							id="jwt"
+							type="text"
+							[value]="snap.token || ''"
+							readonly
+							class="flex-1 mono"
+							placeholder="Not available"
+						/>
+						<p-button
+							icon="pi pi-copy"
+							severity="secondary"
+							[text]="true"
+							(onClick)="copy(snap.token, 'JWT')"
+							[disabled]="!snap.token"
+							pTooltip="Copy JWT"
+							ariaLabel="Copy JWT"
+						></p-button>
+					</div>
+				</div>
+
+				<div class="field-row">
+					<label for="hierarchyId">Hierarchy ID</label>
+					<div class="input-with-copy">
+						<input
+							pInputText
+							id="hierarchyId"
+							type="text"
+							[value]="snap.hierarchyId || ''"
+							readonly
+							class="flex-1 mono"
+							placeholder="Not available"
+						/>
+						<p-button
+							icon="pi pi-copy"
+							severity="secondary"
+							[text]="true"
+							(onClick)="copy(snap.hierarchyId, 'Hierarchy ID')"
+							[disabled]="!snap.hierarchyId"
+							pTooltip="Copy Hierarchy ID"
+							ariaLabel="Copy Hierarchy ID"
+						></p-button>
+					</div>
+				</div>
+
+				<div class="field-row">
+					<label for="tenantId">Tenant ID</label>
+					<div class="input-with-copy">
+						<input
+							pInputText
+							id="tenantId"
+							type="text"
+							[value]="snap.tenantId || ''"
+							readonly
+							class="flex-1 mono"
+							placeholder="Not available"
+						/>
+						<p-button
+							icon="pi pi-copy"
+							severity="secondary"
+							[text]="true"
+							(onClick)="copy(snap.tenantId, 'Tenant ID')"
+							[disabled]="!snap.tenantId"
+							pTooltip="Copy Tenant ID"
+							ariaLabel="Copy Tenant ID"
+						></p-button>
+					</div>
+				</div>
+
+				<div class="field-row">
+					<label for="projectId">Project ID</label>
+					<div class="input-with-copy">
+						<input
+							pInputText
+							id="projectId"
+							type="text"
+							[value]="snap.projectId || ''"
+							readonly
+							class="flex-1 mono"
+							placeholder="Not available"
+						/>
+						<p-button
+							icon="pi pi-copy"
+							severity="secondary"
+							[text]="true"
+							(onClick)="copy(snap.projectId, 'Project ID')"
+							[disabled]="!snap.projectId"
+							pTooltip="Copy Project ID"
+							ariaLabel="Copy Project ID"
+						></p-button>
+					</div>
+				</div>
+			</div>
+
+			<div class="raw-toggle">
+				<p-button
+					[label]="showRaw() ? 'Hide full osContext' : 'View full osContext'"
+					[icon]="showRaw() ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+					severity="secondary"
+					[text]="true"
+					size="small"
+					(onClick)="toggleRaw()"
+				></p-button>
+				<p-button
+					label="Copy JSON"
+					icon="pi pi-copy"
+					severity="secondary"
+					[text]="true"
+					size="small"
+					(onClick)="copyRaw()"
+				></p-button>
+			</div>
+
+			@if (showRaw()) {
+			<pre class="raw-json">{{ rawJson() }}</pre>
+			} }
+		</div>
+	</div>
+</div>

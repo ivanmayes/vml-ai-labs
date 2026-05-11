@@ -41,6 +41,11 @@ export class AccountBarComponent implements OnInit {
 	ngOnInit(): void {
 		this.accountMenuItems = [
 			{
+				label: 'My Account',
+				icon: 'pi pi-user',
+				command: () => this.router.navigate(['/account']),
+			},
+			{
 				label: 'Logout',
 				icon: 'pi pi-sign-out',
 				command: () => this.logout(),

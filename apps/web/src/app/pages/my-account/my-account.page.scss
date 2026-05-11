@@ -1,0 +1,92 @@
+.my-account-page {
+	padding: 1.5rem;
+
+	.settings-content {
+		max-width: 800px;
+	}
+
+	.setting-item {
+		padding: 1.5rem;
+		background: var(--p-surface-card);
+		border-radius: 6px;
+		margin-bottom: 1rem;
+		border: 1px solid var(--p-surface-border);
+
+		.setting-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 0.5rem;
+
+			h3 {
+				font-size: 1.2rem;
+				font-weight: 500;
+				color: var(--p-text-color);
+				margin: 0;
+			}
+		}
+
+		.setting-description {
+			color: var(--p-text-color-secondary);
+			margin: 0;
+			line-height: 1.5;
+		}
+	}
+
+	.field-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.field-row {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+
+		label {
+			font-size: 0.85rem;
+			font-weight: 500;
+			color: var(--p-text-color-secondary);
+		}
+	}
+
+	.input-with-copy {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.mono {
+		font-family:
+			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		font-size: 0.85rem;
+	}
+
+	.raw-toggle {
+		display: flex;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+
+	.raw-json {
+		margin-top: 0.75rem;
+		padding: 1rem;
+		max-height: 24rem;
+		overflow: auto;
+		background: var(--p-surface-ground);
+		border: 1px solid var(--p-surface-border);
+		border-radius: 6px;
+		color: var(--p-text-color);
+		font-family:
+			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		font-size: 0.8rem;
+		line-height: 1.4;
+		white-space: pre;
+	}
+
+	.error-text {
+		color: var(--p-text-color-secondary);
+		font-size: 0.85rem;
+	}
+}

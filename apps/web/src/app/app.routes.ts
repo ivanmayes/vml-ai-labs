@@ -45,6 +45,13 @@ export const routes: Routes = [
 			),
 	},
 	{
+		path: 'account',
+		loadComponent: () =>
+			import('./pages/my-account/my-account.page').then(
+				(m) => m.MyAccountPage,
+			),
+	},
+	{
 		path: 'space/:spaceId/project/:projectId',
 		loadChildren: () =>
 			import('./pages/project/project.module').then(
