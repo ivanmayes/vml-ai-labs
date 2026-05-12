@@ -11,8 +11,8 @@ export class SchemaBootstrapService implements OnApplicationBootstrap {
 	constructor(private readonly dataSource: DataSource) {}
 
 	async onApplicationBootstrap() {
-		const manifestPath = path.resolve(__dirname, '../../../mini-apps.json');
-		if (!fs.existsSync(manifestPath)) {
+		const manifestPath = this.resolveManifestPath();
+		if (!manifestPath) {
 			this.logger.warn(
 				'mini-apps.json not found, skipping schema bootstrap',
 			);
@@ -36,5 +36,21 @@ export class SchemaBootstrapService implements OnApplicationBootstrap {
 			);
 			this.logger.log(`Ensured schema exists: ${schemaName}`);
 		}
+	}
+
+	/**
+	 * The manifest sits at different relative locations in source vs. compiled
+	 * output. Source path (ts-node): `apps/api/src/_platform/database/...` →
+	 * `apps/mini-apps.json` is `../../../../mini-apps.json`. Compiled (Heroku):
+	 * `/app/dist/_platform/database/...` (TypeScript flattens `src/` into the
+	 * `dist/` root) → `/app/mini-apps.json` is `../../../mini-apps.json`. Both
+	 * candidates are tried; the first existing one wins.
+	 */
+	private resolveManifestPath(): string | null {
+		const candidates = [
+			path.resolve(__dirname, '../../../mini-apps.json'),
+			path.resolve(__dirname, '../../../../mini-apps.json'),
+		];
+		return candidates.find((p) => fs.existsSync(p)) ?? null;
 	}
 }

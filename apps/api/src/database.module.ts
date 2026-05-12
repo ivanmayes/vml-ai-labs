@@ -18,15 +18,25 @@ import { Project } from './project/project.entity';
 import { OrganizationApp } from './organization-app/organization-app.entity';
 // CLI_ENTITIES_IMPORT
 
+function resolveMiniAppsManifestPath(): string | null {
+	// The manifest sits at different relative locations in source vs. compiled
+	// output because (a) the CI does `cp ../mini-apps.json apps/api/` before
+	// build, and (b) TypeScript flattens `src/` into `dist/`. Both layouts
+	// need to work for first-boot schema bootstrap.
+	const candidates = [
+		// Prod compiled: /app/dist/database.module.js → /app/mini-apps.json
+		path.resolve(__dirname, '../mini-apps.json'),
+		// Dev source: apps/api/src/database.module.ts → apps/mini-apps.json
+		path.resolve(__dirname, '../../mini-apps.json'),
+	];
+	return candidates.find((p) => fs.existsSync(p)) ?? null;
+}
+
 async function ensureSchemasExist(): Promise<void> {
 	const logger = new Logger('SchemaBootstrap');
-	// Source: apps/mini-apps.json (repo-root-ish). From this file's location
-	// (apps/api/src/database.module.ts) that's three segments up.
-	const manifestPath = path.resolve(__dirname, '../../mini-apps.json');
-	if (!fs.existsSync(manifestPath)) {
-		logger.warn(
-			`mini-apps.json not found at ${manifestPath}, skipping schema bootstrap`,
-		);
+	const manifestPath = resolveMiniAppsManifestPath();
+	if (!manifestPath) {
+		logger.warn('mini-apps.json not found, skipping schema bootstrap');
 		return;
 	}
 
