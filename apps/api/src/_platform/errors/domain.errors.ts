@@ -64,8 +64,24 @@ export class InvalidFileTypeError extends DomainError {
 	readonly code = 'INVALID_FILE_TYPE';
 	readonly httpStatus = 400;
 
+	constructor(message = 'Unsupported file type') {
+		super(message, false);
+	}
+}
+
+/**
+ * Thrown for HEIC uploads in v1 — image-library accepts PNG/JPEG/WebP/GIF
+ * only. iOS Camera defaults to HEIC unless "Most Compatible" is selected.
+ */
+export class HeicNotSupportedError extends DomainError {
+	readonly code = 'HEIC_NOT_SUPPORTED';
+	readonly httpStatus = 415;
+
 	constructor() {
-		super('Unsupported file type', false);
+		super(
+			'HEIC images are not supported yet. On iPhone, open Settings → Camera → Formats → Most Compatible, or convert the file to JPEG before uploading.',
+			false,
+		);
 	}
 }
 

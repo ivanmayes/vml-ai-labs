@@ -103,6 +103,14 @@ export const routes: Routes = [
 						(m) => m.routes,
 					),
 			},
+			{
+				path: 'image-library',
+				canActivate: [appAccessGuard],
+				loadChildren: () =>
+					import('./mini-apps/image-library/image-library.routes').then(
+						(m) => m.routes,
+					),
+			},
 			// MINIAPP_ROUTES_REF
 		],
 	},
