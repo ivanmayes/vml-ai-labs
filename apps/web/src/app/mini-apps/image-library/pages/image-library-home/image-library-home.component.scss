@@ -84,40 +84,65 @@
 		}
 	}
 
-	.toolbar {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1rem;
-		padding: 1rem;
-		background: var(--p-surface-card);
-		border: 1px solid var(--p-surface-border);
-		border-radius: 8px;
+	.search-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
 		margin-bottom: 1.25rem;
 
-		@media (width >= 56rem) {
-			grid-template-columns: 1fr 1fr;
-		}
-
-		.upload-cell,
-		.filter-cell {
+		.search-input-wrap {
+			flex: 1 1 auto;
+			min-width: 0;
 			display: flex;
 			align-items: center;
-			gap: 0.75rem;
-			flex-wrap: wrap;
+			gap: 0.5rem;
+
+			p-autocomplete {
+				flex: 1 1 auto;
+				display: block;
+				min-width: 0;
+				width: 100%;
+			}
+
+			.clear-btn {
+				flex: 0 0 auto;
+			}
 		}
 
-		.tag-input {
-			flex: 1 1 14rem;
-			min-width: 14rem;
+		.upload-btn {
+			flex: 0 0 auto;
 		}
 
-		.page-size {
-			min-width: 9rem;
+		// Drop the inline search icon — the placeholder text is the affordance,
+		// and the icon-inside-input pattern requires deep PrimeNG overrides
+		// that aren't worth it for v1.
+		.search-icon {
+			display: none;
+		}
+	}
+
+	.upload-modal {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+
+		.upload-label {
+			font-size: 0.85rem;
+			font-weight: 500;
+			color: var(--p-text-color);
+			margin-bottom: 0.25rem;
 		}
 
-		.spinner-inline {
-			width: 1.5rem;
-			height: 1.5rem;
+		.upload-hint {
+			color: var(--p-text-color-secondary);
+			font-size: 0.78rem;
+			margin-top: 0.25rem;
+		}
+
+		.upload-divider {
+			height: 1px;
+			background: var(--p-surface-border);
+			margin: 1rem 0 0.75rem;
 		}
 	}
 

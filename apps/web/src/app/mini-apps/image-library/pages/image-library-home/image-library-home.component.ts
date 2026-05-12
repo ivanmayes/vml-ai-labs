@@ -19,15 +19,15 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { PrimeNgModule } from '../../../../shared/primeng.module';
 import { SpaceService } from '../../../../shared/services/space.service';
+import type { ImageResponse } from '../../models/image-library.types';
+import { ImageLibraryWebService } from '../../services/image-library.service';
+import { copyImageBlobToClipboard } from '../../services/image-clipboard.util';
+import { shareImage } from '../../services/image-share.util';
 
 interface AutoCompleteCompleteEvent {
 	originalEvent: Event;
 	query: string;
 }
-import type { ImageResponse } from '../../models/image-library.types';
-import { ImageLibraryWebService } from '../../services/image-library.service';
-import { copyImageBlobToClipboard } from '../../services/image-clipboard.util';
-import { shareImage } from '../../services/image-share.util';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 25;
@@ -53,10 +53,7 @@ export class ImageLibraryHomeComponent implements OnInit {
 	private readonly cdr = inject(ChangeDetectorRef);
 
 	readonly orgId = environment.organizationId;
-	readonly pageSizeOptions = PAGE_SIZE_OPTIONS.map((v) => ({
-		label: `${v} per page`,
-		value: v,
-	}));
+	readonly pageSizeOptions = [...PAGE_SIZE_OPTIONS];
 	readonly maxUploadBytes = MAX_UPLOAD_BYTES;
 	readonly maxUploadMb = MAX_UPLOAD_BYTES / 1024 / 1024;
 	readonly acceptMimes = 'image/png,image/jpeg,image/webp,image/gif';
@@ -73,11 +70,11 @@ export class ImageLibraryHomeComponent implements OnInit {
 
 	readonly selectedTags = signal<string[]>([]);
 	readonly tagSuggestions = signal<string[]>([]);
-	readonly suggestLoading = signal(false);
 
 	readonly pageSize = signal<number>(DEFAULT_PAGE_SIZE);
 	readonly page = signal<number>(1);
 
+	readonly uploadModalOpen = signal(false);
 	readonly uploading = signal(false);
 	readonly uploadTags = signal<string[]>([]);
 	readonly uploadTagSuggestions = signal<string[]>([]);
@@ -124,7 +121,6 @@ export class ImageLibraryHomeComponent implements OnInit {
 					this.cdr.markForCheck();
 				},
 				error: () => {
-					// Non-admins can't hit /admin/spaces; that's fine — UI falls back to the help message.
 					this.availableSpaces.set([]);
 					this.availableSpacesLoading.set(false);
 					this.availableSpacesError.set('cannot-list');
@@ -152,7 +148,7 @@ export class ImageLibraryHomeComponent implements OnInit {
 					this.cdr.markForCheck();
 				},
 				error: () => {
-					// Leave spaceName null; header falls back to the UUID label.
+					/* leave spaceName null; header falls back to the UUID label */
 				},
 			});
 	}
@@ -175,18 +171,14 @@ export class ImageLibraryHomeComponent implements OnInit {
 		}
 	}
 
-	onPageSizeChange(value: number): void {
-		this.pageSize.set(value);
-		this.page.set(1);
+	private persistPageSize(value: number): void {
 		const sid = this.spaceId();
-		if (sid) {
-			try {
-				localStorage.setItem(this.pageSizeKey(sid), String(value));
-			} catch {
-				/* swallow quota errors */
-			}
+		if (!sid) return;
+		try {
+			localStorage.setItem(this.pageSizeKey(sid), String(value));
+		} catch {
+			/* swallow quota errors */
 		}
-		this.refresh();
 	}
 
 	// --- List + filter -----------------------------------------------------
@@ -238,12 +230,31 @@ export class ImageLibraryHomeComponent implements OnInit {
 		this.refresh();
 	}
 
+	/**
+	 * PrimeNG v20 p-autoComplete[multiple] doesn't add free-typed values on
+	 * Enter — only on suggestion-click. We intercept Enter here so a user
+	 * who types a brand-new tag and hits Enter actually gets a chip.
+	 */
+	commitTypedTag(target: 'filter' | 'upload', evt: KeyboardEvent): void {
+		if (evt.key !== 'Enter') return;
+		const input = evt.target as HTMLInputElement | null;
+		const raw = input?.value?.trim();
+		if (!raw) return;
+		evt.preventDefault();
+		evt.stopPropagation();
+		if (target === 'filter') {
+			const next = this.dedupe([...this.selectedTags(), raw]);
+			this.selectedTags.set(next);
+			this.page.set(1);
+			this.refresh();
+		} else {
+			this.uploadTags.set(this.dedupe([...this.uploadTags(), raw]));
+		}
+		if (input) input.value = '';
+	}
+
 	completeFilterTags(evt: AutoCompleteCompleteEvent): void {
-		this.fetchTagSuggestions(
-			evt.query,
-			this.tagSuggestions,
-			this.suggestLoading,
-		);
+		this.fetchTagSuggestions(evt.query, this.tagSuggestions);
 	}
 
 	completeUploadTags(evt: AutoCompleteCompleteEvent): void {
@@ -253,37 +264,43 @@ export class ImageLibraryHomeComponent implements OnInit {
 	private fetchTagSuggestions(
 		q: string,
 		target: ReturnType<typeof signal<string[]>>,
-		loading?: ReturnType<typeof signal<boolean>>,
 	): void {
 		const sid = this.spaceId();
 		if (!sid) return;
-		loading?.set(true);
 		this.imageService
 			.suggestTags(this.orgId, sid, q ?? '', 20)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (resp) => {
 					target.set(resp.data.suggestions.map((s) => s.tag));
-					loading?.set(false);
 					this.cdr.markForCheck();
 				},
-				error: () => {
-					target.set([]);
-					loading?.set(false);
-				},
+				error: () => target.set([]),
 			});
 	}
 
 	onPageChange(evt: PaginatorState): void {
 		this.page.set((evt.page ?? 0) + 1);
 		const rows = (evt as { rows?: number }).rows;
-		if (typeof rows === 'number') {
+		if (typeof rows === 'number' && rows !== this.pageSize()) {
 			this.pageSize.set(rows);
+			this.persistPageSize(rows);
 		}
 		this.refresh();
 	}
 
-	// --- Upload ------------------------------------------------------------
+	// --- Upload modal ------------------------------------------------------
+
+	openUploadModal(): void {
+		this.uploadTags.set([]);
+		this.uploadTagSuggestions.set([]);
+		this.uploadModalOpen.set(true);
+	}
+
+	closeUploadModal(): void {
+		if (this.uploading()) return;
+		this.uploadModalOpen.set(false);
+	}
 
 	onUpload(event: unknown): void {
 		const sid = this.spaceId();
@@ -317,7 +334,7 @@ export class ImageLibraryHomeComponent implements OnInit {
 			.subscribe({
 				next: (resp) => {
 					this.uploading.set(false);
-					this.uploadTags.set([]);
+					this.uploadModalOpen.set(false);
 					this.messageService.add({
 						severity: 'success',
 						summary: 'Uploaded',
@@ -472,7 +489,6 @@ export class ImageLibraryHomeComponent implements OnInit {
 				life: 3000,
 			});
 		}
-		// 'cancelled' → silent
 	}
 
 	delete(): void {

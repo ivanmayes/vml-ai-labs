@@ -47,70 +47,40 @@
 			}
 		</section>
 	} @else {
-		<!-- Upload + filter toolbar -->
-		<section class="toolbar">
-			<div class="upload-cell">
-				<p-fileUpload
-					name="file"
-					mode="basic"
-					[chooseLabel]="uploading() ? 'Uploading…' : 'Upload image'"
-					[auto]="true"
-					[customUpload]="true"
-					[multiple]="false"
-					[accept]="acceptMimes"
-					[maxFileSize]="maxUploadBytes"
-					[disabled]="uploading()"
-					(uploadHandler)="onUpload($event)"
-				></p-fileUpload>
-				@if (uploading()) {
-					<p-progressSpinner
-						styleClass="spinner-inline"
-						strokeWidth="4"
-					></p-progressSpinner>
-				}
-				<p-autoComplete
-					[ngModel]="uploadTags()"
-					(ngModelChange)="onUploadTagsChange($event)"
-					[suggestions]="uploadTagSuggestions()"
-					(completeMethod)="completeUploadTags($event)"
-					[multiple]="true"
-					[forceSelection]="false"
-					placeholder="Add tags before uploading…"
-					styleClass="tag-input"
-					[disabled]="uploading()"
-				></p-autoComplete>
-			</div>
-
-			<div class="filter-cell">
+		<!-- Top search/filter + upload -->
+		<section class="search-bar">
+			<div class="search-input-wrap">
+				<i class="pi pi-search search-icon" aria-hidden="true"></i>
 				<p-autoComplete
 					[ngModel]="selectedTags()"
 					(ngModelChange)="onTagsChange($event)"
 					[suggestions]="tagSuggestions()"
 					(completeMethod)="completeFilterTags($event)"
+					(onKeyUp)="commitTypedTag('filter', $event)"
 					[multiple]="true"
 					[forceSelection]="false"
-					placeholder="Filter by tag…"
-					styleClass="tag-input filter"
+					[completeOnFocus]="true"
+					placeholder="Search by tag — type and press Enter to add"
+					styleClass="search-autocomplete"
 				></p-autoComplete>
 				@if (selectedTags().length > 0) {
 					<p-button
-						label="Clear filters"
+						label="Clear"
 						icon="pi pi-times"
 						severity="secondary"
-						[outlined]="true"
+						[text]="true"
 						(onClick)="clearAll()"
 						ariaLabel="Clear all tag filters"
+						styleClass="clear-btn"
 					></p-button>
 				}
-				<p-select
-					[options]="pageSizeOptions"
-					[ngModel]="pageSize()"
-					(ngModelChange)="onPageSizeChange($event)"
-					optionLabel="label"
-					optionValue="value"
-					styleClass="page-size"
-				></p-select>
 			</div>
+			<p-button
+				label="Upload image"
+				icon="pi pi-plus"
+				(onClick)="openUploadModal()"
+				styleClass="upload-btn"
+			></p-button>
 		</section>
 
 		<!-- Grid -->
@@ -144,7 +114,11 @@
 		} @else if (images().length === 0) {
 			<p-message
 				severity="info"
-				text="No images yet. Upload one above — add tags to make it findable."
+				[text]="
+					selectedTags().length > 0
+						? 'No images match these tags. Clear filters or try a different tag.'
+						: 'No images yet. Click \'Upload image\' to add the first one.'
+				"
 			></p-message>
 		} @else {
 			<div class="grid">
@@ -187,11 +161,66 @@
 				[rows]="pageSize()"
 				[totalRecords]="total()"
 				[first]="(page() - 1) * pageSize()"
+				[rowsPerPageOptions]="pageSizeOptions"
 				(onPageChange)="onPageChange($event)"
 				styleClass="paginator"
 			></p-paginator>
 		}
 	}
+
+	<!-- Upload modal -->
+	<p-dialog
+		[visible]="uploadModalOpen()"
+		(visibleChange)="$event ? null : closeUploadModal()"
+		[modal]="true"
+		[closable]="!uploading()"
+		[dismissableMask]="!uploading()"
+		[style]="{ width: '92vw', maxWidth: '36rem' }"
+		header="Upload image"
+	>
+		<div class="upload-modal">
+			<label class="upload-label" for="upload-tags">Tags</label>
+			<p-autoComplete
+				inputId="upload-tags"
+				[ngModel]="uploadTags()"
+				(ngModelChange)="onUploadTagsChange($event)"
+				[suggestions]="uploadTagSuggestions()"
+				(completeMethod)="completeUploadTags($event)"
+				(onKeyUp)="commitTypedTag('upload', $event)"
+				[multiple]="true"
+				[forceSelection]="false"
+				[completeOnFocus]="true"
+				placeholder="Add tags — type and press Enter"
+				styleClass="upload-tags-input"
+				[disabled]="uploading()"
+			></p-autoComplete>
+			<small class="upload-hint">
+				Tags help others find this image later. Add them now or skip and
+				edit later.
+			</small>
+
+			<div class="upload-divider"></div>
+
+			<p-fileUpload
+				name="file"
+				mode="basic"
+				[chooseLabel]="
+					uploading() ? 'Uploading…' : 'Choose image to upload'
+				"
+				chooseIcon="pi pi-image"
+				[auto]="true"
+				[customUpload]="true"
+				[multiple]="false"
+				[accept]="acceptMimes"
+				[maxFileSize]="maxUploadBytes"
+				[disabled]="uploading()"
+				(uploadHandler)="onUpload($event)"
+			></p-fileUpload>
+			<small class="upload-hint">
+				PNG · JPEG · WebP · GIF — up to {{ maxUploadMb }} MB.
+			</small>
+		</div>
+	</p-dialog>
 
 	<!-- Detail dialog -->
 	<p-dialog
