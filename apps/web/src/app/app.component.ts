@@ -40,6 +40,23 @@ interface WppOpenLoginResponse {
 	spaceId?: string;
 }
 
+/**
+ * Whether the iframe's initial path looks like an explicit deep link the
+ * user wants to land on (vs. a generic root / home / login URL where the
+ * API's post-auth redirect should take precedence).
+ */
+function isMeaningfulDeepLink(path: string): boolean {
+	if (!path) return false;
+	// `Location.path()` returns just the path + query, no origin. Normalize
+	// to compare ignoring trailing slash and query.
+	const justPath = path.split('?')[0].replace(/\/+$/, '');
+	if (!justPath || justPath === '/') return false;
+	const lower = justPath.toLowerCase();
+	if (lower === '/home' || lower === '/login') return false;
+	if (lower.startsWith('/login/') || lower.startsWith('/sso/')) return false;
+	return true;
+}
+
 @Component({
 	selector: 'app-root',
 	templateUrl: './app.component.html',
@@ -87,6 +104,12 @@ export class AppComponent implements OnInit {
 		// Likely in an iframe.
 		// Attempt to login with WPP Open token.
 		if (window.self !== window.top) {
+			// Capture the in-iframe path BEFORE auth. WPP Open loads our app
+			// at whatever URL the user opened (a deep link from a shared
+			// link, a bookmark, or in-app navigation), and we want to honor
+			// that intent over the API's generic post-auth redirect.
+			const initialPath = this.location.path();
+
 			const token = await this.wppOpenService
 				.getAccessToken()
 				.catch(() => {
@@ -132,8 +155,18 @@ export class AppComponent implements OnInit {
 					});
 					await this.loadGlobalSettings();
 
-					if (resp.redirect) {
-						this.router.navigate([resp.redirect], {
+					// Deep-link preservation: if the user opened our app at
+					// a non-root URL (e.g., `/apps/image-library/<spaceId>`),
+					// honor that instead of the API's generic redirect.
+					// Treat `/`, `/home`, and `/login` paths as "no deep
+					// link" so first-time visits still flow through the
+					// API's intended landing.
+					if (isMeaningfulDeepLink(initialPath)) {
+						await this.router.navigateByUrl(initialPath, {
+							replaceUrl: true,
+						});
+					} else if (resp.redirect) {
+						await this.router.navigateByUrl(resp.redirect, {
 							replaceUrl: true,
 						});
 					} else if (resp.spaceId) {
