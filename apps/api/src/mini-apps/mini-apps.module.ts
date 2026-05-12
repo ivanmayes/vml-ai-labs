@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { DocumentConverterModule } from './document-converter/document-converter.module';
 import { WppOpenAgentUpdaterModule } from './wpp-open-agent-updater/wpp-open-agent-updater.module';
 import { SiteScraperModule } from './site-scraper/site-scraper.module';
+import { ImageLibraryModule } from './image-library/image-library.module';
 // MINIAPP_MODULES_IMPORT
 
 @Module({
@@ -10,6 +11,7 @@ import { SiteScraperModule } from './site-scraper/site-scraper.module';
 		DocumentConverterModule,
 		WppOpenAgentUpdaterModule,
 		SiteScraperModule,
+		ImageLibraryModule,
 		// MINIAPP_MODULES_REF
 	],
 })

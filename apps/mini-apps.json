@@ -26,6 +26,15 @@
       "defaultEnabled": true,
       "route": "/apps/site-scraper",
       "apiPrefix": "apps/site-scraper"
+    },
+    {
+      "key": "image-library",
+      "displayName": "Image Library",
+      "description": "Per-space image library for upload, tag, find, and share",
+      "icon": "pi pi-images",
+      "defaultEnabled": true,
+      "route": "/apps/image-library",
+      "apiPrefix": "apps/image-library"
     }
   ]
 }

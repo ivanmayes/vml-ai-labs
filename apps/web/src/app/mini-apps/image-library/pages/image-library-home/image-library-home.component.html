@@ -1,0 +1,266 @@
+<div class="image-library">
+	<p-toast></p-toast>
+	<p-confirmDialog></p-confirmDialog>
+
+	<header class="library-header">
+		<div>
+			<h1 class="library-title">Image Library</h1>
+			@if (spaceId(); as sid) {
+				<p class="library-sub">Space {{ sid }}</p>
+			}
+		</div>
+	</header>
+
+	@if (!spaceId()) {
+		<p-message
+			severity="info"
+			text="This library is per-space. Open it from a space page, or use the URL /apps/image-library/<spaceId>."
+		></p-message>
+	} @else {
+		<!-- Upload + filter toolbar -->
+		<section class="toolbar">
+			<div class="upload-cell">
+				<p-fileUpload
+					name="file"
+					mode="basic"
+					[chooseLabel]="uploading() ? 'Uploading…' : 'Upload image'"
+					[auto]="true"
+					[customUpload]="true"
+					[multiple]="false"
+					[accept]="acceptMimes"
+					[maxFileSize]="maxUploadBytes"
+					[disabled]="uploading()"
+					(uploadHandler)="onUpload($event)"
+				></p-fileUpload>
+				@if (uploading()) {
+					<p-progressSpinner
+						styleClass="spinner-inline"
+						strokeWidth="4"
+					></p-progressSpinner>
+				}
+				<p-autoComplete
+					[ngModel]="uploadTags()"
+					(ngModelChange)="onUploadTagsChange($event)"
+					[suggestions]="uploadTagSuggestions()"
+					(completeMethod)="completeUploadTags($event)"
+					[multiple]="true"
+					[forceSelection]="false"
+					field="tag"
+					placeholder="Add tags before uploading…"
+					styleClass="tag-input"
+					[disabled]="uploading()"
+				></p-autoComplete>
+			</div>
+
+			<div class="filter-cell">
+				<p-autoComplete
+					[ngModel]="selectedTags()"
+					(ngModelChange)="onTagsChange($event)"
+					[suggestions]="tagSuggestions()"
+					(completeMethod)="completeFilterTags($event)"
+					[multiple]="true"
+					[forceSelection]="false"
+					field="tag"
+					placeholder="Filter by tag…"
+					styleClass="tag-input filter"
+				></p-autoComplete>
+				<p-button
+					label="ALL"
+					severity="secondary"
+					[text]="true"
+					(onClick)="clearAll()"
+					[disabled]="selectedTags().length === 0"
+					ariaLabel="Clear all tag filters"
+				></p-button>
+				<p-select
+					[options]="pageSizeOptions"
+					[ngModel]="pageSize()"
+					(ngModelChange)="onPageSizeChange($event)"
+					optionLabel="label"
+					optionValue="value"
+					styleClass="page-size"
+				></p-select>
+			</div>
+		</section>
+
+		<!-- Grid -->
+		@if (loading()) {
+			<div class="grid">
+				@for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
+					<div class="card skeleton-card">
+						<p-skeleton width="100%" height="11rem"></p-skeleton>
+						<p-skeleton
+							width="70%"
+							height="1rem"
+							styleClass="mt-2"
+						></p-skeleton>
+						<div class="skeleton-chips">
+							<p-skeleton
+								width="3rem"
+								height="1.25rem"
+								borderRadius="999px"
+							></p-skeleton>
+							<p-skeleton
+								width="4rem"
+								height="1.25rem"
+								borderRadius="999px"
+							></p-skeleton>
+						</div>
+					</div>
+				}
+			</div>
+		} @else if (listError()) {
+			<p-message severity="error" [text]="listError()!"></p-message>
+		} @else if (images().length === 0) {
+			<p-message
+				severity="info"
+				text="No images yet. Upload one above — add tags to make it findable."
+			></p-message>
+		} @else {
+			<div class="grid">
+				@for (image of images(); track image.id) {
+					<button
+						type="button"
+						class="card"
+						(click)="openDetail(image)"
+						[attr.aria-label]="'Open ' + image.originalFilename"
+					>
+						<img
+							class="thumb"
+							[src]="image.signedUrl"
+							[alt]="image.originalFilename"
+							loading="lazy"
+						/>
+						<div class="meta">
+							<span
+								class="filename"
+								[title]="image.originalFilename"
+							>
+								{{ image.originalFilename }}
+							</span>
+							@if (image.tags?.length) {
+								<div class="tags">
+									@for (t of image.tags; track t) {
+										<p-tag
+											[value]="t"
+											severity="secondary"
+										></p-tag>
+									}
+								</div>
+							}
+						</div>
+					</button>
+				}
+			</div>
+
+			<p-paginator
+				[rows]="pageSize()"
+				[totalRecords]="total()"
+				[first]="(page() - 1) * pageSize()"
+				(onPageChange)="onPageChange($event)"
+				styleClass="paginator"
+			></p-paginator>
+		}
+	}
+
+	<!-- Detail dialog -->
+	<p-dialog
+		[visible]="detailVisible()"
+		(visibleChange)="$event ? null : closeDetail()"
+		[modal]="true"
+		[closable]="true"
+		[dismissableMask]="true"
+		[style]="{ width: '92vw', maxWidth: '60rem' }"
+		header="Image details"
+	>
+		@if (selectedImage(); as img) {
+			<div class="detail">
+				<img
+					class="detail-img"
+					[src]="img.signedUrl"
+					[alt]="'Full size: ' + img.originalFilename"
+				/>
+				<div class="detail-meta">
+					<div class="detail-name" [title]="img.originalFilename">
+						{{ img.originalFilename }}
+					</div>
+					<div class="detail-sub">
+						Uploaded by {{ img.uploadedBy?.email || "—" }} ·
+						{{ img.createdAt | date: "medium" }}
+					</div>
+					@if (img.tags?.length) {
+						<div class="tags detail-tags">
+							@for (t of img.tags; track t) {
+								<p-tag [value]="t" severity="secondary"></p-tag>
+							}
+						</div>
+					}
+				</div>
+
+				<div class="detail-actions">
+					<p-button
+						label="Copy image"
+						icon="pi pi-copy"
+						[loading]="clipboardBusy()"
+						(onClick)="copyImage()"
+					></p-button>
+					<p-button
+						label="Share"
+						icon="pi pi-share-alt"
+						severity="secondary"
+						(onClick)="share()"
+					></p-button>
+					<a
+						class="p-button p-button-secondary p-button-outlined"
+						[href]="img.signedUrl"
+						[download]="img.originalFilename"
+						target="_blank"
+						rel="noopener"
+					>
+						<i class="pi pi-download"></i>
+						<span>Download</span>
+					</a>
+					<p-button
+						label="Delete"
+						icon="pi pi-trash"
+						severity="danger"
+						[text]="true"
+						(onClick)="delete()"
+					></p-button>
+				</div>
+
+				@if (shareFallback(); as fb) {
+					<div
+						class="share-fallback"
+						role="group"
+						aria-label="Share options"
+					>
+						<a
+							class="p-button p-button-secondary p-button-outlined"
+							[href]="fb.mailto"
+						>
+							<i class="pi pi-envelope"></i>
+							<span>Email link</span>
+						</a>
+						@if (fb.sms) {
+							<a
+								class="p-button p-button-secondary p-button-outlined"
+								[href]="fb.sms"
+							>
+								<i class="pi pi-mobile"></i>
+								<span>Text link</span>
+							</a>
+						}
+						<p-button
+							label="Copy link"
+							icon="pi pi-link"
+							severity="secondary"
+							[outlined]="true"
+							(onClick)="copyLink()"
+						></p-button>
+					</div>
+				}
+			</div>
+		}
+	</p-dialog>
+</div>
