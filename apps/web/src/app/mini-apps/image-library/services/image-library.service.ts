@@ -57,6 +57,17 @@ export class ImageLibraryWebService {
 		);
 	}
 
+	getImageContent(
+		orgId: string,
+		spaceId: string,
+		id: string,
+	): Observable<Blob> {
+		return this.http.get(
+			`${this.base(orgId, spaceId)}/images/${id}/content`,
+			{ responseType: 'blob' },
+		);
+	}
+
 	deleteImage(
 		orgId: string,
 		spaceId: string,

@@ -20,10 +20,12 @@ import {
 	Post,
 	Query,
 	Req,
+	Res,
 	UploadedFile,
 	UseGuards,
 	UseInterceptors,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -111,6 +113,24 @@ export class ImageLibraryController {
 			sort: query.sort,
 		});
 		return new ResponseEnvelope(ResponseStatus.Success, undefined, result);
+	}
+
+	@Get('images/:id/content')
+	async streamImage(
+		@CurrentOrg() orgId: string,
+		@Param('spaceId', new ParseUUIDPipe()) spaceId: string,
+		@Param('id', new ParseUUIDPipe()) id: string,
+		@Res() res: Response,
+	): Promise<void> {
+		const { stream, mime, filename } =
+			await this.imageLibraryService.getImageStream(id, orgId, spaceId);
+		res.setHeader('Content-Type', mime);
+		res.setHeader(
+			'Content-Disposition',
+			`inline; filename="${filename.replace(/"/g, '')}"`,
+		);
+		res.setHeader('Cache-Control', 'private, max-age=300');
+		stream.pipe(res);
 	}
 
 	@Delete('images/:id')

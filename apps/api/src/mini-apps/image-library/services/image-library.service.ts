@@ -119,6 +119,25 @@ export class ImageLibraryService {
 		return { items, total, page, pageSize };
 	}
 
+	async getImageStream(
+		id: string,
+		orgId: string,
+		spaceId: string,
+	): Promise<{
+		stream: NodeJS.ReadableStream;
+		mime: string;
+		filename: string;
+	}> {
+		const row = await this.imageRepo.findOne({
+			where: { id, organizationId: orgId, spaceId },
+		});
+		if (!row) {
+			throw new NotFoundException('Image not found');
+		}
+		const stream = await this.s3Service.getObjectStream(row.s3Key);
+		return { stream, mime: row.mime, filename: row.originalFilename };
+	}
+
 	async deleteImage(
 		id: string,
 		orgId: string,

@@ -1,6 +1,9 @@
 /**
- * Fetch an image via signed URL and place it on the OS clipboard as
- * `image/png` so it can be pasted into Claude / ChatGPT / Gemini.
+ * Place an image Blob on the OS clipboard as `image/png` so it can be
+ * pasted into Claude / ChatGPT / Gemini. The caller is responsible for
+ * fetching the blob — using Angular's HttpClient against the API proxy
+ * gives us CORS + auth via the existing request interceptor without
+ * needing the S3 bucket to have CORS rules.
  *
  * Re-encodes to PNG via canvas regardless of source format for the most
  * consistent ingestion across AI chat surfaces.
@@ -10,8 +13,8 @@
  * Safari, permission denied), returns `false` and the caller should fall
  * back to copying the link instead.
  */
-export async function copyImageToClipboard(
-	signedUrl: string,
+export async function copyImageBlobToClipboard(
+	sourceBlob: Blob,
 ): Promise<boolean> {
 	if (typeof navigator === 'undefined' || !navigator.clipboard) {
 		return false;
@@ -24,10 +27,6 @@ export async function copyImageToClipboard(
 	}
 
 	try {
-		const response = await fetch(signedUrl, { mode: 'cors' });
-		if (!response.ok) return false;
-		const sourceBlob = await response.blob();
-
 		const pngBlob = await reencodeToPng(sourceBlob);
 		if (!pngBlob) return false;
 
