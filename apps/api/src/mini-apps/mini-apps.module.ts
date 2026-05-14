@@ -4,6 +4,7 @@ import { DocumentConverterModule } from './document-converter/document-converter
 import { WppOpenAgentUpdaterModule } from './wpp-open-agent-updater/wpp-open-agent-updater.module';
 import { SiteScraperModule } from './site-scraper/site-scraper.module';
 import { ImageLibraryModule } from './image-library/image-library.module';
+import { TextCounterModule } from './text-counter/text-counter.module';
 // MINIAPP_MODULES_IMPORT
 
 @Module({
@@ -12,6 +13,7 @@ import { ImageLibraryModule } from './image-library/image-library.module';
 		WppOpenAgentUpdaterModule,
 		SiteScraperModule,
 		ImageLibraryModule,
+		TextCounterModule,
 		// MINIAPP_MODULES_REF
 	],
 })
