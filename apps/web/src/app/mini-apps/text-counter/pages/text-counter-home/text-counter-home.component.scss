@@ -1,0 +1,74 @@
+:host {
+	display: block;
+	color: var(--p-text-color);
+}
+
+.text-counter-page {
+	min-height: 100%;
+}
+
+.stat-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+
+.stat-row--primary {
+	font-size: 1.125rem;
+	font-weight: 600;
+}
+
+.stat-row:not(.stat-row--primary) {
+	font-size: 0.9rem;
+	color: var(--p-text-muted-color);
+}
+
+.stat-label {
+	flex: 1 1 auto;
+}
+
+.stat-value {
+	flex: 0 0 auto;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.stat-divider {
+	height: 1px;
+	background-color: var(--p-content-border-color);
+	margin: 0.25rem 0;
+}
+
+.text-counter-footnote {
+	font-size: 0.75rem;
+	color: var(--p-text-muted-color);
+	line-height: 1.4;
+}
+
+.settings-section-label {
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--p-text-muted-color);
+	margin: 0;
+}
+
+.setting-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+
+	label {
+		font-size: 0.9rem;
+	}
+}
+
+.setting-row--input {
+	p-inputnumber,
+	p-select {
+		min-width: 9rem;
+	}
+}

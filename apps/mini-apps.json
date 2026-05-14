@@ -35,6 +35,15 @@
       "defaultEnabled": true,
       "route": "/apps/image-library",
       "apiPrefix": "apps/image-library"
+    },
+    {
+      "key": "text-counter",
+      "displayName": "Text Counter",
+      "description": "Count characters, words, and more, with configurable settings",
+      "icon": "pi pi-align-left",
+      "defaultEnabled": true,
+      "route": "/apps/text-counter",
+      "apiPrefix": "apps/text-counter"
     }
   ]
 }

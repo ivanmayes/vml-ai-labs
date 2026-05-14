@@ -111,6 +111,14 @@ export const routes: Routes = [
 						(m) => m.routes,
 					),
 			},
+			{
+				path: 'text-counter',
+				canActivate: [appAccessGuard],
+				loadChildren: () =>
+					import('./mini-apps/text-counter/text-counter.routes').then(
+						(m) => m.routes,
+					),
+			},
 			// MINIAPP_ROUTES_REF
 		],
 	},

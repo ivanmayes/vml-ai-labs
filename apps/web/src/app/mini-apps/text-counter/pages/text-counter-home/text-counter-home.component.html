@@ -1,0 +1,286 @@
+<div class="text-counter-page grid gap-6 p-4 md:grid-cols-[1fr_24rem]">
+	<!-- Left column: textarea -->
+	<div class="flex flex-col gap-2">
+		<label for="text-counter-input" class="text-sm font-medium opacity-80">
+			Your text
+		</label>
+		<textarea
+			id="text-counter-input"
+			pTextarea
+			[ngModel]="text()"
+			(ngModelChange)="onTextChange($event)"
+			rows="18"
+			placeholder="Paste or type your text here…"
+			class="w-full font-mono text-sm"
+			aria-label="Text to count"
+		></textarea>
+	</div>
+
+	<!-- Right column: stats + settings -->
+	<div class="flex flex-col gap-4">
+		<!-- Stats card -->
+		<p-card header="Stats">
+			<div class="flex flex-col gap-3">
+				<!-- Primary counts -->
+				<div class="stat-row stat-row--primary">
+					<span class="stat-label">Characters</span>
+					<span class="stat-value">
+						{{ stats().characters | number }}
+						<p-tag
+							*ngIf="isOverForUnit('characters')"
+							severity="danger"
+							value="over"
+							class="ml-2"
+						></p-tag>
+					</span>
+				</div>
+				<div class="stat-row stat-row--primary">
+					<span class="stat-label">Words</span>
+					<span class="stat-value">
+						{{ stats().words | number }}
+						<p-tag
+							*ngIf="isOverForUnit('words')"
+							severity="danger"
+							value="over"
+							class="ml-2"
+						></p-tag>
+					</span>
+				</div>
+				<div class="stat-row stat-row--primary">
+					<span class="stat-label">Lines</span>
+					<span class="stat-value">{{ stats().lines | number }}</span>
+				</div>
+
+				<!-- Divider before optional stats if any are visible -->
+				<div
+					*ngIf="
+						settings().showSentences ||
+						settings().showParagraphs ||
+						settings().showReadingTime ||
+						settings().showSpeakingTime
+					"
+					class="stat-divider"
+				></div>
+
+				<!-- Optional stats -->
+				<div *ngIf="settings().showSentences" class="stat-row">
+					<span class="stat-label">Sentences</span>
+					<span class="stat-value">{{
+						stats().sentences | number
+					}}</span>
+				</div>
+				<div *ngIf="settings().showParagraphs" class="stat-row">
+					<span class="stat-label">Paragraphs</span>
+					<span class="stat-value">{{
+						stats().paragraphs | number
+					}}</span>
+				</div>
+				<div *ngIf="settings().showReadingTime" class="stat-row">
+					<span class="stat-label">Reading time</span>
+					<span class="stat-value">
+						{{
+							stats().readingTimeMinutes < 1
+								? "< 1 min"
+								: stats().readingTimeMinutes + " min"
+						}}
+					</span>
+				</div>
+				<div *ngIf="settings().showSpeakingTime" class="stat-row">
+					<span class="stat-label">Speaking time</span>
+					<span class="stat-value">
+						{{
+							stats().speakingTimeMinutes < 1
+								? "< 1 min"
+								: stats().speakingTimeMinutes + " min"
+						}}
+					</span>
+				</div>
+			</div>
+
+			<p class="text-counter-footnote mt-4">
+				Word counting is optimized for space-separated scripts. CJK and
+				other non-spaced scripts may not produce meaningful word counts.
+			</p>
+		</p-card>
+
+		<!-- Settings card -->
+		<p-card header="Settings">
+			<div class="flex flex-col gap-4">
+				<!-- Character counting -->
+				<section class="flex flex-col gap-2">
+					<h4 class="settings-section-label">Characters</h4>
+					<div class="setting-row">
+						<label for="setting-ws">Count whitespace</label>
+						<p-toggleswitch
+							inputId="setting-ws"
+							[ngModel]="settings().countWhitespaceAsCharacter"
+							(ngModelChange)="
+								updateSetting(
+									'countWhitespaceAsCharacter',
+									$event
+								)
+							"
+						></p-toggleswitch>
+					</div>
+					<div class="setting-row">
+						<label for="setting-lb">Count line breaks</label>
+						<p-toggleswitch
+							inputId="setting-lb"
+							[ngModel]="settings().countLineBreaksAsCharacter"
+							(ngModelChange)="
+								updateSetting(
+									'countLineBreaksAsCharacter',
+									$event
+								)
+							"
+						></p-toggleswitch>
+					</div>
+				</section>
+
+				<!-- Word rule -->
+				<section class="flex flex-col gap-2">
+					<h4 class="settings-section-label">Word rule</h4>
+					<p-selectbutton
+						[options]="wordRuleOptions"
+						optionLabel="label"
+						optionValue="value"
+						[ngModel]="settings().wordRule"
+						(ngModelChange)="updateSetting('wordRule', $event)"
+						[allowEmpty]="false"
+						aria-label="Word counting rule"
+					></p-selectbutton>
+				</section>
+
+				<!-- Show / hide stats -->
+				<section class="flex flex-col gap-2">
+					<h4 class="settings-section-label">Show stats</h4>
+					<div class="setting-row">
+						<label for="setting-sentences">Sentences</label>
+						<p-toggleswitch
+							inputId="setting-sentences"
+							[ngModel]="settings().showSentences"
+							(ngModelChange)="
+								updateSetting('showSentences', $event)
+							"
+						></p-toggleswitch>
+					</div>
+					<div class="setting-row">
+						<label for="setting-paragraphs">Paragraphs</label>
+						<p-toggleswitch
+							inputId="setting-paragraphs"
+							[ngModel]="settings().showParagraphs"
+							(ngModelChange)="
+								updateSetting('showParagraphs', $event)
+							"
+						></p-toggleswitch>
+					</div>
+					<div class="setting-row">
+						<label for="setting-reading">Reading time</label>
+						<p-toggleswitch
+							inputId="setting-reading"
+							[ngModel]="settings().showReadingTime"
+							(ngModelChange)="
+								updateSetting('showReadingTime', $event)
+							"
+						></p-toggleswitch>
+					</div>
+					<div class="setting-row">
+						<label for="setting-speaking">Speaking time</label>
+						<p-toggleswitch
+							inputId="setting-speaking"
+							[ngModel]="settings().showSpeakingTime"
+							(ngModelChange)="
+								updateSetting('showSpeakingTime', $event)
+							"
+						></p-toggleswitch>
+					</div>
+				</section>
+
+				<!-- WPM -->
+				<section class="flex flex-col gap-2">
+					<h4 class="settings-section-label">Words per minute</h4>
+					<div class="setting-row setting-row--input">
+						<label for="setting-reading-wpm">Reading</label>
+						<p-inputnumber
+							inputId="setting-reading-wpm"
+							[ngModel]="settings().readingWpm"
+							(ngModelChange)="
+								updateSetting('readingWpm', $event ?? 0)
+							"
+							[min]="0"
+							[max]="2000"
+							[showButtons]="true"
+							buttonLayout="horizontal"
+							[step]="10"
+							incrementButtonIcon="pi pi-plus"
+							decrementButtonIcon="pi pi-minus"
+						></p-inputnumber>
+					</div>
+					<div class="setting-row setting-row--input">
+						<label for="setting-speaking-wpm">Speaking</label>
+						<p-inputnumber
+							inputId="setting-speaking-wpm"
+							[ngModel]="settings().speakingWpm"
+							(ngModelChange)="
+								updateSetting('speakingWpm', $event ?? 0)
+							"
+							[min]="0"
+							[max]="2000"
+							[showButtons]="true"
+							buttonLayout="horizontal"
+							[step]="10"
+							incrementButtonIcon="pi pi-plus"
+							decrementButtonIcon="pi pi-minus"
+						></p-inputnumber>
+					</div>
+				</section>
+
+				<!-- Target -->
+				<section class="flex flex-col gap-2">
+					<h4 class="settings-section-label">Target</h4>
+					<div class="setting-row">
+						<label for="setting-target-enabled"
+							>Enable target</label
+						>
+						<p-toggleswitch
+							inputId="setting-target-enabled"
+							[ngModel]="settings().target.enabled"
+							(ngModelChange)="updateTarget('enabled', $event)"
+						></p-toggleswitch>
+					</div>
+					<div class="setting-row setting-row--input">
+						<label for="setting-target-unit">Unit</label>
+						<p-select
+							inputId="setting-target-unit"
+							[options]="targetUnitOptions"
+							optionLabel="label"
+							optionValue="value"
+							[ngModel]="settings().target.unit"
+							(ngModelChange)="updateTarget('unit', $event)"
+							[disabled]="!settings().target.enabled"
+						></p-select>
+					</div>
+					<div class="setting-row setting-row--input">
+						<label for="setting-target-value">Value</label>
+						<p-inputnumber
+							inputId="setting-target-value"
+							[ngModel]="settings().target.value"
+							(ngModelChange)="updateTarget('value', $event ?? 0)"
+							[min]="0"
+							[disabled]="!settings().target.enabled"
+						></p-inputnumber>
+					</div>
+				</section>
+
+				<!-- Reset -->
+				<p-button
+					label="Reset to defaults"
+					icon="pi pi-refresh"
+					severity="secondary"
+					[outlined]="true"
+					(onClick)="onReset()"
+				></p-button>
+			</div>
+		</p-card>
+	</div>
+</div>
