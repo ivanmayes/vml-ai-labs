@@ -1,9 +1,31 @@
 <div class="text-counter-page grid gap-6 p-4 md:grid-cols-[1fr_24rem]">
 	<!-- Left column: textarea -->
 	<div class="flex flex-col gap-2">
-		<label for="text-counter-input" class="text-sm font-medium opacity-80">
-			Your text
-		</label>
+		<div class="flex items-baseline justify-between gap-3">
+			<label
+				for="text-counter-input"
+				class="text-sm font-medium opacity-80"
+			>
+				Your text
+			</label>
+			@if (targetSummary(); as t) {
+				<span
+					class="textarea-target-pill"
+					[class.textarea-target-pill--over]="t.over"
+					[attr.aria-label]="
+						'Target progress: ' +
+						t.current +
+						' of ' +
+						t.value +
+						' ' +
+						t.unit
+					"
+				>
+					{{ t.current | number }} / {{ t.value | number }}
+					{{ t.unit }}
+				</span>
+			}
+		</div>
 		<textarea
 			id="text-counter-input"
 			pTextarea
@@ -17,38 +39,36 @@
 	</div>
 
 	<!-- Right column: stats + settings -->
-	<div class="flex flex-col gap-4">
+	<div class="flex flex-col gap-6">
 		<!-- Stats card -->
 		<p-card header="Stats">
 			<div class="flex flex-col gap-3">
-				<!-- Primary counts -->
-				<div class="stat-row stat-row--primary">
-					<span class="stat-label">Characters</span>
-					<span class="stat-value">
-						{{ stats().characters | number }}
-						<p-tag
-							*ngIf="isOverForUnit('characters')"
-							severity="danger"
-							value="over"
-							class="ml-2"
-						></p-tag>
-					</span>
-				</div>
-				<div class="stat-row stat-row--primary">
-					<span class="stat-label">Words</span>
-					<span class="stat-value">
-						{{ stats().words | number }}
-						<p-tag
-							*ngIf="isOverForUnit('words')"
-							severity="danger"
-							value="over"
-							class="ml-2"
-						></p-tag>
-					</span>
-				</div>
-				<div class="stat-row stat-row--primary">
-					<span class="stat-label">Lines</span>
-					<span class="stat-value">{{ stats().lines | number }}</span>
+				<!-- Primary counts: 3-up grid -->
+				<div class="primary-grid">
+					<div
+						class="primary-cell"
+						[class.primary-cell--over]="isOverForUnit('characters')"
+					>
+						<span class="primary-cell-label">Characters</span>
+						<span class="primary-cell-value">
+							{{ stats().characters | number }}
+						</span>
+					</div>
+					<div
+						class="primary-cell"
+						[class.primary-cell--over]="isOverForUnit('words')"
+					>
+						<span class="primary-cell-label">Words</span>
+						<span class="primary-cell-value">
+							{{ stats().words | number }}
+						</span>
+					</div>
+					<div class="primary-cell">
+						<span class="primary-cell-label">Lines</span>
+						<span class="primary-cell-value">
+							{{ stats().lines | number }}
+						</span>
+					</div>
 				</div>
 
 				<!-- Divider before optional stats if any are visible -->
@@ -108,7 +128,7 @@
 			<div class="flex flex-col gap-4">
 				<!-- Character counting -->
 				<section class="flex flex-col gap-2">
-					<h4 class="settings-section-label">Characters</h4>
+					<h4 class="settings-section-label">Character counting</h4>
 					<div class="setting-row">
 						<label for="setting-ws">Count whitespace</label>
 						<p-toggleswitch
@@ -139,7 +159,7 @@
 
 				<!-- Word rule -->
 				<section class="flex flex-col gap-2">
-					<h4 class="settings-section-label">Word rule</h4>
+					<h4 class="settings-section-label">How to count words</h4>
 					<p-selectbutton
 						[options]="wordRuleOptions"
 						optionLabel="label"
@@ -248,27 +268,35 @@
 							(ngModelChange)="updateTarget('enabled', $event)"
 						></p-toggleswitch>
 					</div>
-					<div class="setting-row setting-row--input">
-						<label for="setting-target-unit">Unit</label>
-						<p-select
-							inputId="setting-target-unit"
-							[options]="targetUnitOptions"
-							optionLabel="label"
-							optionValue="value"
-							[ngModel]="settings().target.unit"
-							(ngModelChange)="updateTarget('unit', $event)"
-							[disabled]="!settings().target.enabled"
-						></p-select>
-					</div>
-					<div class="setting-row setting-row--input">
-						<label for="setting-target-value">Value</label>
-						<p-inputnumber
-							inputId="setting-target-value"
-							[ngModel]="settings().target.value"
-							(ngModelChange)="updateTarget('value', $event ?? 0)"
-							[min]="0"
-							[disabled]="!settings().target.enabled"
-						></p-inputnumber>
+					<div
+						class="target-preview"
+						[class.is-disabled]="!settings().target.enabled"
+						[attr.aria-hidden]="!settings().target.enabled"
+					>
+						<div class="setting-row setting-row--input">
+							<label for="setting-target-unit">Unit</label>
+							<p-select
+								inputId="setting-target-unit"
+								[options]="targetUnitOptions"
+								optionLabel="label"
+								optionValue="value"
+								[ngModel]="settings().target.unit"
+								(ngModelChange)="updateTarget('unit', $event)"
+								[disabled]="!settings().target.enabled"
+							></p-select>
+						</div>
+						<div class="setting-row setting-row--input">
+							<label for="setting-target-value">Value</label>
+							<p-inputnumber
+								inputId="setting-target-value"
+								[ngModel]="settings().target.value"
+								(ngModelChange)="
+									updateTarget('value', $event ?? 0)
+								"
+								[min]="0"
+								[disabled]="!settings().target.enabled"
+							></p-inputnumber>
+						</div>
 					</div>
 				</section>
 

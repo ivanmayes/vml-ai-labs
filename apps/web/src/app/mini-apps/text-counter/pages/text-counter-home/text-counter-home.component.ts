@@ -63,6 +63,20 @@ export class TextCounterHomeComponent implements OnInit {
 		{ label: 'Words', value: 'words' },
 	];
 
+	readonly targetSummary = computed(() => {
+		const s = this.settings();
+		if (!s.target.enabled) return null;
+		const stats = this.stats();
+		const current =
+			s.target.unit === 'characters' ? stats.characters : stats.words;
+		return {
+			current,
+			value: s.target.value,
+			unit: s.target.unit,
+			over: stats.overTarget,
+		};
+	});
+
 	ngOnInit(): void {
 		// Per R7: never load any text from storage. Only settings.
 		this.settings.set(loadSettings());
