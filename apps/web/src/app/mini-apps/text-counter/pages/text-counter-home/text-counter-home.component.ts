@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '../../../../shared/primeng.module';
 import { TextCounterTextModeComponent } from '../../components/text-counter-text-mode/text-counter-text-mode.component';
 import { TextCounterImageGeneralComponent } from '../../components/text-counter-image-general/text-counter-image-general.component';
+import { TextCounterImageTemplateComponent } from '../../components/text-counter-image-template/text-counter-image-template.component';
 
 type TextCounterTab = 'text' | 'image-general' | 'image-template';
 
@@ -18,6 +19,7 @@ type TextCounterTab = 'text' | 'image-general' | 'image-template';
 		PrimeNgModule,
 		TextCounterTextModeComponent,
 		TextCounterImageGeneralComponent,
+		TextCounterImageTemplateComponent,
 	],
 })
 export class TextCounterHomeComponent {
