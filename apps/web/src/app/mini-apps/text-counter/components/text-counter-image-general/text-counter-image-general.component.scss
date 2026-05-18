@@ -1,0 +1,164 @@
+:host {
+	display: block;
+	color: var(--p-text-color);
+}
+
+.image-general-page {
+	min-height: 100%;
+}
+
+/* --- Header --- */
+
+.page-title {
+	font-size: 1.125rem;
+	font-weight: 600;
+	margin: 0;
+	color: var(--p-text-color);
+}
+
+.page-subtitle {
+	margin: 0;
+	font-size: 0.875rem;
+	color: var(--p-text-muted-color);
+	line-height: 1.4;
+}
+
+/* --- Uploader row --- */
+
+.uploader-row {
+	align-items: center;
+}
+
+.upload-hint {
+	font-size: 0.8125rem;
+	color: var(--p-text-muted-color);
+}
+
+/* --- Empty state --- */
+
+.empty-state {
+	padding: 2rem 1rem;
+	text-align: center;
+	font-size: 0.875rem;
+	color: var(--p-text-muted-color);
+	border: 1px dashed var(--p-content-border-color);
+	border-radius: var(--p-content-border-radius);
+	background-color: var(--p-content-background);
+}
+
+/* --- Image card --- */
+
+.image-card {
+	display: block;
+}
+
+.card-header {
+	border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.thumb {
+	flex: 0 0 auto;
+	width: 4rem;
+	height: 4rem;
+	object-fit: cover;
+	border-radius: var(--p-content-border-radius);
+	border: 1px solid var(--p-content-border-color);
+	background-color: var(--p-content-background);
+}
+
+.card-filename {
+	display: block;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--p-text-color);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.card-remove {
+	flex: 0 0 auto;
+	width: 1.75rem;
+	height: 1.75rem;
+	border-radius: 9999px;
+	border: 1px solid var(--p-content-border-color);
+	background: transparent;
+	color: var(--p-text-muted-color);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition:
+		color 0.15s ease,
+		border-color 0.15s ease,
+		background-color 0.15s ease;
+}
+
+.card-remove:hover,
+.card-remove:focus-visible {
+	color: var(--p-text-color);
+	border-color: var(--p-text-color);
+	outline: none;
+}
+
+/* --- Card body --- */
+
+.card-body {
+	padding-top: 0.25rem;
+}
+
+.card-error-text {
+	margin: 0;
+	font-size: 0.875rem;
+	color: var(--p-red-500, #ef4444);
+}
+
+.card-empty {
+	margin: 0;
+	font-size: 0.875rem;
+	color: var(--p-text-muted-color);
+}
+
+/* --- Rows --- */
+
+.rows-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.row {
+	border-top: 1px solid var(--p-content-border-color);
+	padding-top: 0.5rem;
+}
+
+.row:first-child {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.row-textarea {
+	resize: vertical;
+	min-height: 2.5rem;
+}
+
+.row-counts {
+	font-size: 0.75rem;
+	color: var(--p-text-muted-color);
+}
+
+.row-count {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 0.25rem;
+}
+
+.row-count-label {
+	color: var(--p-text-muted-color);
+}
+
+.row-count-value {
+	font-variant-numeric: tabular-nums;
+	color: var(--p-text-color);
+	font-weight: 500;
+}

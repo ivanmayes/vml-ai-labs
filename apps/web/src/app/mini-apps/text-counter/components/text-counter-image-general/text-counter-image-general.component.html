@@ -1,0 +1,204 @@
+<div class="image-general-page flex flex-col gap-4 p-4">
+	<header class="flex flex-col gap-1">
+		<h2 class="page-title">Image (general)</h2>
+		<p class="page-subtitle">
+			Upload one or more images. We extract each text region and show
+			character / word counts using your paste-mode settings.
+		</p>
+	</header>
+
+	<!-- One-time AI consent banner (M11). Only mounted once at least one
+	     image has been uploaded — never shows on cold page load. -->
+	@if (images().length > 0) {
+		<app-text-counter-consent-banner />
+	}
+
+	<!-- Uploader -->
+	<div class="uploader-row flex flex-wrap items-center gap-3">
+		<p-fileUpload
+			name="files"
+			mode="advanced"
+			[customUpload]="true"
+			[multiple]="true"
+			[auto]="true"
+			[accept]="acceptMimes"
+			[maxFileSize]="maxUploadBytes"
+			[showUploadButton]="false"
+			[showCancelButton]="false"
+			chooseLabel="Add images"
+			chooseIcon="pi pi-image"
+			(uploadHandler)="onUpload($event)"
+		></p-fileUpload>
+		<small class="upload-hint">
+			PNG · JPEG · WebP · GIF — up to {{ maxUploadMb }} MB each.
+		</small>
+	</div>
+
+	<!-- Image cards -->
+	@if (images().length === 0) {
+		<div class="empty-state" role="status">
+			Drop some images above to get started.
+		</div>
+	} @else {
+		<div class="cards-grid grid grid-cols-1 lg:grid-cols-2 gap-4">
+			@for (entry of images(); track trackEntry($index, entry)) {
+				<p-card class="image-card">
+					<ng-template pTemplate="header">
+						<div class="card-header flex items-start gap-3 p-3">
+							<img
+								class="thumb"
+								[src]="entry.previewUrl"
+								[alt]="entry.file.name"
+							/>
+							<div class="flex-1 min-w-0 flex flex-col gap-1">
+								<span
+									class="card-filename"
+									[title]="entry.file.name"
+								>
+									{{ entry.file.name }}
+								</span>
+								@switch (entry.status) {
+									@case ("extracting") {
+										<p-tag
+											value="Extracting…"
+											severity="info"
+										></p-tag>
+									}
+									@case ("error") {
+										<p-tag
+											value="Error"
+											severity="danger"
+										></p-tag>
+									}
+									@case ("done") {
+										<p-tag
+											[value]="
+												entry.rows.length + ' region(s)'
+											"
+											severity="success"
+										></p-tag>
+									}
+									@default {
+										<p-tag
+											value="Pending"
+											severity="secondary"
+										></p-tag>
+									}
+								}
+							</div>
+							<button
+								type="button"
+								class="card-remove"
+								(click)="remove(entry.id)"
+								[attr.aria-label]="'Remove ' + entry.file.name"
+							>
+								<i class="pi pi-times" aria-hidden="true"></i>
+							</button>
+						</div>
+					</ng-template>
+
+					<div class="card-body flex flex-col gap-2">
+						@if (entry.status === "extracting") {
+							<div class="flex flex-col gap-2">
+								<p-skeleton height="2rem"></p-skeleton>
+								<p-skeleton height="2rem"></p-skeleton>
+								<p-skeleton height="2rem"></p-skeleton>
+							</div>
+						} @else if (entry.status === "error") {
+							<div class="card-error flex flex-col gap-2">
+								<p class="card-error-text">
+									{{ entry.error || "Extraction failed." }}
+								</p>
+								<div>
+									<p-button
+										label="Retry"
+										icon="pi pi-refresh"
+										size="small"
+										severity="secondary"
+										(onClick)="retry(entry.id)"
+									></p-button>
+								</div>
+							</div>
+						} @else if (entry.status === "done") {
+							@if (entry.rows.length === 0) {
+								<p class="card-empty">
+									No text regions were detected in this image.
+								</p>
+							} @else {
+								<ul class="rows-list flex flex-col gap-2">
+									@for (
+										row of rowViews()[entry.id] || [];
+										track trackRow($index, row)
+									) {
+										<li class="row flex flex-col gap-1">
+											<textarea
+												pTextarea
+												[ngModel]="row.text"
+												(ngModelChange)="
+													onRowTextChange(
+														entry.id,
+														row.id,
+														$event
+													)
+												"
+												rows="2"
+												class="row-textarea w-full font-mono text-sm"
+												aria-label="Extracted text region"
+											></textarea>
+											<div
+												class="row-counts flex items-center gap-3"
+											>
+												<span class="row-count">
+													<span
+														class="row-count-label"
+														>chars</span
+													>
+													<span
+														class="row-count-value"
+													>
+														{{
+															row.stats.characters
+																| number
+														}}
+													</span>
+												</span>
+												<span class="row-count">
+													<span
+														class="row-count-label"
+														>words</span
+													>
+													<span
+														class="row-count-value"
+													>
+														{{
+															row.stats.words
+																| number
+														}}
+													</span>
+												</span>
+												<span class="row-count">
+													<span
+														class="row-count-label"
+														>lines</span
+													>
+													<span
+														class="row-count-value"
+													>
+														{{
+															row.stats.lines
+																| number
+														}}
+													</span>
+												</span>
+											</div>
+										</li>
+									}
+								</ul>
+							}
+						}
+					</div>
+				</p-card>
+			}
+		</div>
+	}
+</div>

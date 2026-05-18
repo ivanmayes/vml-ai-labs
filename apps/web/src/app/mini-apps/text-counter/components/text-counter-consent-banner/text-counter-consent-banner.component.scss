@@ -1,0 +1,22 @@
+:host {
+	display: block;
+}
+
+.consent-banner {
+	background-color: var(--p-content-background);
+	border: 1px solid var(--p-content-border-color);
+	color: var(--p-text-color);
+}
+
+.consent-banner-icon {
+	color: var(--p-primary-color);
+	font-size: 1.125rem;
+	margin-top: 0.125rem;
+}
+
+.consent-banner-text {
+	margin: 0;
+	font-size: 0.875rem;
+	line-height: 1.4;
+	color: var(--p-text-color);
+}

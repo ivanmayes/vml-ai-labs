@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { PrimeNgModule } from '../../../../shared/primeng.module';
 import { TextCounterTextModeComponent } from '../../components/text-counter-text-mode/text-counter-text-mode.component';
+import { TextCounterImageGeneralComponent } from '../../components/text-counter-image-general/text-counter-image-general.component';
 
 type TextCounterTab = 'text' | 'image-general' | 'image-template';
 
@@ -12,7 +13,12 @@ type TextCounterTab = 'text' | 'image-general' | 'image-template';
 	templateUrl: './text-counter-home.component.html',
 	styleUrls: ['./text-counter-home.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [CommonModule, PrimeNgModule, TextCounterTextModeComponent],
+	imports: [
+		CommonModule,
+		PrimeNgModule,
+		TextCounterTextModeComponent,
+		TextCounterImageGeneralComponent,
+	],
 })
 export class TextCounterHomeComponent {
 	// Default landing on the paste-text experience preserves prior behavior.
