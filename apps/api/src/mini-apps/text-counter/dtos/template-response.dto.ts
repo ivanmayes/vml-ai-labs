@@ -10,7 +10,12 @@ export interface TemplateFieldResponseDto {
 export interface TemplateResponseDto {
 	id: string;
 	organizationId: string;
-	createdById: string;
+	/**
+	 * Author id. Becomes `null` if the user is later deleted —
+	 * templates survive their author so other org members can keep
+	 * using them.
+	 */
+	createdById: string | null;
 	name: string;
 	fields: TemplateFieldResponseDto[];
 	createdAt: Date;

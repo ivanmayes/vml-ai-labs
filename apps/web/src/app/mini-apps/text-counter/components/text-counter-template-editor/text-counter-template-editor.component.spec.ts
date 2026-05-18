@@ -504,6 +504,46 @@ describe('TextCounterTemplateEditorComponent', () => {
 		expect(savedEvents).toEqual([updated]);
 	});
 
+	it('edit flow: payload sent to update() includes ids on unchanged + edited existing fields and omits id on new fields', () => {
+		const tpl = makeTemplate({
+			id: 'tpl-ids',
+			name: 'IDs',
+			fields: [
+				{ id: 'f1', label: 'headline', position: 0, rules: [] },
+				{ id: 'f2', label: 'body', position: 1, rules: [] },
+			],
+		});
+		const { component, templates } = makeFixture({
+			mode: 'edit',
+			template: tpl,
+		});
+
+		// Rename f1; leave f2 alone; add a brand new field.
+		component.updateFieldLabel(0, 'headline-renamed');
+		component.addField();
+		// Newly added field is at index 2.
+		component.updateFieldLabel(2, 'newly-added');
+
+		const updated = makeTemplate({ id: 'tpl-ids', name: 'IDs' });
+		templates.updateImpl = () => of(updated);
+
+		component.onSave();
+
+		expect(templates.updateCalls.length).toBe(1);
+		const fields = templates.updateCalls[0].payload.fields;
+		expect(fields.length).toBe(3);
+
+		// Renamed existing field carries f1's id.
+		expect(fields[0].id).toBe('f1');
+		expect(fields[0].label).toBe('headline-renamed');
+		// Untouched existing field still carries f2's id.
+		expect(fields[1].id).toBe('f2');
+		expect(fields[1].label).toBe('body');
+		// Newly added field has no id (server assigns).
+		expect(fields[2].id).toBeUndefined();
+		expect(fields[2].label).toBe('newly-added');
+	});
+
 	it('save error: keeps the dialog open and surfaces the message via the error signal', () => {
 		const { component, templates } = makeFixture({ mode: 'create' });
 		const savedEvents: Template[] = [];

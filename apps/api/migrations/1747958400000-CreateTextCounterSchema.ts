@@ -18,7 +18,7 @@ export class CreateTextCounterSchema1747958400000
 			CREATE TABLE "text_counter"."template" (
 				"id" uuid NOT NULL DEFAULT uuid_generate_v4(),
 				"organizationId" uuid NOT NULL,
-				"createdById" uuid NOT NULL,
+				"createdById" uuid,
 				"name" character varying(255) NOT NULL,
 				"createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
 				"updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -49,8 +49,12 @@ export class CreateTextCounterSchema1747958400000
 		await queryRunner.query(
 			`ALTER TABLE "text_counter"."template" ADD CONSTRAINT "fk_tc_template_organization" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE`,
 		);
+		// Use SET NULL (not CASCADE) so deleting a user does NOT wipe
+		// templates they authored — templates are org-shared and other
+		// org members still rely on them. `createdById` is nullable to
+		// support the SET-NULL semantics.
 		await queryRunner.query(
-			`ALTER TABLE "text_counter"."template" ADD CONSTRAINT "fk_tc_template_created_by" FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE CASCADE`,
+			`ALTER TABLE "text_counter"."template" ADD CONSTRAINT "fk_tc_template_created_by" FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE SET NULL`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "text_counter"."template_field" ADD CONSTRAINT "fk_tc_template_field_template" FOREIGN KEY ("templateId") REFERENCES "text_counter"."template"("id") ON DELETE CASCADE`,

@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FileUploadModule } from 'primeng/fileupload';
 import { TextareaModule } from 'primeng/textarea';
+import { Subscription } from 'rxjs';
 
 import { environment } from '../../../../../environments/environment';
 import { PrimeNgModule } from '../../../../shared/primeng.module';
@@ -36,7 +37,10 @@ import {
 } from '../../services/text-counter-shared.util';
 import { computeStats } from '../../services/text-counter.util';
 import { TextCounterExtractionService } from '../../services/text-counter-extraction.service';
-import { TextCounterConsentBannerComponent } from '../text-counter-consent-banner/text-counter-consent-banner.component';
+import {
+	TextCounterConsentBannerComponent,
+	hasAIConsent,
+} from '../text-counter-consent-banner/text-counter-consent-banner.component';
 
 /**
  * Per-image extraction state. Order of statuses:
@@ -123,6 +127,26 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 	readonly settings = signal<TextCounterSettings>(loadSettings());
 
 	/**
+	 * Active extraction subscriptions, keyed by entry id. Tracked so we
+	 * can abort an in-flight request when the user removes a card or
+	 * retries before the result arrives — mirrors the image-template
+	 * orchestrator. Without this we'd silently pay the AI cost on cards
+	 * the user already discarded (or on the orphaned half of a retry).
+	 */
+	private readonly extractionSubs = new Map<string, Subscription>();
+
+	/**
+	 * Entries waiting on AI-vision consent before the first extraction
+	 * fires. We render the entry's card in `extracting` UI state but
+	 * defer the actual HTTP POST until the user accepts the banner.
+	 *
+	 * Once consent is recorded (banner emits `accepted`), this list is
+	 * drained. Drained-and-cleared on accept — subsequent uploads in
+	 * the same session see `hasAIConsent()` true and skip the queue.
+	 */
+	private readonly pendingConsent = new Map<string, File>();
+
+	/**
 	 * Drives the per-row count display. Recomputed whenever images() or
 	 * settings() change — so editing a row or flipping a setting in the
 	 * paste tab re-rolls every count without manual wiring.
@@ -141,6 +165,12 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 	});
 
 	ngOnDestroy(): void {
+		// Cancel any in-flight extractions so they don't try to update
+		// a torn-down component.
+		for (const sub of this.extractionSubs.values()) {
+			sub.unsubscribe();
+		}
+		this.extractionSubs.clear();
 		// Release any object URLs we minted for image previews.
 		for (const entry of this.images()) {
 			this.releasePreview(entry);
@@ -170,11 +200,41 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 			error: null,
 		};
 		this.images.update((list) => [...list, entry]);
+
+		// Gate the FIRST extraction on AI-vision consent. Without this,
+		// the banner renders only AFTER the request is already in
+		// flight — disclosure rather than consent. When the flag is
+		// already set (subsequent uploads, or a returning user), the
+		// extraction fires immediately.
+		if (!hasAIConsent()) {
+			this.pendingConsent.set(entry.id, file);
+			return;
+		}
 		this.runExtraction(entry.id, file);
 	}
 
+	/**
+	 * Banner emitted `accepted`. Drain any extractions we deferred while
+	 * waiting on consent.
+	 */
+	onConsentAccepted(): void {
+		const queued = Array.from(this.pendingConsent.entries());
+		this.pendingConsent.clear();
+		for (const [entryId, file] of queued) {
+			this.runExtraction(entryId, file);
+		}
+	}
+
 	private runExtraction(entryId: string, file: File): void {
-		this.extractionService
+		// Cancel any previous in-flight extraction for this entry before
+		// starting a new one (retry or repeat).
+		const previous = this.extractionSubs.get(entryId);
+		if (previous) {
+			previous.unsubscribe();
+			this.extractionSubs.delete(entryId);
+		}
+
+		const sub = this.extractionService
 			.extract(this.orgId, file, 'general')
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
@@ -201,6 +261,7 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 							};
 						}),
 					);
+					this.extractionSubs.delete(entryId);
 					this.cdr.markForCheck();
 				},
 				error: (err: unknown) => {
@@ -218,9 +279,12 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 								: entry,
 						),
 					);
+					this.extractionSubs.delete(entryId);
 					this.cdr.markForCheck();
 				},
 			});
+
+		this.extractionSubs.set(entryId, sub);
 	}
 
 	/**
@@ -242,8 +306,19 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 
 	/**
 	 * Remove an entry from the list and release its preview URL.
+	 *
+	 * Cancels the in-flight extraction (if any) so we don't pay the AI
+	 * cost on a card the user just discarded.
 	 */
 	remove(entryId: string): void {
+		const sub = this.extractionSubs.get(entryId);
+		if (sub) {
+			sub.unsubscribe();
+			this.extractionSubs.delete(entryId);
+		}
+		// Drop from the consent-queue too — otherwise an accept later
+		// would re-fire extraction on a card the user already removed.
+		this.pendingConsent.delete(entryId);
 		const entry = this.images().find((e) => e.id === entryId);
 		if (entry) this.releasePreview(entry);
 		this.images.update((list) => list.filter((e) => e.id !== entryId));

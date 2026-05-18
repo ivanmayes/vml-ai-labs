@@ -1,8 +1,18 @@
-import { BadGatewayException, NotFoundException } from '@nestjs/common';
+import {
+	BadGatewayException,
+	GatewayTimeoutException,
+	HttpException,
+	NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { v4 as uuidv4 } from 'uuid';
 
-import { AIService } from '../../../ai/ai.service';
+import {
+	AIProviderError,
+	AIRateLimitError,
+	AIService,
+	AITimeoutError,
+} from '../../../ai';
 import { ImageFileValidationService } from '../../../_platform/files';
 import {
 	HeicNotSupportedError,
@@ -476,6 +486,82 @@ describe('ExtractionService', () => {
 			})) as ExtractGeneralResponseDto;
 
 			expect(result.regions).toEqual(['A', 'B']);
+		});
+	});
+
+	// ---------------------------------------------------------------------
+	// AI provider error → HTTP status mapping (Fix 1)
+	// ---------------------------------------------------------------------
+	describe('AI provider error mapping', () => {
+		it('maps AIRateLimitError to 429 Too Many Requests with a generic message', async () => {
+			aiService.analyzeImage.mockRejectedValue(
+				new AIRateLimitError('upstream key abc123 rate-limited', {
+					retryAfter: 30,
+				}),
+			);
+
+			try {
+				await service.extract({
+					dto: { mode: 'general' },
+					orgId: uuidv4(),
+					file: fakeMulterFile(),
+				});
+				fail('should have thrown');
+			} catch (err) {
+				expect(err).toBeInstanceOf(HttpException);
+				expect((err as HttpException).getStatus()).toBe(429);
+				const msg = (err as HttpException).message;
+				expect(msg).not.toContain('abc123');
+				expect(msg).toMatch(/rate-limited/i);
+			}
+		});
+
+		it('maps AITimeoutError to 504 Gateway Timeout with a generic message', async () => {
+			aiService.analyzeImage.mockRejectedValue(
+				new AITimeoutError('upstream timed out talking to provider X', {
+					timeoutMs: 30000,
+				}),
+			);
+
+			try {
+				await service.extract({
+					dto: { mode: 'general' },
+					orgId: uuidv4(),
+					file: fakeMulterFile(),
+				});
+				fail('should have thrown');
+			} catch (err) {
+				expect(err).toBeInstanceOf(GatewayTimeoutException);
+				expect((err as GatewayTimeoutException).getStatus()).toBe(504);
+				const msg = (err as GatewayTimeoutException).message;
+				expect(msg).not.toContain('provider X');
+				expect(msg).toMatch(/timed out/i);
+			}
+		});
+
+		it('maps AIProviderError to 502 Bad Gateway with a generic message', async () => {
+			aiService.analyzeImage.mockRejectedValue(
+				new AIProviderError('upstream 500 - internal trace abc/xyz', {
+					statusCode: 500,
+					providerCode: 'internal_error',
+				}),
+			);
+
+			try {
+				await service.extract({
+					dto: { mode: 'general' },
+					orgId: uuidv4(),
+					file: fakeMulterFile(),
+				});
+				fail('should have thrown');
+			} catch (err) {
+				expect(err).toBeInstanceOf(BadGatewayException);
+				expect((err as BadGatewayException).getStatus()).toBe(502);
+				const msg = (err as BadGatewayException).message;
+				expect(msg).not.toContain('abc/xyz');
+				expect(msg).not.toContain('internal trace');
+				expect(msg).toMatch(/unavailable/i);
+			}
 		});
 	});
 });

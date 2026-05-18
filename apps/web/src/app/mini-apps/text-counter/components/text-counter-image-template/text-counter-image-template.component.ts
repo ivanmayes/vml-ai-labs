@@ -62,7 +62,10 @@ import {
 	nextId,
 	revokeImagePreviewUrl,
 } from '../../services/text-counter-shared.util';
-import { TextCounterConsentBannerComponent } from '../text-counter-consent-banner/text-counter-consent-banner.component';
+import {
+	TextCounterConsentBannerComponent,
+	hasAIConsent,
+} from '../text-counter-consent-banner/text-counter-consent-banner.component';
 import {
 	ImageCardState,
 	TextCounterImageCardComponent,
@@ -127,6 +130,10 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 	// abort an in-flight request when the user removes a card or switches
 	// the card to a different template before the result arrives.
 	private readonly extractionSubs = new Map<string, Subscription>();
+
+	// Cards waiting on AI-vision consent before their first extraction.
+	// Drained when the banner emits `accepted`.
+	private readonly pendingConsent = new Set<string>();
 
 	ngOnInit(): void {
 		this.refreshTemplates();
@@ -271,6 +278,9 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 			sub.unsubscribe();
 			this.extractionSubs.delete(cardId);
 		}
+		// Also drop from the consent queue so a later accept doesn't
+		// re-fire extraction on a card the user already discarded.
+		this.pendingConsent.delete(cardId);
 		const card = this.imageCards().find((c) => c.id === cardId);
 		if (card) this.releasePreview(card);
 		this.imageCards.update((list) => list.filter((c) => c.id !== cardId));
@@ -349,6 +359,18 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 		this.editorVisible.set(value);
 	}
 
+	/**
+	 * Banner emitted `accepted`. Re-run extraction for every card whose
+	 * first attempt was deferred pending consent.
+	 */
+	onConsentAccepted(): void {
+		const queued = Array.from(this.pendingConsent);
+		this.pendingConsent.clear();
+		for (const cardId of queued) {
+			this.runExtraction(cardId);
+		}
+	}
+
 	// -----------------------------------------------------------------
 	// Extraction
 	// -----------------------------------------------------------------
@@ -356,8 +378,6 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 	private runExtraction(cardId: string): void {
 		const card = this.imageCards().find((c) => c.id === cardId);
 		if (!card || !card.templateId) return;
-		const tpl =
-			this.templates().find((t) => t.id === card.templateId) ?? null;
 
 		// Cancel any previous in-flight extraction for this card before
 		// starting a new one (retry or rapid template switch).
@@ -376,11 +396,32 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 			),
 		);
 
+		// Gate the FIRST extraction on AI-vision consent. The banner
+		// renders only after the first upload (`imageCards().length > 0`)
+		// and now emits `accepted` so we can drain queued cards. Without
+		// this gate the AI POST is in flight by the time the banner
+		// renders — disclosure, not consent.
+		if (!hasAIConsent()) {
+			this.pendingConsent.add(cardId);
+			return;
+		}
+
 		const sub = this.extractionService
 			.extract(this.orgId, card.file, 'template', card.templateId)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (result) => {
+					// Re-resolve the template from the current signal at
+					// response time. If the user edited the template
+					// mid-flight (onEditorSaved mutates templates()), the
+					// stale snapshot we'd captured at request-issue time
+					// would zip the response against the OLD field IDs and
+					// the user would see an empty card. Re-reading now
+					// keeps assignments aligned with the live template.
+					const currentTpl =
+						this.templates().find(
+							(t) => t.id === card.templateId,
+						) ?? null;
 					const tplResult = narrowTemplate(result);
 					if (!tplResult) {
 						this.imageCards.update((list) =>
@@ -398,7 +439,7 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 						this.cdr.markForCheck();
 						return;
 					}
-					this.applyTemplateResult(cardId, tplResult, tpl);
+					this.applyTemplateResult(cardId, tplResult, currentTpl);
 					this.extractionSubs.delete(cardId);
 					this.cdr.markForCheck();
 				},
