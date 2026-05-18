@@ -32,11 +32,11 @@ import { memoryStorage } from 'multer';
 
 import { CurrentOrg, RequiresApp } from '../../_platform/decorators';
 import { DomainError } from '../../_platform/errors/domain.errors';
+import { ImageFileValidationService } from '../../_platform/files';
 import { ResponseEnvelope, ResponseStatus } from '../../_platform/models';
 import { SpaceAccessGuard } from '../../space/guards/space-access.guard';
 
 import { ListImagesQueryDto, TagSuggestQueryDto, UploadImageDto } from './dtos';
-import { ImageFileValidationService } from './services/image-file-validation.service';
 import { ImageLibraryService } from './services/image-library.service';
 
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB

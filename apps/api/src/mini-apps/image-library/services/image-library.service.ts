@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { AwsS3Service } from '../../../_platform/aws';
+import { ValidatedImage } from '../../../_platform/files';
 import { UserService } from '../../../user/user.service';
 import { ImageAsset } from '../entities/image-asset.entity';
 import type {
@@ -11,8 +12,6 @@ import type {
 	ListImagesResponseDto,
 	TagSuggestResponseDto,
 } from '../dtos';
-
-import { ValidatedImage } from './image-file-validation.service';
 
 const APP_PREFIX = 'image-library';
 const SIGNED_URL_TTL_SECONDS = 3600;
