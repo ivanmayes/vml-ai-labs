@@ -48,7 +48,12 @@ export interface TemplateField {
 export interface Template {
 	id: string;
 	organizationId: string;
-	createdById: string;
+	/**
+	 * Author id. Becomes `null` if the original author is later
+	 * deleted — templates survive their author so other org members
+	 * can keep using them.
+	 */
+	createdById: string | null;
 	name: string;
 	createdAt: string;
 	updatedAt: string;
@@ -56,12 +61,19 @@ export interface Template {
 }
 
 /**
- * Field shape on a create / update payload — no server-assigned `id`,
- * and `position` is derived from array order on the API side (the
- * service re-numbers positions on insert), but the type carries it for
- * round-trip clarity in case a caller wants to set explicit ordering.
+ * Field shape on a create / update payload. `position` is derived from
+ * array order on the API side (the service re-numbers positions on
+ * save), but the type carries it for round-trip clarity in case a
+ * caller wants to set explicit ordering.
+ *
+ * `id` is optional and only relevant on update: send the existing
+ * field id to preserve the row (and therefore preserve any client
+ * state keyed by it — image-card assignments rely on this); omit `id`
+ * to insert a new field; existing fields whose id is omitted from the
+ * payload are deleted.
  */
 export interface TemplateFieldPayload {
+	id?: string;
 	label: string;
 	position?: number;
 	rules: Rule[];

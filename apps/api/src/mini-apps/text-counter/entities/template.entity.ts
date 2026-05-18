@@ -43,15 +43,19 @@ export class Template {
 	})
 	organization: Organization;
 
-	@Column('uuid')
-	createdById: string;
+	@Column({ type: 'uuid', nullable: true })
+	createdById: string | null;
 
-	@ManyToOne(() => User, { onDelete: 'CASCADE' })
+	// Use SET NULL (not CASCADE) on user deletion — templates are
+	// org-shared and other org members still rely on them. The author
+	// id becomes null when the user record is deleted; the template
+	// row itself survives.
+	@ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
 	@JoinColumn({
 		name: 'createdById',
 		foreignKeyConstraintName: 'fk_tc_template_created_by',
 	})
-	createdBy: User;
+	createdBy: User | null;
 
 	@Column({ type: 'varchar', length: 255 })
 	name: string;

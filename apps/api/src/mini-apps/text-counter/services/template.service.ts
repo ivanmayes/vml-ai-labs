@@ -40,9 +40,14 @@ interface UpdateTemplateInput {
  * org's templates.
  *
  * Create + update run inside a transaction so the parent + field rows
- * land atomically. Update replaces the field list outright (delete +
- * re-insert) because diffing isn't needed for V1 and the simpler
- * approach is easier to reason about.
+ * land atomically.
+ *
+ * Update preserves field ids: payload fields carrying an `id` UPDATE
+ * the existing row in place; payload fields without `id` INSERT a new
+ * row; any existing field whose id isn't in the payload's "kept" set
+ * is deleted. The earlier delete-and-reinsert algorithm regenerated
+ * every field UUID on every save, which orphaned client-side state
+ * keyed by field id (e.g. image-card assignments).
  */
 @Injectable()
 export class TemplateService {
@@ -129,18 +134,57 @@ export class TemplateService {
 			existing.name = dto.name;
 			const savedTemplate = await templateRepo.save(existing);
 
-			// Replace the field list outright — simpler than diffing.
-			await fieldRepo.delete({ templateId: savedTemplate.id });
-
-			const fields = dto.fields.map((field, index) =>
-				fieldRepo.create({
-					templateId: savedTemplate.id,
-					label: field.label,
-					position: index,
-					rules: field.rules.map((rule) => normalizeRule(rule)),
-				}),
+			// Preserve field ids on update. For each payload field with
+			// an `id` matching an existing row on this template, update
+			// in place; for each payload field without an `id`, insert a
+			// new row; delete any existing row whose id is not in the
+			// kept set.
+			const existingFields = existing.fields ?? [];
+			const existingById = new Map<string, TemplateField>(
+				existingFields.map((f) => [f.id, f]),
 			);
-			const savedFields = await fieldRepo.save(fields);
+			const keptIds = new Set<string>();
+			const fieldRowsToSave: TemplateField[] = [];
+
+			dto.fields.forEach((field, index) => {
+				const incomingId = field.id;
+				const existingRow = incomingId
+					? existingById.get(incomingId)
+					: undefined;
+
+				if (existingRow) {
+					// In-place update — id and createdAt stay the same.
+					existingRow.label = field.label;
+					existingRow.position = index;
+					existingRow.rules = field.rules.map((rule) =>
+						normalizeRule(rule),
+					);
+					keptIds.add(existingRow.id);
+					fieldRowsToSave.push(existingRow);
+				} else {
+					// New row — let the database assign the id.
+					fieldRowsToSave.push(
+						fieldRepo.create({
+							templateId: savedTemplate.id,
+							label: field.label,
+							position: index,
+							rules: field.rules.map((rule) =>
+								normalizeRule(rule),
+							),
+						}),
+					);
+				}
+			});
+
+			// Delete fields the payload omitted.
+			const toDelete = existingFields
+				.filter((f) => !keptIds.has(f.id))
+				.map((f) => f.id);
+			if (toDelete.length > 0) {
+				await fieldRepo.delete(toDelete);
+			}
+
+			const savedFields = await fieldRepo.save(fieldRowsToSave);
 			savedTemplate.fields = savedFields;
 
 			return savedTemplate;

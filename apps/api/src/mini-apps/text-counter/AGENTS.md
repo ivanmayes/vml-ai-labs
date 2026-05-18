@@ -21,7 +21,10 @@ Endpoints under `organization/:orgId/apps/text-counter/`:
 - Validation rules persist as JSONB on `template_field.rules`. The six V1 rule types (`maxCharacters`, `maxWords`, `minCharacters`, `minWords`, `singleLine`, `forbiddenWords`) live in `dtos/rule.dto.ts` as a discriminated union (`RuleDtoUnion`); the entity imports this type, so there is one source of truth on the API side
 - DTO validation enforces: no control chars in template name / field labels, `forbiddenWords` array max 100 × 200 chars each
 - AI calls go through `AIService.analyzeImage({ images: [{ base64, mimeType }], prompt })` with no provider override — the default is resolved from `AIConfig.defaultProviders[AIModality.Vision]`
+- AI provider errors map to specific HTTP statuses in `extraction.service.ts`: `AIRateLimitError` → 429, `AITimeoutError` → 504, `AIProviderError` → 502. Never propagate raw upstream error messages — they may contain keys / prompt fragments / user content
 - Cross-org reads return 404 (not 403) to avoid existence leaks
+- `template.service.update` preserves field ids — payload fields carrying an `id` update in place, fields without an `id` insert, and fields omitted from the payload are deleted. Never regenerate every field UUID on save (it orphans client-side state keyed by id)
+- `template.createdById` is nullable and the FK uses `ON DELETE SET NULL` — deleting a user does NOT cascade-wipe their org's templates
 
 ## Privacy Posture (R7)
 Templates persist. Images and extracted text **do not** — no DB rows are created for either. The extraction endpoint asserts this in its specs (see `extraction.service.spec.ts`). Future mini-app additions in this directory must preserve this posture.

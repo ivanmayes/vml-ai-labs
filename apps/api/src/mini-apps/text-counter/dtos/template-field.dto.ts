@@ -2,14 +2,16 @@ import { Type } from 'class-transformer';
 import {
 	ArrayMaxSize,
 	IsArray,
+	IsOptional,
 	IsString,
+	IsUUID,
 	Matches,
 	MaxLength,
 	MinLength,
 	registerDecorator,
 	ValidationOptions,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { IsRule, RuleDtoUnion } from './rule.dto';
 
@@ -49,6 +51,22 @@ export function NoControlChars(validationOptions?: ValidationOptions) {
 const MAX_RULES_PER_FIELD = 20;
 
 export class TemplateFieldDto {
+	/**
+	 * Optional id present on update payloads only. When the client sends
+	 * a field that already exists (carrying its current id), the service
+	 * UPDATEs the row in place — preserving the id so any client-side
+	 * data keyed by field id (e.g. card assignments) survives the edit.
+	 * Omit on create or when adding a new field to an existing template.
+	 */
+	@ApiPropertyOptional({
+		format: 'uuid',
+		description:
+			'Optional. Present on update payloads to preserve existing field ids; absent on create / new fields.',
+	})
+	@IsOptional()
+	@IsUUID()
+	id?: string;
+
 	@ApiProperty({ minLength: 1, maxLength: 255 })
 	@IsString()
 	@MinLength(1)

@@ -159,7 +159,10 @@ describe('TextCounterImageTemplateComponent', () => {
 
 	beforeEach(() => {
 		localStorage.removeItem(SETTINGS_KEY);
-		localStorage.removeItem(CONSENT_STORAGE_KEY);
+		// Pre-accept consent for the default suite so existing tests
+		// continue to exercise the post-consent extraction flow. Tests
+		// that exercise the consent gate explicitly clear this flag.
+		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
 		spyOn(URL, 'createObjectURL').and.callFake(() => 'blob:fake');
 		spyOn(URL, 'revokeObjectURL').and.callFake(() => undefined);
 		extraction = new FakeExtractionService();
@@ -240,6 +243,41 @@ describe('TextCounterImageTemplateComponent', () => {
 			'app-text-counter-consent-banner',
 		);
 		expect(banner).not.toBeNull();
+	});
+
+	it('defers the FIRST extraction call until consent is accepted (gates the AI POST)', () => {
+		// Clear the pre-accepted flag set by beforeEach for this test.
+		localStorage.removeItem(CONSENT_STORAGE_KEY);
+		const tpl = makeTemplate({ id: 'tpl-gate' });
+		templates.queueList([tpl]);
+		extraction.queueSuccess({
+			matches: [
+				{ label: 'headline', text: 'H-text' },
+				{ label: 'body', text: 'B-text' },
+			],
+			unassigned: [],
+		} as TemplateExtractionResult);
+
+		const fixture = buildWith({ extraction, templates });
+		const c = fixture.componentInstance;
+
+		c.onUpload({ files: [fakeImage()] });
+		fixture.detectChanges();
+		c.onTemplateChange(c.imageCards()[0].id, 'tpl-gate');
+		fixture.detectChanges();
+
+		// Card is in extracting state but the AI POST has NOT fired.
+		expect(c.imageCards()[0].status).toBe('extracting');
+		expect(extraction.calls.length).toBe(0);
+
+		// Simulate the banner setting the flag, then emitting accepted.
+		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
+		c.onConsentAccepted();
+		fixture.detectChanges();
+
+		expect(extraction.calls.length).toBe(1);
+		expect(c.imageCards()[0].status).toBe('done');
+		expect(c.imageCards()[0].assignments['fa-headline']).toBe('H-text');
 	});
 
 	// -----------------------------------------------------------------
@@ -593,6 +631,63 @@ describe('TextCounterImageTemplateComponent', () => {
 		// orchestrator unsubscribed before tearing the card down.
 		expect(pending.observed).toBe(false);
 		expect(c.imageCards().length).toBe(0);
+	});
+
+	it('re-resolves the template at response time so mid-flight edits map to the current field IDs', () => {
+		// Template starts with `headline`/`body` fields (ids fa-headline/fa-body).
+		const original = makeTemplate({ id: 'tpl-edit-midflight' });
+		templates.queueList([original]);
+
+		// Use a Subject so the spec can edit the template before the
+		// response resolves.
+		const pending = new Subject<TemplateExtractionResult>();
+		extraction.queuePending(pending);
+
+		const fixture = buildWith({ extraction, templates });
+		const c = fixture.componentInstance;
+
+		c.onUpload({ files: [fakeImage()] });
+		fixture.detectChanges();
+		const cardId = c.imageCards()[0].id;
+		c.onTemplateChange(cardId, 'tpl-edit-midflight');
+		fixture.detectChanges();
+		expect(c.imageCards()[0].status).toBe('extracting');
+
+		// User edits the template mid-flight: same labels, different IDs
+		// (simulates the pre-Fix-4 server behavior where saves regenerated
+		// every field UUID).
+		const edited: Template = {
+			...original,
+			fields: [
+				{
+					id: 'new-headline',
+					label: 'headline',
+					position: 0,
+					rules: [],
+				},
+				{ id: 'new-body', label: 'body', position: 1, rules: [] },
+			],
+		};
+		c.onEditorSaved(edited);
+		fixture.detectChanges();
+
+		// Now the AI response arrives.
+		pending.next({
+			matches: [
+				{ label: 'headline', text: 'H-text' },
+				{ label: 'body', text: 'B-text' },
+			],
+			unassigned: [],
+		} as TemplateExtractionResult);
+		pending.complete();
+		fixture.detectChanges();
+
+		const card = c.imageCards()[0];
+		expect(card.status).toBe('done');
+		// Assignments are keyed by the NEW (live) field IDs, not the stale
+		// IDs captured when the request was issued.
+		expect(card.assignments['new-headline']).toBe('H-text');
+		expect(card.assignments['new-body']).toBe('B-text');
 	});
 
 	it('cancels an in-flight extraction when the user switches to a different template mid-extraction', () => {

@@ -83,7 +83,10 @@ describe('TextCounterImageGeneralComponent', () => {
 
 	beforeEach(() => {
 		localStorage.removeItem(SETTINGS_KEY);
-		localStorage.removeItem(CONSENT_STORAGE_KEY);
+		// Pre-accept consent for the default suite so existing tests
+		// continue to exercise the post-consent extraction flow. Tests
+		// that exercise the consent gate explicitly clear this flag.
+		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
 		// Stable object-URL stubs so we don't lean on jsdom's URL impl.
 		spyOn(URL, 'createObjectURL').and.callFake(() => 'blob:fake');
 		spyOn(URL, 'revokeObjectURL').and.callFake(() => undefined);
@@ -296,6 +299,52 @@ describe('TextCounterImageGeneralComponent', () => {
 	// Remove
 	// -------------------------------------------------------------------
 
+	it('cancels an in-flight extraction subscription when the entry is removed before the result arrives', () => {
+		const pending = fake.queueDeferred();
+
+		const fixture = buildWith(fake);
+		const c = fixture.componentInstance;
+
+		c.onUpload({ files: [fakeImage()] });
+		fixture.detectChanges();
+
+		const entryId = c.images()[0].id;
+		expect(c.images()[0].status).toBe('extracting');
+		expect(pending.observed).toBe(true);
+
+		c.remove(entryId);
+		fixture.detectChanges();
+
+		// The pending subject should have no subscribers anymore.
+		expect(pending.observed).toBe(false);
+		expect(c.images().length).toBe(0);
+	});
+
+	it('cancels the previous extraction subscription when retry fires before the prior call completes', () => {
+		const firstPending = fake.queueDeferred();
+		fake.queueSuccess({ regions: ['Recovered'] });
+
+		const fixture = buildWith(fake);
+		const c = fixture.componentInstance;
+
+		c.onUpload({ files: [fakeImage()] });
+		fixture.detectChanges();
+
+		const entryId = c.images()[0].id;
+		expect(c.images()[0].status).toBe('extracting');
+		expect(firstPending.observed).toBe(true);
+
+		c.retry(entryId);
+		fixture.detectChanges();
+
+		// First call's Subject should be unsubscribed; second extraction
+		// is now in flight (queueSuccess resolves synchronously via `of`).
+		expect(firstPending.observed).toBe(false);
+		expect(fake.calls.length).toBe(2);
+		expect(c.images()[0].status).toBe('done');
+		expect(c.images()[0].rows[0].text).toBe('Recovered');
+	});
+
 	it('removes an entry and revokes its preview URL', () => {
 		fake.queueSuccess({ regions: ['a'] });
 		fake.queueSuccess({ regions: ['b'] });
@@ -375,6 +424,48 @@ describe('TextCounterImageGeneralComponent', () => {
 			'app-text-counter-consent-banner',
 		);
 		expect(banner).not.toBeNull();
+	});
+
+	it('does not fire extraction on the first upload until consent is accepted (gates the FIRST AI call)', () => {
+		// Clear the pre-accepted flag set by beforeEach for this test.
+		localStorage.removeItem(CONSENT_STORAGE_KEY);
+		fake.queueSuccess({ regions: ['HEAD'] });
+
+		const fixture = buildWith(fake);
+		const c = fixture.componentInstance;
+
+		c.onUpload({ files: [fakeImage()] });
+		fixture.detectChanges();
+
+		// Image entry exists in extracting state, but the AI POST has
+		// NOT fired — the request is gated on consent acceptance.
+		expect(c.images().length).toBe(1);
+		expect(c.images()[0].status).toBe('extracting');
+		expect(fake.calls.length).toBe(0);
+
+		// Simulate the banner setting the flag, then emitting accepted.
+		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
+		c.onConsentAccepted();
+		fixture.detectChanges();
+
+		expect(fake.calls.length).toBe(1);
+		expect(c.images()[0].status).toBe('done');
+		expect(c.images()[0].rows[0].text).toBe('HEAD');
+	});
+
+	it('fires extraction immediately when consent was previously accepted', () => {
+		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
+		fake.queueSuccess({ regions: ['ok'] });
+
+		const fixture = buildWith(fake);
+		const c = fixture.componentInstance;
+
+		c.onUpload({ files: [fakeImage()] });
+		fixture.detectChanges();
+
+		// Extraction fires synchronously — no consent gating needed.
+		expect(fake.calls.length).toBe(1);
+		expect(c.images()[0].status).toBe('done');
 	});
 
 	it('does not re-show the consent banner when the accepted flag is already set', () => {

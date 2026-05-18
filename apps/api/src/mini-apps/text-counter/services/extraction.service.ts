@@ -19,12 +19,28 @@
  *
  * Parse failures from the AI surface as `BadGatewayException` (502)
  * with a generic message; the raw AI text is logged at debug level
- * only.
+ * only. Provider-level errors map to specific statuses:
+ *
+ *   - `AIRateLimitError`  → 429 Too Many Requests
+ *   - `AITimeoutError`    → 504 Gateway Timeout
+ *   - `AIProviderError`   → 502 Bad Gateway
  */
 
-import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
+import {
+	BadGatewayException,
+	GatewayTimeoutException,
+	HttpException,
+	Injectable,
+	Logger,
+} from '@nestjs/common';
 
-import { AIService } from '../../../ai/ai.service';
+import {
+	AIProviderError,
+	AIRateLimitError,
+	AIService,
+	AITimeoutError,
+} from '../../../ai';
+import type { AIVisionResponse } from '../../../ai';
 import { ImageFileValidationService } from '../../../_platform/files';
 import type { ValidatedImage } from '../../../_platform/files';
 import type { ExtractRequestDto } from '../dtos/extract-request.dto';
@@ -50,6 +66,22 @@ interface ExtractInput {
 
 const AI_PARSE_FAILURE_MESSAGE =
 	'Text extraction failed — the vision provider returned an unexpected response.';
+const AI_RATE_LIMIT_MESSAGE =
+	'Text extraction is temporarily rate-limited. Try again in a moment.';
+const AI_TIMEOUT_MESSAGE =
+	'Text extraction timed out waiting on the vision provider. Try again.';
+const AI_PROVIDER_FAILURE_MESSAGE =
+	'Text extraction failed — the vision provider is currently unavailable.';
+
+/**
+ * Truncate `templateId` for log fields. We never want to dump the full
+ * id (cheap pivot to scrape org content via log grep) but a short
+ * prefix is useful when correlating with traces.
+ */
+function templateIdHint(templateId: string | undefined): string | undefined {
+	if (!templateId) return undefined;
+	return templateId.slice(0, 8);
+}
 
 @Injectable()
 export class ExtractionService {
@@ -85,12 +117,24 @@ export class ExtractionService {
 		// 3. Build prompt.
 		const prompt = buildPrompt(dto.mode, template);
 
-		// 4. Vision call. Base64-encode the buffer and hand it off.
+		// 4. Vision call. Base64-encode the buffer and hand it off. Map
+		// provider-level errors to specific HTTP statuses so callers can
+		// distinguish "try again later" (429) from "the upstream is
+		// timing out" (504) from "the upstream is broken" (502). Without
+		// this catch all three bubble as 500s from Nest's default
+		// handler.
 		const base64 = validated.buffer.toString('base64');
-		const aiResponse = await this.aiService.analyzeImage({
-			images: [{ base64, mimeType: validated.mimeType }],
-			prompt,
-		});
+		let aiResponse: AIVisionResponse;
+		try {
+			aiResponse = await this.aiService.analyzeImage({
+				images: [{ base64, mimeType: validated.mimeType }],
+				prompt,
+			});
+		} catch (err) {
+			// handleAiError always throws; the `never` return type lets TS
+			// narrow `aiResponse` as defined below.
+			this.handleAiError(err, dto, orgId);
+		}
 
 		// 5. Parse + shape-validate.
 		let parsed: ExtractResponseDto;
@@ -129,6 +173,55 @@ export class ExtractionService {
 		(validated as { buffer?: Buffer }).buffer = undefined;
 
 		return result;
+	}
+
+	/**
+	 * Map a thrown AI-provider error to the appropriate HTTP status:
+	 *
+	 *   - `AIRateLimitError`  → 429 Too Many Requests
+	 *   - `AITimeoutError`    → 504 Gateway Timeout
+	 *   - `AIProviderError`   → 502 Bad Gateway
+	 *
+	 * Anything else is rethrown for the default Nest exception filter
+	 * to handle (500 by default).
+	 *
+	 * Provider error messages may include API keys, prompt fragments, or
+	 * snippets of the user's extracted content (the upstream often
+	 * echoes parts of the request) — never propagate them to the
+	 * client. Log at warn with structured, non-content fields only.
+	 *
+	 * Declared `never` so the caller's narrow tracks that this either
+	 * throws or rethrows.
+	 */
+	private handleAiError(
+		err: unknown,
+		dto: ExtractRequestDto,
+		orgId: string,
+	): never {
+		const meta = {
+			orgId,
+			mode: dto.mode,
+			templateIdHint: templateIdHint(dto.templateId),
+			name: (err as { name?: string })?.name,
+		};
+
+		if (err instanceof AIRateLimitError) {
+			this.logger.warn(
+				`Vision provider rate-limited: ${JSON.stringify(meta)}`,
+			);
+			throw new HttpException(AI_RATE_LIMIT_MESSAGE, 429);
+		}
+		if (err instanceof AITimeoutError) {
+			this.logger.warn(
+				`Vision provider timed out: ${JSON.stringify(meta)}`,
+			);
+			throw new GatewayTimeoutException(AI_TIMEOUT_MESSAGE);
+		}
+		if (err instanceof AIProviderError) {
+			this.logger.warn(`Vision provider error: ${JSON.stringify(meta)}`);
+			throw new BadGatewayException(AI_PROVIDER_FAILURE_MESSAGE);
+		}
+		throw err;
 	}
 
 	/**

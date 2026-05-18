@@ -316,7 +316,7 @@ describe('TemplateService', () => {
 	// update
 	// -----------------------------------------------------------------------
 	describe('update', () => {
-		it('replaces the field list outright (delete + re-insert)', async () => {
+		it('inserts new fields and deletes existing fields the payload omits', async () => {
 			const tmpl = createMockTemplate();
 			const orgId = tmpl.organizationId;
 			templateRepo.findOne.mockResolvedValue(tmpl);
@@ -353,11 +353,145 @@ describe('TemplateService', () => {
 			expect(result.name).toBe('Renamed');
 			expect(result.fields).toHaveLength(1);
 			expect(result.fields[0].label).toBe('new-headline');
+		});
 
-			// The old fields are removed before new ones are inserted.
-			expect(manager._fieldRepo.delete).toHaveBeenCalledWith({
-				templateId: tmpl.id,
+		it('preserves field ids when payload fields carry their existing id (no rows deleted, no new rows inserted)', async () => {
+			// Existing template has two fields with stable ids; payload
+			// repeats both ids → service should update in place, never
+			// delete-and-reinsert.
+			const existingFieldA = createMockField({
+				id: 'field-a',
+				label: 'headline',
+				position: 0,
+				rules: [{ type: 'maxCharacters', value: 25 }],
 			});
+			const existingFieldB = createMockField({
+				id: 'field-b',
+				label: 'body',
+				position: 1,
+				rules: [{ type: 'maxWords', value: 30 }],
+			});
+			const tmpl = createMockTemplate({
+				fields: [existingFieldA, existingFieldB],
+			});
+			templateRepo.findOne.mockResolvedValue(tmpl);
+
+			const dto: UpdateTemplateDto = {
+				name: 'Renamed',
+				fields: [
+					{
+						id: 'field-a',
+						label: 'headline-renamed',
+						rules: [{ type: 'singleLine' }],
+					},
+					{
+						id: 'field-b',
+						label: 'body',
+						rules: [{ type: 'maxWords', value: 50 }],
+					},
+				],
+			} as UpdateTemplateDto;
+
+			const manager = mockManager();
+			manager._templateRepo.save.mockImplementation(async (t: any) => t);
+			manager._fieldRepo.save.mockImplementation(
+				async (rows: any) => rows,
+			);
+			manager._fieldRepo.delete.mockResolvedValue({ affected: 0 });
+
+			dataSource.transaction.mockImplementation(async (cb: any) =>
+				cb(manager),
+			);
+
+			const result = await service.update({
+				id: tmpl.id,
+				dto,
+				orgId: tmpl.organizationId,
+			});
+
+			// Both existing field ids must survive the update.
+			expect(result.fields.map((f) => f.id).sort()).toEqual([
+				'field-a',
+				'field-b',
+			]);
+
+			// fieldRepo.delete must NOT be called when nothing is removed.
+			expect(manager._fieldRepo.delete).not.toHaveBeenCalled();
+
+			// fieldRepo.save receives the SAME row references (in-place
+			// update — id preserved).
+			const savedRows = manager._fieldRepo.save.mock.calls[0][0];
+			expect(savedRows).toHaveLength(2);
+			const savedIds = savedRows.map((r: any) => r.id).sort();
+			expect(savedIds).toEqual(['field-a', 'field-b']);
+
+			// And the in-place update reflects the new label / rules.
+			const rowA = savedRows.find((r: any) => r.id === 'field-a');
+			expect(rowA.label).toBe('headline-renamed');
+			expect(rowA.rules).toEqual([{ type: 'singleLine' }]);
+		});
+
+		it('inserts new fields and deletes existing fields the payload omits while preserving ids of the survivors', async () => {
+			const existingFieldA = createMockField({
+				id: 'field-a',
+				label: 'headline',
+				position: 0,
+			});
+			const existingFieldB = createMockField({
+				id: 'field-b',
+				label: 'body',
+				position: 1,
+			});
+			const tmpl = createMockTemplate({
+				fields: [existingFieldA, existingFieldB],
+			});
+			templateRepo.findOne.mockResolvedValue(tmpl);
+
+			// Payload keeps field-a, drops field-b, adds a new field.
+			const dto: UpdateTemplateDto = {
+				name: 'Mixed',
+				fields: [
+					{
+						id: 'field-a',
+						label: 'headline',
+						rules: [],
+					},
+					{
+						label: 'new-cta',
+						rules: [],
+					},
+				],
+			} as UpdateTemplateDto;
+
+			const manager = mockManager();
+			manager._templateRepo.save.mockImplementation(async (t: any) => t);
+			manager._fieldRepo.save.mockImplementation(async (rows: any) =>
+				rows.map((r: any, i: number) => ({
+					...r,
+					id: r.id ?? `new-id-${i}`,
+				})),
+			);
+			manager._fieldRepo.delete.mockResolvedValue({ affected: 1 });
+
+			dataSource.transaction.mockImplementation(async (cb: any) =>
+				cb(manager),
+			);
+
+			const result = await service.update({
+				id: tmpl.id,
+				dto,
+				orgId: tmpl.organizationId,
+			});
+
+			// field-b is gone, field-a survives with its id, plus one new row.
+			expect(result.fields).toHaveLength(2);
+			expect(result.fields.find((f) => f.id === 'field-a')).toBeDefined();
+			expect(
+				result.fields.find((f) => f.id === 'field-b'),
+			).toBeUndefined();
+
+			// Delete was called with only the omitted id.
+			expect(manager._fieldRepo.delete).toHaveBeenCalledWith(['field-b']);
 		});
 
 		it('throws NotFoundException for an id in a different org', async () => {

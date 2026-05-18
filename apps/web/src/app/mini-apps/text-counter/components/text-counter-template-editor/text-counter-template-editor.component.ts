@@ -514,11 +514,18 @@ export class TextCounterTemplateEditorComponent implements OnInit {
 	}
 
 	private buildPayload(): CreateTemplatePayload & UpdateTemplatePayload {
-		const fields: TemplateFieldPayload[] = this.fields().map((f, i) => ({
-			label: f.label,
-			position: i,
-			rules: f.rules.map((r) => ({ ...r }) as Rule),
-		}));
+		const fields: TemplateFieldPayload[] = this.fields().map((f, i) => {
+			const base: TemplateFieldPayload = {
+				label: f.label,
+				position: i,
+				rules: f.rules.map((r) => ({ ...r }) as Rule),
+			};
+			// Preserve field id on update so the API can match the row
+			// in place rather than regenerating UUIDs (which would
+			// orphan any client-side state keyed by the id).
+			if (f.id) base.id = f.id;
+			return base;
+		});
 		return { name: this.name(), fields };
 	}
 

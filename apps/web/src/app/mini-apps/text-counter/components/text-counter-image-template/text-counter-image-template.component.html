@@ -7,9 +7,11 @@
 		</p>
 	</header>
 
-	<!-- M11 consent banner — only after at least one image has been added. -->
+	<!-- M11 consent banner — only after at least one image has been added.
+	     The banner now GATES the first extraction (see runExtraction) and
+	     emits `accepted` so we can drain any queued cards. -->
 	@if (hasAnyCards()) {
-		<app-text-counter-consent-banner />
+		<app-text-counter-consent-banner (accepted)="onConsentAccepted()" />
 	}
 
 	<!-- Templates load error (e.g. network) — surfaces at the top so
