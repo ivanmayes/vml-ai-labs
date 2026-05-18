@@ -1,10 +1,28 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { Template } from './entities/template.entity';
+import { TemplateField } from './entities/template-field.entity';
+import { TemplateController } from './template.controller';
+import { TemplateService } from './services/template.service';
 
 /**
- * Text Counter is a client-only mini app: no controllers, no entities, no DB tables.
- * The module exists for parity with `apps/mini-apps.json` and to register the schema
- * via SchemaBootstrapService — but it deliberately registers nothing inside.
- * See: docs/plans/2026-05-14-001-feat-text-counter-mini-app-plan.md (R9).
+ * Text Counter mini app — module wiring.
+ *
+ * U2 introduces org-scoped template CRUD. The text-counter mini app
+ * is no longer client-only as of this unit; the `text_counter` schema
+ * is created by migration `1747958400000-CreateTextCounterSchema.ts`
+ * (U1) and the `template` + `template_field` tables back the persisted
+ * state. Counting and rule evaluation remain client-side; the server
+ * persists only the reusable templates.
+ *
+ * No CommonModule import: this mini app does not consume the per-space
+ * membership infra (templates are org-scoped, not space-scoped).
  */
-@Module({})
+@Module({
+	imports: [TypeOrmModule.forFeature([Template, TemplateField])],
+	controllers: [TemplateController],
+	providers: [TemplateService],
+	exports: [TemplateService],
+})
 export class TextCounterModule {}
