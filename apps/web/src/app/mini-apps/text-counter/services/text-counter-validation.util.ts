@@ -3,6 +3,28 @@ import type { TextCounterSettings } from '../models/text-counter.types';
 
 import { computeStats } from './text-counter.util';
 
+/**
+ * Lowercase the text and each rule term once, then walk the terms
+ * looking for substring matches. Returns the original-casing terms
+ * that matched (for display in the failure detail).
+ *
+ * Pulled out of `evaluateRule` so the dispatch stays under the cognitive
+ * complexity budget; previously both sides were lowercased on every
+ * iteration which got expensive for live keystroke evaluation.
+ */
+function matchForbiddenTerms(text: string, terms: string[]): string[] {
+	const loweredText = text.toLowerCase();
+	const loweredTerms = terms.map((t) => t.toLowerCase());
+	const matched: string[] = [];
+	for (let i = 0; i < loweredTerms.length; i++) {
+		const term = loweredTerms[i];
+		if (term.length > 0 && loweredText.includes(term)) {
+			matched.push(terms[i]);
+		}
+	}
+	return matched;
+}
+
 export function evaluateRules(
 	text: string,
 	rules: Rule[],
@@ -68,11 +90,7 @@ function evaluateRule(
 			};
 		}
 		case 'forbiddenWords': {
-			const lowered = text.toLowerCase();
-			const matched = rule.values.filter(
-				(term) =>
-					term.length > 0 && lowered.includes(term.toLowerCase()),
-			);
+			const matched = matchForbiddenTerms(text, rule.values);
 			const pass = matched.length === 0;
 			return {
 				rule,

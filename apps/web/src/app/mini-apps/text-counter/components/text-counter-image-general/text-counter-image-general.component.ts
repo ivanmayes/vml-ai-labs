@@ -26,6 +26,14 @@ import type {
 	TextStats,
 } from '../../models/text-counter.types';
 import { loadSettings } from '../../services/text-counter-settings.util';
+import {
+	ACCEPT_MIMES,
+	MAX_UPLOAD_BYTES,
+	createImagePreviewUrl,
+	extractErrorMessage,
+	nextId,
+	revokeImagePreviewUrl,
+} from '../../services/text-counter-shared.util';
 import { computeStats } from '../../services/text-counter.util';
 import { TextCounterExtractionService } from '../../services/text-counter-extraction.service';
 import { TextCounterConsentBannerComponent } from '../text-counter-consent-banner/text-counter-consent-banner.component';
@@ -57,21 +65,6 @@ interface RowView {
 	id: string;
 	text: string;
 	stats: TextStats;
-}
-
-const ACCEPT_MIMES = 'image/png,image/jpeg,image/webp,image/gif';
-const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
-
-function nextId(): string {
-	if (
-		typeof crypto !== 'undefined' &&
-		typeof crypto.randomUUID === 'function'
-	) {
-		return crypto.randomUUID();
-	}
-	// Fallback for environments without crypto.randomUUID — collision-resistant
-	// enough for in-memory keys in tests.
-	return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function narrowGeneral(
@@ -171,7 +164,7 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 		const entry: ImageEntry = {
 			id: nextId(),
 			file,
-			previewUrl: this.createPreview(file),
+			previewUrl: createImagePreviewUrl(file),
 			status: 'extracting',
 			rows: [],
 			error: null,
@@ -210,12 +203,10 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 					);
 					this.cdr.markForCheck();
 				},
-				error: (err) => {
-					const message =
-						err?.error?.message ??
-						(typeof err?.message === 'string'
-							? err.message
-							: 'Extraction failed. Try again.');
+				error: (err: unknown) => {
+					const message = extractErrorMessage(err, {
+						fallback: 'Extraction failed.',
+					});
 					this.images.update((list) =>
 						list.map((entry) =>
 							entry.id === entryId
@@ -293,20 +284,8 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 		return row.id;
 	}
 
-	private createPreview(file: File): string {
-		try {
-			return URL.createObjectURL(file);
-		} catch {
-			return '';
-		}
-	}
-
 	private releasePreview(entry: ImageEntry): void {
 		if (!entry.previewUrl) return;
-		try {
-			URL.revokeObjectURL(entry.previewUrl);
-		} catch {
-			/* no-op */
-		}
+		revokeImagePreviewUrl(entry.previewUrl);
 	}
 }
