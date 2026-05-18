@@ -1,0 +1,42 @@
+@if (!hasTemplates()) {
+	<div
+		class="template-picker-empty flex flex-col gap-2 items-start"
+		role="status"
+	>
+		<p class="empty-text m-0 text-sm">
+			No templates yet — create your first to extract structured text from
+			this image.
+		</p>
+		<p-button
+			label="Create your first"
+			icon="pi pi-plus"
+			size="small"
+			(onClick)="onManageTemplates()"
+			[disabled]="disabled()"
+		></p-button>
+	</div>
+} @else {
+	<div class="template-picker flex flex-wrap items-center gap-2">
+		<p-select
+			[options]="options()"
+			optionLabel="label"
+			optionValue="value"
+			placeholder="Choose a template…"
+			[ngModel]="selectedId()"
+			(ngModelChange)="onSelectChange($event)"
+			[showClear]="true"
+			[disabled]="disabled()"
+			styleClass="template-picker-select"
+			aria-label="Template"
+		></p-select>
+		<p-button
+			label="Manage templates"
+			icon="pi pi-cog"
+			size="small"
+			severity="secondary"
+			[text]="true"
+			(onClick)="onManageTemplates()"
+			[disabled]="disabled()"
+		></p-button>
+	</div>
+}

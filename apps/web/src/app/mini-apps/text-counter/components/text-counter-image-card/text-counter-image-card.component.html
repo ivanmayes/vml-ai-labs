@@ -1,0 +1,286 @@
+<p-card class="image-card">
+	<ng-template pTemplate="header">
+		<div class="card-header flex items-start gap-3 p-3">
+			<img
+				class="thumb"
+				[src]="card().previewUrl"
+				[alt]="card().file.name"
+			/>
+			<div class="flex-1 min-w-0 flex flex-col gap-1">
+				<span class="card-filename" [title]="card().file.name">
+					{{ card().file.name }}
+				</span>
+				@switch (card().status) {
+					@case ("extracting") {
+						<p-tag value="Extracting…" severity="info"></p-tag>
+					}
+					@case ("error") {
+						<p-tag value="Error" severity="danger"></p-tag>
+					}
+					@case ("done") {
+						<p-tag
+							[value]="
+								fieldRows().length +
+								' field(s) · ' +
+								poolEntries().length +
+								' unassigned'
+							"
+							severity="success"
+						></p-tag>
+					}
+					@default {
+						<p-tag value="Pending" severity="secondary"></p-tag>
+					}
+				}
+			</div>
+			<button
+				type="button"
+				class="card-remove"
+				(click)="onRemoveClicked()"
+				[attr.aria-label]="'Remove ' + card().file.name"
+			>
+				<i class="pi pi-times" aria-hidden="true"></i>
+			</button>
+		</div>
+	</ng-template>
+
+	<div class="card-body flex flex-col gap-3">
+		<!-- Template picker -->
+		<app-text-counter-template-picker
+			[templates]="templates()"
+			[selectedId]="card().templateId"
+			[orgId]="orgId()"
+			(selectedIdChange)="onTemplateChange($event)"
+			(manageTemplatesClicked)="onManageTemplatesClicked()"
+		/>
+
+		<!-- Body content driven by status -->
+		@if (!card().templateId) {
+			<p class="card-hint">
+				Pick a template to extract and validate text from this image.
+			</p>
+		} @else if (card().status === "extracting") {
+			<div class="flex flex-col gap-2">
+				<p-skeleton height="2rem"></p-skeleton>
+				<p-skeleton height="2rem"></p-skeleton>
+				<p-skeleton height="2rem"></p-skeleton>
+			</div>
+		} @else if (card().status === "error") {
+			<div class="card-error flex flex-col gap-2">
+				<p class="card-error-text">
+					{{ card().error || "Extraction failed." }}
+				</p>
+				<div>
+					<p-button
+						label="Retry"
+						icon="pi pi-refresh"
+						size="small"
+						severity="secondary"
+						(onClick)="onRetryClicked()"
+					></p-button>
+				</div>
+			</div>
+		} @else if (card().status === "done") {
+			<!-- Fields list -->
+			<ul class="fields-list flex flex-col gap-2">
+				@for (row of fieldRows(); track trackFieldRow($index, row)) {
+					<li
+						class="field-row flex flex-col gap-1"
+						[class.is-drag-target]="dragging()"
+					>
+						<div class="field-row-header flex items-center gap-2">
+							<label class="field-label" [for]="row.dropListId">
+								{{ row.field.label }}
+							</label>
+							<span class="field-counts">
+								<span class="field-count-label">chars</span>
+								<span class="field-count-value">{{
+									row.stats.characters | number
+								}}</span>
+								<span class="field-count-label">·</span>
+								<span class="field-count-label">words</span>
+								<span class="field-count-value">{{
+									row.stats.words | number
+								}}</span>
+							</span>
+							<span class="field-validation ml-auto">
+								@if (row.hasRules) {
+									@if (row.failed.length === 0) {
+										<i
+											class="pi pi-check-circle field-pass"
+											aria-label="Passes all rules"
+										></i>
+									} @else {
+										<i
+											class="pi pi-exclamation-circle field-fail"
+											[pTooltip]="row.tooltipText"
+											tooltipPosition="left"
+											[attr.aria-label]="
+												'Rules failed: ' +
+												row.tooltipText
+											"
+										></i>
+									}
+								}
+							</span>
+						</div>
+
+						<div
+							cdkDropList
+							[id]="row.dropListId"
+							[cdkDropListConnectedTo]="connectedListIds()"
+							[cdkDropListData]="row.items"
+							class="field-droplist"
+							[class.is-empty]="row.text.length === 0"
+							(cdkDropListDropped)="
+								onFieldDropped($event, row.field.id)
+							"
+						>
+							@if (row.text.length > 0) {
+								<div
+									class="chunk field-chunk"
+									cdkDrag
+									[cdkDragData]="row.text"
+									(cdkDragStarted)="onDragStarted()"
+									(cdkDragEnded)="onDragEnded()"
+								>
+									<textarea
+										pTextarea
+										[ngModel]="row.text"
+										(ngModelChange)="
+											onFieldTextChange(
+												row.field.id,
+												$event
+											)
+										"
+										rows="2"
+										class="chunk-textarea w-full font-mono text-sm"
+										[id]="row.dropListId"
+										[attr.aria-label]="
+											row.field.label + ' text'
+										"
+									></textarea>
+									<div class="chunk-actions">
+										<p-menu
+											[model]="
+												keyboardMenuForField(
+													row.field.id
+												)
+											"
+											[popup]="true"
+											#fieldMenu
+										></p-menu>
+										<p-button
+											icon="pi pi-ellipsis-v"
+											severity="secondary"
+											[text]="true"
+											size="small"
+											(onClick)="fieldMenu.toggle($event)"
+											[attr.aria-label]="
+												'Move ' + row.field.label
+											"
+										></p-button>
+									</div>
+								</div>
+							} @else {
+								<div class="empty-target text-sm">
+									Drop a chunk here or edit directly.
+									<textarea
+										pTextarea
+										[ngModel]="''"
+										(ngModelChange)="
+											onFieldTextChange(
+												row.field.id,
+												$event
+											)
+										"
+										rows="2"
+										class="chunk-textarea w-full font-mono text-sm mt-1"
+										[id]="row.dropListId + '-empty'"
+										[attr.aria-label]="
+											row.field.label + ' text (empty)'
+										"
+									></textarea>
+								</div>
+							}
+						</div>
+					</li>
+				}
+			</ul>
+
+			<!-- Unassigned pool sits BELOW the field list (R20). -->
+			<section class="pool flex flex-col gap-1">
+				<h3 class="pool-heading">Other extracted text</h3>
+				<div
+					cdkDropList
+					[id]="poolListId"
+					[cdkDropListConnectedTo]="connectedListIds()"
+					[cdkDropListData]="card().unassigned"
+					class="pool-droplist"
+					[class.is-drag-target]="dragging()"
+					(cdkDropListDropped)="onPoolDropped($event)"
+				>
+					@if (poolEntries().length === 0) {
+						<p class="pool-empty">
+							No leftover text — everything is in a field.
+						</p>
+					} @else {
+						<ul class="pool-list flex flex-col gap-2">
+							@for (
+								entry of poolEntries();
+								track trackPoolEntry($index, entry)
+							) {
+								<li
+									class="chunk pool-chunk"
+									cdkDrag
+									[cdkDragData]="entry.text"
+									(cdkDragStarted)="onDragStarted()"
+									(cdkDragEnded)="onDragEnded()"
+								>
+									<div class="pool-chunk-text">
+										{{ entry.text }}
+									</div>
+									<div class="pool-chunk-meta">
+										<span class="pool-count">
+											<span class="pool-count-label"
+												>chars</span
+											>
+											<span class="pool-count-value">{{
+												entry.stats.characters | number
+											}}</span>
+										</span>
+										<span class="pool-count">
+											<span class="pool-count-label"
+												>words</span
+											>
+											<span class="pool-count-value">{{
+												entry.stats.words | number
+											}}</span>
+										</span>
+										<p-menu
+											[model]="
+												keyboardMenuForPoolEntry(
+													entry.index
+												)
+											"
+											[popup]="true"
+											#poolMenu
+										></p-menu>
+										<p-button
+											icon="pi pi-ellipsis-v"
+											severity="secondary"
+											[text]="true"
+											size="small"
+											(onClick)="poolMenu.toggle($event)"
+											[attr.aria-label]="'Move chunk to field'"
+										></p-button>
+									</div>
+								</li>
+							}
+						</ul>
+					}
+				</div>
+			</section>
+		}
+	</div>
+</p-card>
