@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 
 import type {
 	ExtractMode,
@@ -63,6 +63,18 @@ class FakeExtractionService {
 	}
 	queueError(err: unknown): void {
 		this.responders.push(() => throwError(() => err));
+	}
+	/**
+	 * Queue a Subject so the spec can simulate an in-flight extraction
+	 * (and observe whether the orchestrator unsubscribes on remove /
+	 * template-switch before the result resolves).
+	 */
+	queuePending(
+		subject: Subject<ExtractionResult> | Subject<TemplateExtractionResult>,
+	): void {
+		this.responders.push(() =>
+			(subject as Subject<ExtractionResult>).asObservable(),
+		);
 	}
 
 	extract(
@@ -553,6 +565,71 @@ describe('TextCounterImageTemplateComponent', () => {
 		expect(URL.revokeObjectURL).toHaveBeenCalled();
 	});
 
+	it('cancels an in-flight extraction subscription when the card is removed before the result arrives', () => {
+		const tpl = makeTemplate({ id: 'tpl-pending' });
+		templates.queueList([tpl]);
+
+		// Queue a never-resolving Subject so the orchestrator's subscribe()
+		// stays open until we either tear it down or push a value.
+		const pending = new Subject<TemplateExtractionResult>();
+		extraction.queuePending(pending);
+
+		const fixture = buildWith({ extraction, templates });
+		const c = fixture.componentInstance;
+
+		c.onUpload({ files: [fakeImage()] });
+		fixture.detectChanges();
+		const cardId = c.imageCards()[0].id;
+		c.onTemplateChange(cardId, 'tpl-pending');
+		fixture.detectChanges();
+
+		expect(c.imageCards()[0].status).toBe('extracting');
+		expect(pending.observed).toBe(true);
+
+		c.onRemove(cardId);
+		fixture.detectChanges();
+
+		// After removal the Subject should have no subscribers — the
+		// orchestrator unsubscribed before tearing the card down.
+		expect(pending.observed).toBe(false);
+		expect(c.imageCards().length).toBe(0);
+	});
+
+	it('cancels an in-flight extraction when the user switches to a different template mid-extraction', () => {
+		const tplA = makeTemplate({ id: 'tpl-A' });
+		const tplB = makeTemplate({ id: 'tpl-B' });
+		templates.queueList([tplA, tplB]);
+
+		const firstPending = new Subject<TemplateExtractionResult>();
+		extraction.queuePending(firstPending);
+		extraction.queueSuccess({
+			matches: [
+				{ label: 'headline', text: 'B-headline' },
+				{ label: 'body', text: 'B-body' },
+			],
+			unassigned: [],
+		} as TemplateExtractionResult);
+
+		const fixture = buildWith({ extraction, templates });
+		const c = fixture.componentInstance;
+
+		c.onUpload({ files: [fakeImage()] });
+		fixture.detectChanges();
+		const cardId = c.imageCards()[0].id;
+		c.onTemplateChange(cardId, 'tpl-A');
+		fixture.detectChanges();
+		expect(firstPending.observed).toBe(true);
+
+		c.onTemplateChange(cardId, 'tpl-B');
+		fixture.detectChanges();
+
+		// First extraction's Subject should now be unsubscribed.
+		expect(firstPending.observed).toBe(false);
+		// Second extraction fires and resolves immediately.
+		expect(c.imageCards()[0].status).toBe('done');
+		expect(c.imageCards()[0].assignments['fa-headline']).toBe('B-headline');
+	});
+
 	// -----------------------------------------------------------------
 	// Template editor wiring
 	// -----------------------------------------------------------------
@@ -569,10 +646,9 @@ describe('TextCounterImageTemplateComponent', () => {
 		expect(c.editorMode()).toBe('create');
 	});
 
-	it('refreshes the templates list after the editor reports a save', () => {
+	it('merges a newly saved template into the local list without re-fetching', () => {
 		templates.queueList([]); // initial mount — empty
 		const newTpl = makeTemplate({ id: 'tpl-new', name: 'New One' });
-		templates.queueList([newTpl]); // post-save refresh
 
 		const fixture = buildWith({ extraction, templates });
 		const c = fixture.componentInstance;
@@ -586,10 +662,24 @@ describe('TextCounterImageTemplateComponent', () => {
 		expect(c.editorVisible()).toBe(false);
 	});
 
-	it('refreshes the templates list when the editor reports a delete', () => {
+	it('replaces an existing template in place when the editor reports an update', () => {
+		const original = makeTemplate({ id: 'tpl-edit', name: 'Original' });
+		templates.queueList([original]);
+
+		const fixture = buildWith({ extraction, templates });
+		const c = fixture.componentInstance;
+
+		const updated: Template = { ...original, name: 'Updated' };
+		c.onEditorSaved(updated);
+		fixture.detectChanges();
+
+		expect(c.templates().length).toBe(1);
+		expect(c.templates()[0].name).toBe('Updated');
+	});
+
+	it('removes a deleted template from the local list without re-fetching', () => {
 		const tpl = makeTemplate({ id: 'tpl-del' });
 		templates.queueList([tpl]);
-		templates.queueList([]); // post-delete refresh
 
 		const fixture = buildWith({ extraction, templates });
 		const c = fixture.componentInstance;
@@ -600,6 +690,32 @@ describe('TextCounterImageTemplateComponent', () => {
 		fixture.detectChanges();
 
 		expect(c.templates()).toEqual([]);
+	});
+
+	it('flags any card using the deleted template after editor delete (so the UI can prompt)', () => {
+		const tpl = makeTemplate({ id: 'tpl-shared' });
+		templates.queueList([tpl]);
+		extraction.queueSuccess({
+			matches: [
+				{ label: 'headline', text: 'H' },
+				{ label: 'body', text: 'B' },
+			],
+			unassigned: [],
+		} as TemplateExtractionResult);
+
+		const fixture = buildWith({ extraction, templates });
+		const c = fixture.componentInstance;
+
+		c.onUpload({ files: [fakeImage()] });
+		fixture.detectChanges();
+		const cardId = c.imageCards()[0].id;
+		c.onTemplateChange(cardId, 'tpl-shared');
+		fixture.detectChanges();
+
+		c.onEditorDeleted('tpl-shared');
+		fixture.detectChanges();
+
+		expect(c.deletedTemplateForCard()[cardId]).toBe(true);
 	});
 
 	// -----------------------------------------------------------------

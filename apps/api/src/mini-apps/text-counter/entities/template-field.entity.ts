@@ -8,27 +8,21 @@ import {
 	UpdateDateColumn,
 } from 'typeorm';
 
+import type { RuleDtoUnion } from '../dtos/rule.dto';
+
 import { Template } from './template.entity';
 
 /**
  * Stored validation rule shape — JSONB array on each field row.
  *
- * V1 supports six rule types. The discriminator is `type`; the optional
- * payloads (`value`, `values`) vary per type. Class-validator on the
- * incoming DTOs enforces the shape; this interface mirrors the
- * post-validation runtime form.
+ * Mirrors the post-validation `RuleDtoUnion` runtime shape; we import
+ * the DTO union directly instead of redeclaring it here so the entity
+ * and DTOs cannot drift out of sync.
  *
  * See plan Key Decisions: "Validation rules persist as JSONB ..." for
  * the rationale (cheaper for V1, single-query reads, no per-rule
  * schema migrations).
  */
-export type StoredRule =
-	| { type: 'maxCharacters'; value: number }
-	| { type: 'maxWords'; value: number }
-	| { type: 'minCharacters'; value: number }
-	| { type: 'minWords'; value: number }
-	| { type: 'singleLine' }
-	| { type: 'forbiddenWords'; values: string[] };
 
 @Entity({ name: 'template_field', schema: 'text_counter' })
 export class TemplateField {
@@ -54,7 +48,7 @@ export class TemplateField {
 	position: number;
 
 	@Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
-	rules: StoredRule[];
+	rules: RuleDtoUnion[];
 
 	@CreateDateColumn({ type: 'timestamptz' })
 	createdAt: Date;

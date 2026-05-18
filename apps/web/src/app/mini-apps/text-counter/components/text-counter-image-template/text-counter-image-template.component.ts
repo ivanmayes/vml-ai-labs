@@ -34,13 +34,13 @@ import {
 	OnDestroy,
 	OnInit,
 	computed,
-	effect,
 	inject,
 	signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FileUploadModule } from 'primeng/fileupload';
+import { Subscription } from 'rxjs';
 
 import { environment } from '../../../../../environments/environment';
 import { PrimeNgModule } from '../../../../shared/primeng.module';
@@ -54,6 +54,14 @@ import type { TextCounterSettings } from '../../models/text-counter.types';
 import { TextCounterExtractionService } from '../../services/text-counter-extraction.service';
 import { TextCounterTemplatesService } from '../../services/text-counter-templates.service';
 import { loadSettings } from '../../services/text-counter-settings.util';
+import {
+	ACCEPT_MIMES,
+	MAX_UPLOAD_BYTES,
+	createImagePreviewUrl,
+	extractErrorMessage,
+	nextId,
+	revokeImagePreviewUrl,
+} from '../../services/text-counter-shared.util';
 import { TextCounterConsentBannerComponent } from '../text-counter-consent-banner/text-counter-consent-banner.component';
 import {
 	ImageCardState,
@@ -63,19 +71,6 @@ import {
 	EditorMode,
 	TextCounterTemplateEditorComponent,
 } from '../text-counter-template-editor/text-counter-template-editor.component';
-
-const ACCEPT_MIMES = 'image/png,image/jpeg,image/webp,image/gif';
-const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
-
-function nextId(): string {
-	if (
-		typeof crypto !== 'undefined' &&
-		typeof crypto.randomUUID === 'function'
-	) {
-		return crypto.randomUUID();
-	}
-	return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
 
 function narrowTemplate(
 	result: ExtractionResult,
@@ -128,28 +123,20 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 
 	readonly hasAnyCards = computed(() => this.imageCards().length > 0);
 
-	constructor() {
-		// Auto-trigger extraction whenever a card's template is selected
-		// for the first time. We watch `imageCards` and kick off the
-		// extraction call for any entry in the "pending" status that now
-		// has a template id. This keeps the orchestration logic in one
-		// place rather than threading it through the card component's
-		// outputs.
-		effect(() => {
-			const cards = this.imageCards();
-			for (const card of cards) {
-				if (card.templateId && card.status === 'pending') {
-					this.runExtraction(card.id);
-				}
-			}
-		});
-	}
+	// Active extraction subscriptions, keyed by cardId. Tracked so we can
+	// abort an in-flight request when the user removes a card or switches
+	// the card to a different template before the result arrives.
+	private readonly extractionSubs = new Map<string, Subscription>();
 
 	ngOnInit(): void {
 		this.refreshTemplates();
 	}
 
 	ngOnDestroy(): void {
+		for (const sub of this.extractionSubs.values()) {
+			sub.unsubscribe();
+		}
+		this.extractionSubs.clear();
 		for (const card of this.imageCards()) {
 			this.releasePreview(card);
 		}
@@ -172,7 +159,11 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 				},
 				error: (err: unknown) => {
 					this.templatesLoaded.set(true);
-					this.templatesError.set(extractErrorMessage(err));
+					this.templatesError.set(
+						extractErrorMessage(err, {
+							fallback: 'Failed to load templates.',
+						}),
+					);
 					this.cdr.markForCheck();
 				},
 			});
@@ -188,7 +179,7 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 		const newCards: ImageCardState[] = files.map((file) => ({
 			id: nextId(),
 			file,
-			previewUrl: this.createPreview(file),
+			previewUrl: createImagePreviewUrl(file),
 			templateId: null,
 			status: 'pending' as const,
 			assignments: {},
@@ -203,6 +194,15 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 	// -----------------------------------------------------------------
 
 	onTemplateChange(cardId: string, templateId: string | null): void {
+		// Cancel any in-flight extraction for this card — the user is
+		// either clearing the template or switching to a different one, so
+		// the pending result is no longer relevant.
+		const existing = this.extractionSubs.get(cardId);
+		if (existing) {
+			existing.unsubscribe();
+			this.extractionSubs.delete(cardId);
+		}
+
 		this.imageCards.update((list) =>
 			list.map((card) =>
 				card.id !== cardId
@@ -210,11 +210,10 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 					: {
 							...card,
 							templateId,
-							// Picking a (different) template resets assignments
-							// + unassigned and re-runs extraction. Clearing the
-							// template just resets the card to "pending without
-							// template" — no extraction fires.
-							status: templateId ? 'pending' : 'pending',
+							// Whether the user picked a new template or cleared
+							// it entirely, the card returns to "pending". When a
+							// templateId is set we fire extraction below.
+							status: 'pending',
 							assignments: {},
 							unassigned: [],
 							error: null,
@@ -229,6 +228,11 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 				delete next[cardId];
 				return next;
 			});
+			// Kick off extraction synchronously now that we know which
+			// template applies. (Previously a constructor effect() iterated
+			// every card on every signal mutation — replaced with this
+			// direct call.)
+			this.runExtraction(cardId);
 		}
 	}
 
@@ -260,6 +264,13 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 	}
 
 	onRemove(cardId: string): void {
+		// Cancel any in-flight extraction so we don't pay the AI cost on a
+		// card the user just discarded.
+		const sub = this.extractionSubs.get(cardId);
+		if (sub) {
+			sub.unsubscribe();
+			this.extractionSubs.delete(cardId);
+		}
 		const card = this.imageCards().find((c) => c.id === cardId);
 		if (card) this.releasePreview(card);
 		this.imageCards.update((list) => list.filter((c) => c.id !== cardId));
@@ -287,8 +298,7 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 						},
 			),
 		);
-		// The effect re-fires extraction because the card is now
-		// pending + has a templateId.
+		this.runExtraction(cardId);
 	}
 
 	openCreateTemplate(): void {
@@ -303,14 +313,32 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 		this.openCreateTemplate();
 	}
 
-	onEditorSaved(_: Template): void {
+	onEditorSaved(template: Template): void {
+		// Merge the saved template into the local list in place rather
+		// than re-fetching from the server. Avoids a redundant GET on
+		// every dialog close.
+		this.templates.update((list) => {
+			const idx = list.findIndex((t) => t.id === template.id);
+			if (idx === -1) return [...list, template];
+			const next = [...list];
+			next[idx] = template;
+			return next;
+		});
 		this.editorVisible.set(false);
-		this.refreshTemplates();
 	}
 
-	onEditorDeleted(_id: string): void {
+	onEditorDeleted(id: string): void {
+		this.templates.update((list) => list.filter((t) => t.id !== id));
+		// For any card currently using the deleted template, flag it so
+		// the per-card UI can prompt the user to pick a different one.
+		this.deletedTemplateForCard.update((map) => {
+			const next = { ...map };
+			for (const card of this.imageCards()) {
+				if (card.templateId === id) next[card.id] = true;
+			}
+			return next;
+		});
 		this.editorVisible.set(false);
-		this.refreshTemplates();
 	}
 
 	onEditorClosed(): void {
@@ -328,6 +356,17 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 	private runExtraction(cardId: string): void {
 		const card = this.imageCards().find((c) => c.id === cardId);
 		if (!card || !card.templateId) return;
+		const tpl =
+			this.templates().find((t) => t.id === card.templateId) ?? null;
+
+		// Cancel any previous in-flight extraction for this card before
+		// starting a new one (retry or rapid template switch).
+		const previous = this.extractionSubs.get(cardId);
+		if (previous) {
+			previous.unsubscribe();
+			this.extractionSubs.delete(cardId);
+		}
+
 		// Move to extracting.
 		this.imageCards.update((list) =>
 			list.map((c) =>
@@ -337,13 +376,13 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 			),
 		);
 
-		this.extractionService
+		const sub = this.extractionService
 			.extract(this.orgId, card.file, 'template', card.templateId)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (result) => {
-					const tpl = narrowTemplate(result);
-					if (!tpl) {
+					const tplResult = narrowTemplate(result);
+					if (!tplResult) {
 						this.imageCards.update((list) =>
 							list.map((c) =>
 								c.id !== cardId
@@ -355,15 +394,21 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 										},
 							),
 						);
+						this.extractionSubs.delete(cardId);
 						this.cdr.markForCheck();
 						return;
 					}
-					this.applyTemplateResult(cardId, tpl);
+					this.applyTemplateResult(cardId, tplResult, tpl);
+					this.extractionSubs.delete(cardId);
 					this.cdr.markForCheck();
 				},
 				error: (err: unknown) => {
 					const status = (err as { status?: number })?.status ?? 0;
-					const message = extractErrorMessage(err);
+					const message = extractErrorMessage(err, {
+						override404:
+							'This template no longer exists. Pick another from the list.',
+						fallback: 'Extraction failed. Try again.',
+					});
 					if (status === 404) {
 						this.deletedTemplateForCard.update((map) => ({
 							...map,
@@ -377,21 +422,23 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 								: { ...c, status: 'error', error: message },
 						),
 					);
+					this.extractionSubs.delete(cardId);
 					this.cdr.markForCheck();
 				},
 			});
+
+		this.extractionSubs.set(cardId, sub);
 	}
 
 	private applyTemplateResult(
 		cardId: string,
 		result: TemplateExtractionResult,
+		tpl: Template | null,
 	): void {
-		const card = this.imageCards().find((c) => c.id === cardId);
-		if (!card) return;
-		const tpl = this.templates().find((t) => t.id === card.templateId);
 		if (!tpl) {
-			// The template disappeared while we were extracting. Surface as
-			// a deleted-template error rather than dropping the result.
+			// The template disappeared between the extraction request and
+			// the response. Surface as a deleted-template error rather
+			// than silently dropping the result.
 			this.imageCards.update((list) =>
 				list.map((c) =>
 					c.id !== cardId
@@ -410,21 +457,16 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 			return;
 		}
 
+		// The API contract guarantees that `matches` is the same length as
+		// `template.fields` and is ordered by field position (see
+		// extraction.service.normalizeTemplateResponse on the API). Any
+		// stray AI labels are already routed to `unassigned`. We can
+		// therefore zip directly without any find-by-label / leftover
+		// shuffle on the client.
 		const assignments: Record<string, string> = {};
-		const remaining = [...result.matches];
-		for (const f of tpl.fields) {
-			const idx = remaining.findIndex((m) => m.label === f.label);
-			if (idx >= 0) {
-				const [m] = remaining.splice(idx, 1);
-				assignments[f.id] = m.text;
-			} else {
-				assignments[f.id] = '';
-			}
+		for (let i = 0; i < tpl.fields.length; i++) {
+			assignments[tpl.fields[i].id] = result.matches[i]?.text ?? '';
 		}
-		// Any leftover matches (labels the AI returned that don't map to
-		// any field) join the unassigned pool — better than dropping
-		// them silently.
-		const leftoverFromMatches = remaining.map((m) => m.text);
 
 		this.imageCards.update((list) =>
 			list.map((c) =>
@@ -435,10 +477,7 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 							status: 'done',
 							error: null,
 							assignments,
-							unassigned: [
-								...result.unassigned,
-								...leftoverFromMatches,
-							],
+							unassigned: [...result.unassigned],
 						},
 			),
 		);
@@ -456,36 +495,8 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 	// Internals
 	// -----------------------------------------------------------------
 
-	private createPreview(file: File): string {
-		try {
-			return URL.createObjectURL(file);
-		} catch {
-			return '';
-		}
-	}
-
 	private releasePreview(card: ImageCardState): void {
 		if (!card.previewUrl) return;
-		try {
-			URL.revokeObjectURL(card.previewUrl);
-		} catch {
-			/* no-op */
-		}
+		revokeImagePreviewUrl(card.previewUrl);
 	}
-}
-
-function extractErrorMessage(err: unknown): string {
-	if (typeof err === 'object' && err !== null) {
-		const e = err as {
-			error?: { message?: string };
-			message?: string;
-			status?: number;
-		};
-		if (e.status === 404) {
-			return 'This template no longer exists. Pick another from the list.';
-		}
-		if (e.error?.message) return e.error.message;
-		if (e.message) return e.message;
-	}
-	return 'Extraction failed. Try again.';
 }
