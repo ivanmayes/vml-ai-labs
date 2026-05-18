@@ -18,3 +18,11 @@ export type {
 	TemplateResponseDto,
 	TemplateFieldResponseDto,
 } from './template-response.dto';
+export { ExtractRequestDto } from './extract-request.dto';
+export type { ExtractMode } from './extract-request.dto';
+export type {
+	ExtractResponseDto,
+	ExtractGeneralResponseDto,
+	ExtractTemplateResponseDto,
+	ExtractMatchDto,
+} from './extract-response.dto';
