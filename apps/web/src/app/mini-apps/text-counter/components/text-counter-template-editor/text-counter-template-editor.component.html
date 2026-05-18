@@ -1,0 +1,354 @@
+<p-dialog
+	[visible]="visible()"
+	(visibleChange)="onDialogVisibleChange($event)"
+	[modal]="true"
+	[closable]="!saving()"
+	[dismissableMask]="!saving()"
+	[draggable]="false"
+	[style]="{ width: '92vw', maxWidth: '48rem' }"
+	[header]="headerLabel"
+>
+	<div class="template-editor flex flex-col gap-4">
+		<!-- Top error banner -->
+		@if (error(); as msg) {
+			<p-message severity="error" [text]="msg" class="w-full"></p-message>
+		}
+
+		<!-- Name -->
+		<div class="flex flex-col gap-1">
+			<label for="tpl-editor-name" class="text-sm font-medium opacity-80">
+				Template name
+			</label>
+			<input
+				id="tpl-editor-name"
+				pInputText
+				type="text"
+				[ngModel]="name()"
+				(ngModelChange)="onNameChange($event)"
+				placeholder="e.g. Holiday Carousel"
+				maxlength="255"
+				class="w-full"
+				aria-label="Template name"
+			/>
+			@if (!isNameValid() && name().length > 0) {
+				<small class="field-error">
+					Name is required, must be ≤ 255 chars, with no line breaks
+					or leading/trailing whitespace.
+				</small>
+			}
+		</div>
+
+		<!-- Fields -->
+		<div class="flex flex-col gap-2">
+			<div class="flex items-baseline justify-between">
+				<h3 class="settings-section-label">
+					Fields ({{ fields().length }} / {{ maxFields() }})
+				</h3>
+				<p-button
+					label="Add field"
+					icon="pi pi-plus"
+					severity="secondary"
+					size="small"
+					[outlined]="true"
+					[disabled]="fields().length >= maxFields()"
+					(onClick)="addField()"
+				></p-button>
+			</div>
+
+			@if (fields().length === 0) {
+				<small class="field-hint">
+					Add at least one field — fields define the slots that
+					extracted text will be matched against.
+				</small>
+			}
+
+			@for (field of fields(); track $index; let fIdx = $index) {
+				<p-card styleClass="field-card">
+					<div class="flex flex-col gap-3">
+						<!-- Field header: label + reorder + remove -->
+						<div class="flex items-end gap-2">
+							<div class="flex flex-col gap-1 flex-1">
+								<label
+									[attr.for]="'tpl-editor-field-' + fIdx"
+									class="text-xs font-medium opacity-70"
+								>
+									Field {{ fIdx + 1 }} label
+								</label>
+								<input
+									[id]="'tpl-editor-field-' + fIdx"
+									pInputText
+									type="text"
+									[ngModel]="field.label"
+									(ngModelChange)="
+										updateFieldLabel(fIdx, $event)
+									"
+									placeholder="e.g. headline"
+									maxlength="255"
+									class="w-full"
+									[attr.aria-label]="
+										'Field ' + (fIdx + 1) + ' label'
+									"
+								/>
+							</div>
+							<p-button
+								icon="pi pi-arrow-up"
+								severity="secondary"
+								size="small"
+								[text]="true"
+								[disabled]="fIdx === 0"
+								(onClick)="moveFieldUp(fIdx)"
+								ariaLabel="Move field up"
+							></p-button>
+							<p-button
+								icon="pi pi-arrow-down"
+								severity="secondary"
+								size="small"
+								[text]="true"
+								[disabled]="fIdx === fields().length - 1"
+								(onClick)="moveFieldDown(fIdx)"
+								ariaLabel="Move field down"
+							></p-button>
+							<p-button
+								icon="pi pi-trash"
+								severity="danger"
+								size="small"
+								[text]="true"
+								(onClick)="removeField(fIdx)"
+								ariaLabel="Remove field"
+							></p-button>
+						</div>
+
+						@if (fieldErrors()[fIdx]; as fieldErr) {
+							<small class="field-error">{{ fieldErr }}</small>
+						}
+
+						<!-- Rules list -->
+						<div class="flex flex-col gap-2">
+							<div class="flex items-center justify-between">
+								<span class="text-xs opacity-70">
+									Rules ({{ field.rules.length }})
+								</span>
+								<div class="flex items-center gap-2">
+									<p-select
+										[options]="ruleTypeOptions"
+										optionLabel="label"
+										optionValue="value"
+										placeholder="Add rule…"
+										appendTo="body"
+										styleClass="add-rule-select"
+										(onChange)="
+											addRule(fIdx, $event.value);
+											$event.value = null
+										"
+									></p-select>
+								</div>
+							</div>
+
+							@for (
+								rule of field.rules;
+								track $index;
+								let rIdx = $index
+							) {
+								<div class="rule-row">
+									<p-select
+										[options]="ruleTypeOptions"
+										optionLabel="label"
+										optionValue="value"
+										[ngModel]="rule.type"
+										(ngModelChange)="
+											changeRuleType(fIdx, rIdx, $event)
+										"
+										appendTo="body"
+										styleClass="rule-type-select"
+										[attr.aria-label]="
+											'Rule ' + (rIdx + 1) + ' type'
+										"
+									></p-select>
+
+									<div class="rule-payload">
+										@switch (rule.type) {
+											@case ("maxCharacters") {
+												<p-inputnumber
+													[ngModel]="
+														numericRuleValue(rule)
+													"
+													(ngModelChange)="
+														updateNumericRuleValue(
+															fIdx,
+															rIdx,
+															$event
+														)
+													"
+													[min]="1"
+													[max]="99999"
+													[showButtons]="true"
+													buttonLayout="horizontal"
+													incrementButtonIcon="pi pi-plus"
+													decrementButtonIcon="pi pi-minus"
+													styleClass="rule-number-input"
+												></p-inputnumber>
+											}
+											@case ("maxWords") {
+												<p-inputnumber
+													[ngModel]="
+														numericRuleValue(rule)
+													"
+													(ngModelChange)="
+														updateNumericRuleValue(
+															fIdx,
+															rIdx,
+															$event
+														)
+													"
+													[min]="1"
+													[max]="99999"
+													[showButtons]="true"
+													buttonLayout="horizontal"
+													incrementButtonIcon="pi pi-plus"
+													decrementButtonIcon="pi pi-minus"
+													styleClass="rule-number-input"
+												></p-inputnumber>
+											}
+											@case ("minCharacters") {
+												<p-inputnumber
+													[ngModel]="
+														numericRuleValue(rule)
+													"
+													(ngModelChange)="
+														updateNumericRuleValue(
+															fIdx,
+															rIdx,
+															$event
+														)
+													"
+													[min]="1"
+													[max]="99999"
+													[showButtons]="true"
+													buttonLayout="horizontal"
+													incrementButtonIcon="pi pi-plus"
+													decrementButtonIcon="pi pi-minus"
+													styleClass="rule-number-input"
+												></p-inputnumber>
+											}
+											@case ("minWords") {
+												<p-inputnumber
+													[ngModel]="
+														numericRuleValue(rule)
+													"
+													(ngModelChange)="
+														updateNumericRuleValue(
+															fIdx,
+															rIdx,
+															$event
+														)
+													"
+													[min]="1"
+													[max]="99999"
+													[showButtons]="true"
+													buttonLayout="horizontal"
+													incrementButtonIcon="pi pi-plus"
+													decrementButtonIcon="pi pi-minus"
+													styleClass="rule-number-input"
+												></p-inputnumber>
+											}
+											@case ("singleLine") {
+												<span
+													class="rule-payload-static"
+												>
+													Single line (no line breaks)
+												</span>
+											}
+											@case ("forbiddenWords") {
+												<div
+													class="flex flex-col gap-1 w-full"
+												>
+													<input
+														pInputText
+														type="text"
+														[ngModel]="
+															forbiddenWordsDisplay(
+																rule
+															)
+														"
+														(ngModelChange)="
+															updateForbiddenWordsText(
+																fIdx,
+																rIdx,
+																$event
+															)
+														"
+														placeholder="Comma-separated terms"
+														class="w-full"
+														[attr.aria-label]="
+															'Forbidden words for rule ' +
+															(rIdx + 1)
+														"
+													/>
+													<small class="field-hint">
+														{{
+															forbiddenWordsCount(
+																rule
+															)
+														}}
+														/
+														{{
+															maxForbiddenWords()
+														}}
+													</small>
+												</div>
+											}
+										}
+									</div>
+
+									<p-button
+										icon="pi pi-times"
+										severity="danger"
+										size="small"
+										[text]="true"
+										(onClick)="removeRule(fIdx, rIdx)"
+										ariaLabel="Remove rule"
+									></p-button>
+								</div>
+							}
+						</div>
+					</div>
+				</p-card>
+			}
+		</div>
+	</div>
+
+	<ng-template pTemplate="footer">
+		<div class="flex w-full items-center justify-between gap-2">
+			<div>
+				@if (mode() === "edit") {
+					<p-button
+						label="Delete"
+						icon="pi pi-trash"
+						severity="danger"
+						[outlined]="true"
+						[disabled]="saving()"
+						(onClick)="onDelete()"
+					></p-button>
+				}
+			</div>
+			<div class="flex items-center gap-2">
+				<p-button
+					label="Cancel"
+					severity="secondary"
+					[outlined]="true"
+					[disabled]="saving()"
+					(onClick)="onCancel()"
+				></p-button>
+				<p-button
+					[label]="saving() ? 'Saving…' : 'Save'"
+					icon="pi pi-check"
+					[disabled]="!isValid() || saving()"
+					[loading]="saving()"
+					(onClick)="onSave()"
+				></p-button>
+			</div>
+		</div>
+	</ng-template>
+</p-dialog>
+
+<p-confirmDialog></p-confirmDialog>

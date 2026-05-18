@@ -1,0 +1,46 @@
+:host {
+	display: block;
+	color: var(--p-text-color);
+}
+
+.template-editor {
+	min-width: 0;
+}
+
+.settings-section-label {
+	font-size: 0.8125rem;
+	font-weight: 600;
+	color: var(--p-text-color);
+	margin: 0;
+}
+
+.field-hint {
+	font-size: 0.75rem;
+	color: var(--p-text-muted-color);
+	line-height: 1.4;
+}
+
+.field-error {
+	font-size: 0.75rem;
+	color: var(--p-red-500);
+	line-height: 1.4;
+}
+
+.rule-row {
+	display: grid;
+	grid-template-columns: 12rem 1fr auto;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.rule-payload {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-width: 0;
+}
+
+.rule-payload-static {
+	font-size: 0.875rem;
+	color: var(--p-text-muted-color);
+}
