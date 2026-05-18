@@ -8,6 +8,7 @@ import {
 	EmptyFileError,
 	InvalidFilenameError,
 	HeicNotSupportedError,
+	FileCorruptedError,
 } from '../errors/domain.errors';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
@@ -85,11 +86,14 @@ export class ImageFileValidationService {
 			throw new FileTooLargeError(buffer.length, MAX_FILE_SIZE);
 		}
 		// Trust buffer length; reported size from multer can drift on streams.
+		// A large mismatch typically signals a truncated or corrupted upload —
+		// reporting it as a filename problem (the prior class) mislabeled the
+		// real failure to the user.
 		if (
 			typeof reportedSize === 'number' &&
 			Math.abs(reportedSize - buffer.length) > 1024
 		) {
-			throw new InvalidFilenameError();
+			throw new FileCorruptedError();
 		}
 	}
 
@@ -105,8 +109,12 @@ export class ImageFileValidationService {
 		if (base !== name && name.includes('/')) {
 			throw new InvalidFilenameError();
 		}
-
-		if (/[ -]/.test(base)) {
+		// Build the control-char regex via RegExp so the source file stays ASCII —
+		// prettier/lint-staged previously rewrote a literal `/[\x00-\x1f]/` to a
+		// printable `/[ -]/` (space-to-hyphen) during commit, silently disabling
+		// the check and ALSO rejecting legitimate filenames with hyphens/spaces.
+		// eslint-disable-next-line no-control-regex -- intentional deny-list against control chars in filenames
+		if (new RegExp('[\\u0000-\\u001f\\u007f]').test(base)) {
 			throw new InvalidFilenameError();
 		}
 		return base;

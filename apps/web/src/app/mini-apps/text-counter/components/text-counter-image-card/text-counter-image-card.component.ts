@@ -39,12 +39,7 @@
  * orchestrator's signal — the card holds no its-own state across
  * teardown. Refresh clears everything (AE9).
  */
-import {
-	CdkDrag,
-	CdkDragDrop,
-	CdkDropList,
-	transferArrayItem,
-} from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { CommonModule } from '@angular/common';
 import {
@@ -156,7 +151,6 @@ export class TextCounterImageCardComponent {
 	readonly templateChange = output<string | null>();
 	readonly assignmentChange = output<{ fieldId: string; text: string }>();
 	readonly unassignedChange = output<string[]>();
-	readonly extractionRequested = output<void>();
 	readonly remove = output<void>();
 	readonly manageTemplatesClicked = output<void>();
 	readonly retryRequested = output<void>();
@@ -366,8 +360,6 @@ export class TextCounterImageCardComponent {
 
 		const targetLabel = this.labelForField(targetFieldId) ?? 'field';
 		this.announceMove(movedText, targetLabel);
-		// Quiet TS unused-locals if anyone removes the transferArrayItem branch.
-		void transferArrayItem;
 	}
 
 	/**

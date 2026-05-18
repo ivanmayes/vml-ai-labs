@@ -21,9 +21,9 @@
 }
 
 .textarea-target-pill--over {
-	color: var(--p-red-50, #fff);
-	background-color: var(--p-red-500, #ef4444);
-	border-color: var(--p-red-500, #ef4444);
+	color: var(--p-red-50);
+	background-color: var(--p-red-500);
+	border-color: var(--p-red-500);
 }
 
 /* --- Primary counts: 3-up grid (Characters / Words / Lines) --- */
@@ -47,8 +47,8 @@
 }
 
 .primary-cell--over {
-	border-color: var(--p-red-500, #ef4444);
-	color: var(--p-red-500, #ef4444);
+	border-color: var(--p-red-500);
+	color: var(--p-red-500);
 }
 
 .primary-cell-label {
@@ -60,7 +60,7 @@
 }
 
 .primary-cell--over .primary-cell-label {
-	color: var(--p-red-500, #ef4444);
+	color: var(--p-red-500);
 }
 
 .primary-cell-value {
