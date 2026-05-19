@@ -264,6 +264,7 @@ describe('TextCounterImageTemplateComponent', () => {
 		c.onUpload({ files: [fakeImage()] });
 		fixture.detectChanges();
 		c.onTemplateChange(c.imageCards()[0].id, 'tpl-gate');
+		c.onExtractClicked(c.imageCards()[0].id);
 		fixture.detectChanges();
 
 		// Card is in extracting state but the AI POST has NOT fired.
@@ -329,7 +330,9 @@ describe('TextCounterImageTemplateComponent', () => {
 		// Card 1 picks template A; card 2 picks template B.
 		const [card1, card2] = c.imageCards();
 		c.onTemplateChange(card1.id, 'tpl-A');
+		c.onExtractClicked(card1.id);
 		c.onTemplateChange(card2.id, 'tpl-B');
+		c.onExtractClicked(card2.id);
 		fixture.detectChanges();
 
 		expect(extraction.calls.length).toBe(2);
@@ -401,6 +404,7 @@ describe('TextCounterImageTemplateComponent', () => {
 		c.onUpload({ files: [fakeImage()] });
 		fixture.detectChanges();
 		c.onTemplateChange(c.imageCards()[0].id, 'tpl-1');
+		c.onExtractClicked(c.imageCards()[0].id);
 		fixture.detectChanges();
 
 		const card = c.imageCards()[0];
@@ -443,8 +447,11 @@ describe('TextCounterImageTemplateComponent', () => {
 
 		const [c1, c2, c3] = c.imageCards();
 		c.onTemplateChange(c1.id, 'tpl-X');
+		c.onExtractClicked(c1.id);
 		c.onTemplateChange(c2.id, 'tpl-X');
+		c.onExtractClicked(c2.id);
 		c.onTemplateChange(c3.id, 'tpl-X');
+		c.onExtractClicked(c3.id);
 		fixture.detectChanges();
 
 		const cards = c.imageCards();
@@ -477,6 +484,7 @@ describe('TextCounterImageTemplateComponent', () => {
 		fixture.detectChanges();
 		const cardId = c.imageCards()[0].id;
 		c.onTemplateChange(cardId, 'tpl-zombie');
+		c.onExtractClicked(cardId);
 		fixture.detectChanges();
 
 		expect(c.imageCards()[0].status).toBe('error');
@@ -501,6 +509,7 @@ describe('TextCounterImageTemplateComponent', () => {
 		fixture.detectChanges();
 		const cardId = c.imageCards()[0].id;
 		c.onTemplateChange(cardId, 'tpl-2');
+		c.onExtractClicked(cardId);
 		fixture.detectChanges();
 		expect(c.deletedTemplateForCard()[cardId]).toBe(true);
 
@@ -530,6 +539,7 @@ describe('TextCounterImageTemplateComponent', () => {
 		c.onUpload({ files: [fakeImage('secret-file.png')] });
 		fixture.detectChanges();
 		c.onTemplateChange(c.imageCards()[0].id, 'tpl-A');
+		c.onExtractClicked(c.imageCards()[0].id);
 		fixture.detectChanges();
 
 		const all: string[] = [];
@@ -571,6 +581,7 @@ describe('TextCounterImageTemplateComponent', () => {
 		fixture.detectChanges();
 		const cardId = c.imageCards()[0].id;
 		c.onTemplateChange(cardId, 'tpl-retry');
+		c.onExtractClicked(cardId);
 		fixture.detectChanges();
 		expect(c.imageCards()[0].status).toBe('error');
 
@@ -619,6 +630,7 @@ describe('TextCounterImageTemplateComponent', () => {
 		fixture.detectChanges();
 		const cardId = c.imageCards()[0].id;
 		c.onTemplateChange(cardId, 'tpl-pending');
+		c.onExtractClicked(cardId);
 		fixture.detectChanges();
 
 		expect(c.imageCards()[0].status).toBe('extracting');
@@ -650,6 +662,7 @@ describe('TextCounterImageTemplateComponent', () => {
 		fixture.detectChanges();
 		const cardId = c.imageCards()[0].id;
 		c.onTemplateChange(cardId, 'tpl-edit-midflight');
+		c.onExtractClicked(cardId);
 		fixture.detectChanges();
 		expect(c.imageCards()[0].status).toBe('extracting');
 
@@ -712,10 +725,12 @@ describe('TextCounterImageTemplateComponent', () => {
 		fixture.detectChanges();
 		const cardId = c.imageCards()[0].id;
 		c.onTemplateChange(cardId, 'tpl-A');
+		c.onExtractClicked(cardId);
 		fixture.detectChanges();
 		expect(firstPending.observed).toBe(true);
 
 		c.onTemplateChange(cardId, 'tpl-B');
+		c.onExtractClicked(cardId);
 		fixture.detectChanges();
 
 		// First extraction's Subject should now be unsubscribed.
@@ -805,6 +820,7 @@ describe('TextCounterImageTemplateComponent', () => {
 		fixture.detectChanges();
 		const cardId = c.imageCards()[0].id;
 		c.onTemplateChange(cardId, 'tpl-shared');
+		c.onExtractClicked(cardId);
 		fixture.detectChanges();
 
 		c.onEditorDeleted('tpl-shared');

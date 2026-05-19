@@ -33,13 +33,14 @@ import {
 	DestroyRef,
 	OnDestroy,
 	OnInit,
+	ViewChild,
 	computed,
 	inject,
 	signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FileUploadModule } from 'primeng/fileupload';
+import { FileUpload, FileUploadModule } from 'primeng/fileupload';
 import { Subscription } from 'rxjs';
 
 import { environment } from '../../../../../environments/environment';
@@ -54,6 +55,7 @@ import type { TextCounterSettings } from '../../models/text-counter.types';
 import { TextCounterExtractionService } from '../../services/text-counter-extraction.service';
 import { TextCounterTemplatesService } from '../../services/text-counter-templates.service';
 import { loadSettings } from '../../services/text-counter-settings.util';
+import { evaluateRules } from '../../services/text-counter-validation.util';
 import {
 	ACCEPT_MIMES,
 	MAX_UPLOAD_BYTES,
@@ -126,6 +128,59 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 
 	readonly hasAnyCards = computed(() => this.imageCards().length > 0);
 
+	/**
+	 * Template reference to the PrimeNG FileUpload directive. We clear()
+	 * its internal queue after every handled upload so the `pTemplate
+	 * ="empty"` slot keeps rendering (otherwise PrimeNG retains the file
+	 * in its queue with `customUpload+auto` and the dropzone disappears
+	 * — including after every card is removed and we want to show the
+	 * hero state again).
+	 */
+	@ViewChild('fu') private readonly fu?: FileUpload;
+
+	// -----------------------------------------------------------------
+	// Header summary stats — surfaced in the hero once cards exist.
+	//
+	// Passing / failing is computed at the field level across every
+	// "done" card: a field with at least one failing rule contributes
+	// to failingCount; a field with rules and zero failures contributes
+	// to passingCount. Cards without a chosen template don't contribute
+	// either bucket.
+	// -----------------------------------------------------------------
+
+	readonly totalCount = computed(() => this.imageCards().length);
+
+	readonly extractingCount = computed(
+		() => this.imageCards().filter((c) => c.status === 'extracting').length,
+	);
+
+	private readonly fieldOutcomeTotals = computed(() => {
+		const settings = this.settings();
+		const templates = this.templates();
+		let passing = 0;
+		let failing = 0;
+		for (const card of this.imageCards()) {
+			if (card.status !== 'done' || !card.templateId) continue;
+			const tpl = templates.find((t) => t.id === card.templateId);
+			if (!tpl) continue;
+			for (const field of tpl.fields) {
+				if (field.rules.length === 0) continue;
+				const text = card.assignments[field.id] ?? '';
+				const failed = evaluateRules(
+					text,
+					field.rules,
+					settings,
+				).filter((r) => !r.pass);
+				if (failed.length > 0) failing++;
+				else passing++;
+			}
+		}
+		return { passing, failing };
+	});
+
+	readonly passingCount = computed(() => this.fieldOutcomeTotals().passing);
+	readonly failingCount = computed(() => this.fieldOutcomeTotals().failing);
+
 	// Active extraction subscriptions, keyed by cardId. Tracked so we can
 	// abort an in-flight request when the user removes a card or switches
 	// the card to a different template before the result arrives.
@@ -194,6 +249,12 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 			error: null,
 		}));
 		this.imageCards.update((list) => [...list, ...newCards]);
+
+		// Drain PrimeNG's internal queue. With `customUpload+auto` the
+		// file isn't removed by PrimeNG itself, which keeps the `empty`
+		// pTemplate (our dropzone UI) suppressed — so removing every
+		// card afterwards would leave the user with no upload affordance.
+		this.fu?.clear();
 	}
 
 	// -----------------------------------------------------------------
@@ -218,8 +279,10 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 							...card,
 							templateId,
 							// Whether the user picked a new template or cleared
-							// it entirely, the card returns to "pending". When a
-							// templateId is set we fire extraction below.
+							// it entirely, the card returns to "pending". The
+							// user explicitly fires extraction via the Go button
+							// (see runExtractionForCard) — picking a template no
+							// longer auto-fires the AI request.
 							status: 'pending',
 							assignments: {},
 							unassigned: [],
@@ -235,12 +298,15 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 				delete next[cardId];
 				return next;
 			});
-			// Kick off extraction synchronously now that we know which
-			// template applies. (Previously a constructor effect() iterated
-			// every card on every signal mutation — replaced with this
-			// direct call.)
-			this.runExtraction(cardId);
 		}
+	}
+
+	/**
+	 * User clicked the per-card Go button. Same semantics as a retry on
+	 * a pending/done card — reset to pending, kick off extraction.
+	 */
+	onExtractClicked(cardId: string): void {
+		this.onRetry(cardId);
 	}
 
 	onAssignmentChange(
@@ -321,6 +387,16 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 		// Opens the editor in create mode. In V1 we surface the create
 		// flow directly — the in-editor list/edit flow is a follow-up.
 		this.openCreateTemplate();
+	}
+
+	onEditTemplateFromCard(cardId: string): void {
+		const card = this.imageCards().find((c) => c.id === cardId);
+		if (!card?.templateId) return;
+		const tpl = this.templates().find((t) => t.id === card.templateId);
+		if (!tpl) return;
+		this.editorMode.set('edit');
+		this.editorTarget.set(tpl);
+		this.editorVisible.set(true);
 	}
 
 	onEditorSaved(template: Template): void {

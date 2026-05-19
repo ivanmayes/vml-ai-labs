@@ -514,10 +514,14 @@ export class TextCounterTemplateEditorComponent implements OnInit {
 	}
 
 	private buildPayload(): CreateTemplatePayload & UpdateTemplatePayload {
-		const fields: TemplateFieldPayload[] = this.fields().map((f, i) => {
+		// API does NOT accept `position` on the wire — it derives position
+		// from array index on the server side. Sending `position` triggers
+		// class-validator's forbidNonWhitelisted: true → 400. We honor that
+		// contract here: serialize fields in the user's desired order, and
+		// the server numbers them.
+		const fields: TemplateFieldPayload[] = this.fields().map((f) => {
 			const base: TemplateFieldPayload = {
 				label: f.label,
-				position: i,
 				rules: f.rules.map((r) => ({ ...r }) as Rule),
 			};
 			// Preserve field id on update so the API can match the row

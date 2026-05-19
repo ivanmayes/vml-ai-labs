@@ -1,129 +1,291 @@
-<p-card class="image-card">
-	<ng-template pTemplate="header">
-		<div class="card-header flex items-start gap-3 p-3">
+<article class="image-card" [attr.data-status]="card().status">
+	<!-- LEFT column: hero image. On desktop this becomes a pinned panel
+	     with overlaid filename + status pill. On mobile it's a full-bleed
+	     banner above the content. -->
+	<div class="image-pane">
+		<div class="image-frame">
 			<img
-				class="thumb"
+				class="image-bg"
+				[src]="card().previewUrl"
+				alt=""
+				aria-hidden="true"
+				loading="lazy"
+			/>
+			<img
+				class="image"
 				[src]="card().previewUrl"
 				[alt]="card().file.name"
+				loading="lazy"
 			/>
-			<div class="flex-1 min-w-0 flex flex-col gap-1">
-				<span class="card-filename" [title]="card().file.name">
-					{{ card().file.name }}
-				</span>
+			<div class="image-gradient" aria-hidden="true"></div>
+
+			<!-- Floating top controls -->
+			<div class="image-overlay-top">
 				@switch (card().status) {
 					@case ("extracting") {
-						<p-tag value="Extracting…" severity="info"></p-tag>
+						<span class="status-pill status-pill--running">
+							<i
+								class="pi pi-spin pi-spinner"
+								aria-hidden="true"
+							></i>
+							Extracting
+						</span>
 					}
 					@case ("error") {
-						<p-tag value="Error" severity="danger"></p-tag>
+						<span class="status-pill status-pill--danger">
+							<i
+								class="pi pi-exclamation-circle"
+								aria-hidden="true"
+							></i>
+							Error
+						</span>
 					}
 					@case ("done") {
-						<p-tag
-							[value]="
-								fieldRows().length +
-								' field(s) · ' +
-								poolEntries().length +
-								' unassigned'
+						<span
+							class="status-pill"
+							[class.status-pill--success]="
+								failingFieldCount() === 0
 							"
-							severity="success"
-						></p-tag>
+							[class.status-pill--warning]="
+								failingFieldCount() > 0
+							"
+						>
+							@if (failingFieldCount() === 0) {
+								<i
+									class="pi pi-check-circle"
+									aria-hidden="true"
+								></i>
+								Ready
+							} @else {
+								<i
+									class="pi pi-exclamation-circle"
+									aria-hidden="true"
+								></i>
+								{{ failingFieldCount() }} to review
+							}
+						</span>
 					}
 					@default {
-						<p-tag value="Pending" severity="secondary"></p-tag>
+						<span class="status-pill status-pill--idle">
+							<i class="pi pi-circle" aria-hidden="true"></i>
+							Pending
+						</span>
 					}
 				}
 			</div>
+
 			<button
 				type="button"
-				class="card-remove"
+				class="image-remove"
 				(click)="onRemoveClicked()"
 				[attr.aria-label]="'Remove ' + card().file.name"
 			>
 				<i class="pi pi-times" aria-hidden="true"></i>
 			</button>
+
+			<div class="image-overlay-bottom">
+				<span class="image-filename" [title]="card().file.name">
+					{{ card().file.name }}
+				</span>
+			</div>
 		</div>
-	</ng-template>
+	</div>
 
-	<div class="card-body flex flex-col gap-3">
+	<!-- RIGHT column: workflow + fields + pool -->
+	<div class="content-pane">
+		<!-- Status journey: 3 micro-steps -->
+		<ol class="journey" aria-label="Card progress">
+			<li class="journey-step journey-step--done">
+				<span class="journey-dot">
+					<i class="pi pi-check" aria-hidden="true"></i>
+				</span>
+				<span class="journey-label">Upload</span>
+			</li>
+			<li
+				class="journey-step"
+				[class.journey-step--done]="card().status === 'done'"
+				[class.journey-step--active]="card().status === 'extracting'"
+				[class.journey-step--error]="card().status === 'error'"
+			>
+				<span class="journey-dot">
+					@if (card().status === "done") {
+						<i class="pi pi-check" aria-hidden="true"></i>
+					} @else if (card().status === "extracting") {
+						<i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+					} @else if (card().status === "error") {
+						<i class="pi pi-times" aria-hidden="true"></i>
+					} @else {
+						<span class="journey-num">2</span>
+					}
+				</span>
+				<span class="journey-label">Extract</span>
+			</li>
+			<li
+				class="journey-step"
+				[class.journey-step--done]="
+					card().status === 'done' && failingFieldCount() === 0
+				"
+				[class.journey-step--active]="
+					card().status === 'done' && failingFieldCount() > 0
+				"
+				[class.journey-step--idle]="card().status !== 'done'"
+			>
+				<span class="journey-dot">
+					@if (
+						card().status === "done" && failingFieldCount() === 0
+					) {
+						<i class="pi pi-check" aria-hidden="true"></i>
+					} @else if (
+						card().status === "done" && failingFieldCount() > 0
+					) {
+						<i
+							class="pi pi-exclamation-circle"
+							aria-hidden="true"
+						></i>
+					} @else {
+						<span class="journey-num">3</span>
+					}
+				</span>
+				<span class="journey-label">Validate</span>
+			</li>
+		</ol>
+
 		<!-- Template picker -->
-		<app-text-counter-template-picker
-			[templates]="templates()"
-			[selectedId]="card().templateId"
-			[orgId]="orgId()"
-			(selectedIdChange)="onTemplateChange($event)"
-			(manageTemplatesClicked)="onManageTemplatesClicked()"
-		/>
+		<div class="picker-wrap">
+			<app-text-counter-template-picker
+				[templates]="templates()"
+				[selectedId]="card().templateId"
+				[orgId]="orgId()"
+				(selectedIdChange)="onTemplateChange($event)"
+				(manageTemplatesClicked)="onManageTemplatesClicked()"
+				(editSelectedTemplateClicked)="onEditSelectedTemplateClicked()"
+			/>
+		</div>
 
-		<!-- Body content driven by status -->
+		<!-- Body driven by status -->
 		@if (!card().templateId) {
-			<p class="card-hint">
-				Pick a template to extract and validate text from this image.
-			</p>
+			<div class="card-hint">
+				<i class="pi pi-arrow-up" aria-hidden="true"></i>
+				<span
+					>Pick a template above to extract text from this
+					image.</span
+				>
+			</div>
+		} @else if (card().status === "pending") {
+			<div class="card-ready" role="group" aria-label="Ready to extract">
+				<div class="card-ready-icon" aria-hidden="true">
+					<i class="pi pi-sparkles"></i>
+				</div>
+				<div class="card-ready-body">
+					<strong class="card-ready-title">Ready to extract</strong>
+					<span class="card-ready-meta">
+						Using template
+						<em>{{ selectedTemplate()?.name }}</em>
+					</span>
+				</div>
+				<p-button
+					label="Extract text"
+					icon="pi pi-arrow-right"
+					iconPos="right"
+					(onClick)="onExtractClicked()"
+					styleClass="card-ready-cta"
+				></p-button>
+			</div>
 		} @else if (card().status === "extracting") {
-			<div class="flex flex-col gap-2">
-				<p-skeleton height="2rem"></p-skeleton>
-				<p-skeleton height="2rem"></p-skeleton>
-				<p-skeleton height="2rem"></p-skeleton>
+			<div class="extracting-state">
+				<div class="extracting-shimmer">
+					<p-skeleton height="2rem" borderRadius="6px"></p-skeleton>
+					<p-skeleton height="2rem" borderRadius="6px"></p-skeleton>
+					<p-skeleton height="2rem" borderRadius="6px"></p-skeleton>
+				</div>
+				<p class="extracting-label">
+					<i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+					Analyzing image and matching template fields&hellip;
+				</p>
 			</div>
 		} @else if (card().status === "error") {
-			<div class="card-error flex flex-col gap-2">
-				<p class="card-error-text">
-					{{ card().error || "Extraction failed." }}
-				</p>
-				<div>
-					<p-button
-						label="Retry"
-						icon="pi pi-refresh"
-						size="small"
-						severity="secondary"
-						(onClick)="onRetryClicked()"
-					></p-button>
+			<div class="card-error" role="alert">
+				<div class="card-error-icon" aria-hidden="true">
+					<i class="pi pi-exclamation-triangle"></i>
 				</div>
+				<div class="card-error-body">
+					<strong class="card-error-title">Extraction failed</strong>
+					<p class="card-error-text">
+						{{
+							card().error ||
+								"Try again or pick a different template."
+						}}
+					</p>
+				</div>
+				<p-button
+					label="Retry"
+					icon="pi pi-refresh"
+					size="small"
+					severity="secondary"
+					(onClick)="onRetryClicked()"
+				></p-button>
 			</div>
 		} @else if (card().status === "done") {
 			<!-- Fields list -->
-			<ul class="fields-list flex flex-col gap-2">
+			<ul class="fields-list">
 				@for (row of fieldRows(); track trackFieldRow($index, row)) {
 					<li
-						class="field-row flex flex-col gap-1"
+						class="field-row"
 						[class.is-drag-target]="dragging()"
+						[class.is-passing]="row.state === 'pass'"
+						[class.is-failing]="row.state === 'fail'"
 					>
-						<div class="field-row-header flex items-center gap-2">
+						<div class="field-row-header">
 							<label class="field-label" [for]="row.dropListId">
 								{{ row.field.label }}
 							</label>
+							@if (row.state === "pass") {
+								<span
+									class="field-status-badge field-status-badge--pass"
+									aria-label="Passes all rules"
+								>
+									<i class="pi pi-check-circle"></i>
+									Pass
+								</span>
+							} @else if (row.state === "fail") {
+								<span
+									class="field-status-badge field-status-badge--fail"
+									[attr.aria-label]="
+										'Rules failed: ' + row.tooltipText
+									"
+								>
+									<i class="pi pi-exclamation-circle"></i>
+									Fail
+								</span>
+							}
 							<span class="field-counts">
-								<span class="field-count-label">chars</span>
-								<span class="field-count-value">{{
-									row.stats.characters | number
-								}}</span>
-								<span class="field-count-label">·</span>
-								<span class="field-count-label">words</span>
-								<span class="field-count-value">{{
-									row.stats.words | number
-								}}</span>
-							</span>
-							<span class="field-validation ml-auto">
-								@if (row.hasRules) {
-									@if (row.failed.length === 0) {
-										<i
-											class="pi pi-check-circle field-pass"
-											aria-label="Passes all rules"
-										></i>
-									} @else {
-										<i
-											class="pi pi-exclamation-circle field-fail"
-											[pTooltip]="row.tooltipText"
-											tooltipPosition="left"
-											[attr.aria-label]="
-												'Rules failed: ' +
-												row.tooltipText
-											"
-										></i>
-									}
-								}
+								<span class="field-count">
+									<span class="field-count-value">{{
+										row.stats.characters | number
+									}}</span>
+									<span class="field-count-label">chars</span>
+								</span>
+								<span class="field-count">
+									<span class="field-count-value">{{
+										row.stats.words | number
+									}}</span>
+									<span class="field-count-label">words</span>
+								</span>
 							</span>
 						</div>
+						@if (
+							row.state === "fail" &&
+							row.failureDetails.length > 0
+						) {
+							<ul class="field-failure-list" role="list">
+								@for (msg of row.failureDetails; track msg) {
+									<li class="field-failure-item">
+										<i class="pi pi-times-circle"></i>
+										{{ msg }}
+									</li>
+								}
+							</ul>
+						}
 
 						<div
 							cdkDropList
@@ -144,6 +306,13 @@
 									(cdkDragStarted)="onDragStarted()"
 									(cdkDragEnded)="onDragEnded()"
 								>
+									<div
+										class="chunk-drag-handle"
+										aria-hidden="true"
+										cdkDragHandle
+									>
+										<i class="pi pi-bars"></i>
+									</div>
 									<textarea
 										pTextarea
 										[ngModel]="row.text"
@@ -183,8 +352,15 @@
 									</div>
 								</div>
 							} @else {
-								<div class="empty-target text-sm">
-									Drop a chunk here or edit directly.
+								<div class="empty-target">
+									<i
+										class="pi pi-arrow-down empty-target-icon"
+										aria-hidden="true"
+									></i>
+									<span class="empty-target-hint"
+										>Drop a chunk here, or type
+										directly</span
+									>
 									<textarea
 										pTextarea
 										[ngModel]="''"
@@ -195,7 +371,7 @@
 											)
 										"
 										rows="2"
-										class="chunk-textarea w-full font-mono text-sm mt-1"
+										class="chunk-textarea w-full font-mono text-sm"
 										[id]="row.dropListId + '-empty'"
 										[attr.aria-label]="
 											row.field.label + ' text (empty)'
@@ -209,8 +385,29 @@
 			</ul>
 
 			<!-- Unassigned pool sits BELOW the field list (R20). -->
-			<section class="pool flex flex-col gap-1">
-				<h3 class="pool-heading">Other extracted text</h3>
+			<section
+				class="pool"
+				[class.pool--empty]="poolEntries().length === 0"
+			>
+				<header class="pool-header">
+					<h3 class="pool-heading">
+						<span
+							class="pool-heading-dot"
+							aria-hidden="true"
+						></span>
+						Other extracted text
+					</h3>
+					@if (poolEntries().length > 0) {
+						<span
+							class="pool-count-badge"
+							aria-label="{{
+								poolEntries().length
+							}} unassigned chunks"
+						>
+							{{ poolEntries().length }}
+						</span>
+					}
+				</header>
 				<div
 					cdkDropList
 					[id]="poolListId"
@@ -218,14 +415,16 @@
 					[cdkDropListData]="card().unassigned"
 					class="pool-droplist"
 					[class.is-drag-target]="dragging()"
+					[class.is-empty]="poolEntries().length === 0"
 					(cdkDropListDropped)="onPoolDropped($event)"
 				>
 					@if (poolEntries().length === 0) {
 						<p class="pool-empty">
+							<i class="pi pi-check" aria-hidden="true"></i>
 							No leftover text — everything is in a field.
 						</p>
 					} @else {
-						<ul class="pool-list flex flex-col gap-2">
+						<ul class="pool-list">
 							@for (
 								entry of poolEntries();
 								track trackPoolEntry($index, entry)
@@ -242,21 +441,22 @@
 									</div>
 									<div class="pool-chunk-meta">
 										<span class="pool-count">
-											<span class="pool-count-label"
-												>chars</span
-											>
 											<span class="pool-count-value">{{
 												entry.stats.characters | number
 											}}</span>
+											<span class="pool-count-label"
+												>chars</span
+											>
 										</span>
 										<span class="pool-count">
-											<span class="pool-count-label"
-												>words</span
-											>
 											<span class="pool-count-value">{{
 												entry.stats.words | number
 											}}</span>
+											<span class="pool-count-label"
+												>words</span
+											>
 										</span>
+										<div class="pool-chunk-spacer"></div>
 										<p-menu
 											[model]="
 												keyboardMenuForPoolEntry(
@@ -283,4 +483,4 @@
 			</section>
 		}
 	</div>
-</p-card>
+</article>

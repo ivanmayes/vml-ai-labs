@@ -39,7 +39,12 @@
  * orchestrator's signal — the card holds no its-own state across
  * teardown. Refresh clears everything (AE9).
  */
-import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import {
+	CdkDrag,
+	CdkDragDrop,
+	CdkDragHandle,
+	CdkDropList,
+} from '@angular/cdk/drag-drop';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { CommonModule } from '@angular/common';
 import {
@@ -103,6 +108,8 @@ interface FieldRow {
 	failed: RuleResult[];
 	hasRules: boolean;
 	tooltipText: string;
+	failureDetails: string[];
+	state: 'pass' | 'fail' | 'neutral';
 	stats: { characters: number; words: number };
 	items: string[]; // single-item array so CdkDropList has a stable reference
 }
@@ -131,6 +138,7 @@ interface PoolEntry {
 		FormsModule,
 		CdkDropList,
 		CdkDrag,
+		CdkDragHandle,
 		MenuModule,
 		TextareaModule,
 		TooltipModule,
@@ -153,7 +161,9 @@ export class TextCounterImageCardComponent {
 	readonly unassignedChange = output<string[]>();
 	readonly remove = output<void>();
 	readonly manageTemplatesClicked = output<void>();
+	readonly editSelectedTemplateClicked = output<void>();
 	readonly retryRequested = output<void>();
+	readonly extractRequested = output<void>();
 
 	// -----------------------------------------------------------------
 	// Internal UI state (not persisted)
@@ -204,7 +214,16 @@ export class TextCounterImageCardComponent {
 			const text = assignments[field.id] ?? '';
 			const rules = evaluateRules(text, field.rules, settings);
 			const failed = rules.filter((r) => !r.pass);
+			const hasRules = field.rules.length > 0;
 			const tooltipText = buildFailureTooltip(failed);
+			const failureDetails = failed
+				.map((r) => failureDetailMessage(r))
+				.filter((s): s is string => !!s);
+			const state: 'pass' | 'fail' | 'neutral' = !hasRules
+				? 'neutral'
+				: failed.length === 0
+					? 'pass'
+					: 'fail';
 			const stats = computeStats(text, settings);
 			return {
 				field,
@@ -212,13 +231,24 @@ export class TextCounterImageCardComponent {
 				text,
 				rules,
 				failed,
-				hasRules: field.rules.length > 0,
+				hasRules,
 				tooltipText,
+				failureDetails,
+				state,
 				stats: { characters: stats.characters, words: stats.words },
 				items: [text],
 			};
 		});
 	});
+
+	/**
+	 * Count of fields whose rule evaluation currently fails — surfaces in
+	 * the image overlay pill ("3 to review") and in the third journey
+	 * step's icon. Only meaningful once status === 'done'.
+	 */
+	readonly failingFieldCount = computed<number>(
+		() => this.fieldRows().filter((r) => r.state === 'fail').length,
+	);
 
 	readonly poolEntries = computed<PoolEntry[]>(() => {
 		const settings = this.settings();
@@ -251,6 +281,10 @@ export class TextCounterImageCardComponent {
 
 	onManageTemplatesClicked(): void {
 		this.manageTemplatesClicked.emit();
+	}
+
+	onEditSelectedTemplateClicked(): void {
+		this.editSelectedTemplateClicked.emit();
 	}
 
 	// -----------------------------------------------------------------
@@ -479,6 +513,10 @@ export class TextCounterImageCardComponent {
 		this.retryRequested.emit();
 	}
 
+	onExtractClicked(): void {
+		this.extractRequested.emit();
+	}
+
 	// -----------------------------------------------------------------
 	// Track-by helpers
 	// -----------------------------------------------------------------
@@ -563,24 +601,30 @@ export function previewSnippet(text: string): string {
 
 export function buildFailureTooltip(failed: RuleResult[]): string {
 	if (failed.length === 0) return '';
-	return failed
-		.map((r) => {
-			switch (r.rule.type) {
-				case 'maxCharacters':
-					return `Max ${r.rule.value} chars${r.detail ? ` (${r.detail})` : ''}`;
-				case 'maxWords':
-					return `Max ${r.rule.value} words${r.detail ? ` (${r.detail})` : ''}`;
-				case 'minCharacters':
-					return `Min ${r.rule.value} chars${r.detail ? ` (${r.detail})` : ''}`;
-				case 'minWords':
-					return `Min ${r.rule.value} words${r.detail ? ` (${r.detail})` : ''}`;
-				case 'singleLine':
-					return 'Must be a single line';
-				case 'forbiddenWords':
-					return r.detail
-						? `Forbidden words ${r.detail}`
-						: 'Contains forbidden words';
-			}
-		})
-		.join(' · ');
+	return failed.map((r) => failureDetailMessage(r)).join(' · ');
+}
+
+/**
+ * Human-readable failure message for a single failed rule. Used both
+ * in the tooltip aggregate and in the inline failure-details list under
+ * each failing field. Returns empty string for a passing rule.
+ */
+export function failureDetailMessage(r: RuleResult): string {
+	if (r.pass) return '';
+	switch (r.rule.type) {
+		case 'maxCharacters':
+			return `Over the ${r.rule.value}-character limit${r.detail ? ` (${r.detail})` : ''}`;
+		case 'maxWords':
+			return `Over the ${r.rule.value}-word limit${r.detail ? ` (${r.detail})` : ''}`;
+		case 'minCharacters':
+			return `Under the ${r.rule.value}-character minimum${r.detail ? ` (${r.detail})` : ''}`;
+		case 'minWords':
+			return `Under the ${r.rule.value}-word minimum${r.detail ? ` (${r.detail})` : ''}`;
+		case 'singleLine':
+			return 'Must be a single line';
+		case 'forbiddenWords':
+			return r.detail
+				? `Forbidden words ${r.detail}`
+				: 'Contains forbidden words';
+	}
 }

@@ -59,14 +59,14 @@ describe('TextCounterTemplatePickerComponent', () => {
 		expect(events.length).toBe(1);
 	});
 
-	it('renders a p-select and a Manage templates button when templates exist', () => {
+	it('renders a p-select and a New template button when templates exist', () => {
 		const fixture = makeFixture({
 			templates: [makeTemplate({ id: 'tpl-1', name: 'A' })],
 		});
 		const select = fixture.nativeElement.querySelector('p-select');
 		expect(select).not.toBeNull();
-		// The "Manage templates" affordance is exposed via the button.
-		expect(fixture.nativeElement.textContent).toContain('Manage templates');
+		// The "Create another template" affordance is the New template button.
+		expect(fixture.nativeElement.textContent).toContain('New template');
 	});
 
 	it('exposes an option per template via the options computed', () => {

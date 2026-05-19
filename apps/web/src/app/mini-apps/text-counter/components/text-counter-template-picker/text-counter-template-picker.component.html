@@ -29,9 +29,21 @@
 			styleClass="template-picker-select"
 			aria-label="Template"
 		></p-select>
+		@if (hasSelection()) {
+			<p-button
+				label="Edit"
+				icon="pi pi-pencil"
+				size="small"
+				severity="secondary"
+				[outlined]="true"
+				(onClick)="onEditSelected()"
+				[disabled]="disabled()"
+				aria-label="Edit selected template"
+			></p-button>
+		}
 		<p-button
-			label="Manage templates"
-			icon="pi pi-cog"
+			label="New template"
+			icon="pi pi-plus"
 			size="small"
 			severity="secondary"
 			[text]="true"

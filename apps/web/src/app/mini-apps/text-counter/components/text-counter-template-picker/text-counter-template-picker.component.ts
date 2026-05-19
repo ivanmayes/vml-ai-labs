@@ -50,6 +50,7 @@ export class TextCounterTemplatePickerComponent {
 
 	readonly selectedIdChange = output<string | null>();
 	readonly manageTemplatesClicked = output<void>();
+	readonly editSelectedTemplateClicked = output<void>();
 
 	/**
 	 * Plain `{ label, value }` shape consumed by `p-select`. The label is
@@ -61,11 +62,17 @@ export class TextCounterTemplatePickerComponent {
 
 	readonly hasTemplates = computed(() => this.templates().length > 0);
 
+	readonly hasSelection = computed(() => !!this.selectedId());
+
 	onSelectChange(value: string | null | undefined): void {
 		this.selectedIdChange.emit(value ?? null);
 	}
 
 	onManageTemplates(): void {
 		this.manageTemplatesClicked.emit();
+	}
+
+	onEditSelected(): void {
+		this.editSelectedTemplateClicked.emit();
 	}
 }

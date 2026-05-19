@@ -433,7 +433,6 @@ describe('TextCounterTemplateEditorComponent', () => {
 			fields: [
 				{
 					label: 'headline',
-					position: 0,
 					rules: [
 						{ type: 'maxCharacters', value: 25 },
 						{ type: 'singleLine' },
@@ -491,12 +490,14 @@ describe('TextCounterTemplateEditorComponent', () => {
 		expect(call.id).toBe('tpl-edit');
 		expect(call.payload.name).toBe('Original');
 		expect(call.payload.fields.length).toBe(2);
-		// After reorder: body is at index 0, main_headline at index 1
+		// After reorder: body is at index 0, main_headline at index 1.
+		// position is NOT sent on the wire — the API derives it from
+		// array order (forbidNonWhitelisted rejects it otherwise).
 		expect(call.payload.fields[0].label).toBe('body');
-		expect(call.payload.fields[0].position).toBe(0);
+		expect(call.payload.fields[0].position).toBeUndefined();
 		expect(call.payload.fields[0].rules).toEqual([]);
 		expect(call.payload.fields[1].label).toBe('main_headline');
-		expect(call.payload.fields[1].position).toBe(1);
+		expect(call.payload.fields[1].position).toBeUndefined();
 		expect(call.payload.fields[1].rules).toEqual([
 			{ type: 'maxCharacters', value: 25 },
 			{ type: 'minCharacters', value: 3 },

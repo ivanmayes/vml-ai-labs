@@ -146,7 +146,7 @@ describe('TextCounterImageCard — pure helpers', () => {
 			},
 			{ rule: { type: 'singleLine' }, pass: false },
 		]);
-		expect(tooltip).toContain('Max 5 chars');
+		expect(tooltip).toContain('Over the 5-character limit');
 		expect(tooltip).toContain('single line');
 		expect(tooltip).toContain(' · ');
 	});
