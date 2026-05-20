@@ -67,9 +67,17 @@
 
 	<!-- M11 consent banner — only after at least one image has been added.
 	     The banner gates the first extraction (see runExtraction) and
-	     emits `accepted` so we can drain any queued cards. -->
+	     emits `accepted` so we can drain any queued cards. The wrapper
+	     gets a `needs-attention` class while extraction is queued so
+	     the banner pulses (and we scroll it into view from the orch). -->
 	@if (hasAnyCards()) {
-		<app-text-counter-consent-banner (accepted)="onConsentAccepted()" />
+		<div
+			class="consent-slot"
+			[class.needs-attention]="consentNeedsAttention()"
+			#consentSlot
+		>
+			<app-text-counter-consent-banner (accepted)="onConsentAccepted()" />
+		</div>
 	}
 
 	<!-- Templates load error (e.g. network) — surfaces at the top so

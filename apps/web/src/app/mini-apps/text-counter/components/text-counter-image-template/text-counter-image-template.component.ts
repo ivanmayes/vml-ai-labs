@@ -31,6 +31,7 @@ import {
 	ChangeDetectorRef,
 	Component,
 	DestroyRef,
+	ElementRef,
 	OnDestroy,
 	OnInit,
 	ViewChild,
@@ -137,6 +138,23 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 	 * hero state again).
 	 */
 	@ViewChild('fu') private readonly fu?: FileUpload;
+
+	/**
+	 * Wrapper around the consent banner. We need a handle to scroll it
+	 * into view and apply a pulse highlight when the user clicks the
+	 * per-card Extract button before accepting consent — otherwise the
+	 * banner can sit above the fold and the extraction silently queues.
+	 */
+	@ViewChild('consentSlot')
+	private readonly consentSlot?: ElementRef<HTMLElement>;
+
+	/**
+	 * Toggled briefly when extraction is gated by missing consent. CSS
+	 * uses this to pulse the consent banner so the user can see what's
+	 * blocking them.
+	 */
+	readonly consentNeedsAttention = signal<boolean>(false);
+	private consentAttentionTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// -----------------------------------------------------------------
 	// Header summary stats — surfaced in the hero once cards exist.
@@ -442,9 +460,34 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 	onConsentAccepted(): void {
 		const queued = Array.from(this.pendingConsent);
 		this.pendingConsent.clear();
+		this.consentNeedsAttention.set(false);
+		if (this.consentAttentionTimer !== null) {
+			clearTimeout(this.consentAttentionTimer);
+			this.consentAttentionTimer = null;
+		}
 		for (const cardId of queued) {
 			this.runExtraction(cardId);
 		}
+	}
+
+	/**
+	 * Scroll the consent banner into view and pulse it briefly. Called
+	 * when the user tries to extract before accepting AI-vision consent.
+	 */
+	private surfaceConsentBanner(): void {
+		const el = this.consentSlot?.nativeElement;
+		if (el) {
+			el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+		this.consentNeedsAttention.set(true);
+		if (this.consentAttentionTimer !== null) {
+			clearTimeout(this.consentAttentionTimer);
+		}
+		this.consentAttentionTimer = setTimeout(() => {
+			this.consentNeedsAttention.set(false);
+			this.consentAttentionTimer = null;
+			this.cdr.markForCheck();
+		}, 1600);
 	}
 
 	// -----------------------------------------------------------------
@@ -463,6 +506,19 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 			this.extractionSubs.delete(cardId);
 		}
 
+		// Gate the FIRST extraction on AI-vision consent BEFORE flipping
+		// status to 'extracting'. If we set 'extracting' first and the
+		// request never fires (no consent yet), the user is left staring
+		// at a spinner with the consent banner sometimes scrolled out of
+		// view — looks "hung". Keeping status at 'pending' surfaces the
+		// "Ready to extract" panel, and we scroll + pulse the banner so
+		// the blocker is unmissable.
+		if (!hasAIConsent()) {
+			this.pendingConsent.add(cardId);
+			this.surfaceConsentBanner();
+			return;
+		}
+
 		// Move to extracting.
 		this.imageCards.update((list) =>
 			list.map((c) =>
@@ -471,16 +527,6 @@ export class TextCounterImageTemplateComponent implements OnInit, OnDestroy {
 					: { ...c, status: 'extracting', error: null },
 			),
 		);
-
-		// Gate the FIRST extraction on AI-vision consent. The banner
-		// renders only after the first upload (`imageCards().length > 0`)
-		// and now emits `accepted` so we can drain queued cards. Without
-		// this gate the AI POST is in flight by the time the banner
-		// renders — disclosure, not consent.
-		if (!hasAIConsent()) {
-			this.pendingConsent.add(cardId);
-			return;
-		}
 
 		const sub = this.extractionService
 			.extract(this.orgId, card.file, 'template', card.templateId)

@@ -267,8 +267,10 @@ describe('TextCounterImageTemplateComponent', () => {
 		c.onExtractClicked(c.imageCards()[0].id);
 		fixture.detectChanges();
 
-		// Card is in extracting state but the AI POST has NOT fired.
-		expect(c.imageCards()[0].status).toBe('extracting');
+		// Card stays at pending so the user sees the "Ready to extract"
+		// panel and the consent banner above, rather than a spinner that
+		// never resolves. The AI POST has NOT fired.
+		expect(c.imageCards()[0].status).toBe('pending');
 		expect(extraction.calls.length).toBe(0);
 
 		// Simulate the banner setting the flag, then emitting accepted.
