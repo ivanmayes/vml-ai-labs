@@ -55,9 +55,14 @@ export enum AIModel {
 	Claude3Sonnet = 'claude-3-sonnet-20240229',
 	Claude3Haiku = 'claude-3-haiku-20240307',
 
-	// Google Gemini Models
-	Gemini15Pro = 'gemini-1.5-pro',
-	Gemini15Flash = 'gemini-1.5-flash',
+	// Google Gemini Models (verified against ai.google.dev/gemini-api/docs/models, 2026-05)
+	Gemini35Flash = 'gemini-3.5-flash',
+	Gemini31FlashLite = 'gemini-3.1-flash-lite',
+	Gemini25Pro = 'gemini-2.5-pro',
+	Gemini25Flash = 'gemini-2.5-flash',
+	Gemini25FlashLite = 'gemini-2.5-flash-lite',
+	Gemini15Pro = 'gemini-1.5-pro-latest',
+	Gemini15Flash = 'gemini-1.5-flash-latest',
 	Gemini15Flash8B = 'gemini-1.5-flash-8b',
 	Gemini10Pro = 'gemini-1.0-pro',
 	GeminiProVision = 'gemini-pro-vision',

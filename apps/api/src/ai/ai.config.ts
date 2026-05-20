@@ -149,9 +149,15 @@ function buildDefaultModels(): AIDefaultModels {
 			[AIModality.Text]: AIModel.Claude35Sonnet,
 			[AIModality.Vision]: AIModel.Claude35Sonnet,
 		},
+		// Default text/vision now point at gemini-3.1-flash-lite — the
+		// legacy "gemini-1.5-pro" plain name was retired upstream and the
+		// v1beta API returns 404. 3.1-flash-lite is the current frontier-
+		// class multimodal model at low cost, well-suited to text-counter's
+		// structured text-extraction workload. The 1.5-*-latest aliases
+		// still resolve and stay in the enum for callers that prefer them.
 		[AIProvider.Google]: {
-			[AIModality.Text]: AIModel.Gemini15Pro,
-			[AIModality.Vision]: AIModel.Gemini15Pro,
+			[AIModality.Text]: AIModel.Gemini31FlashLite,
+			[AIModality.Vision]: AIModel.Gemini31FlashLite,
 			[AIModality.Embedding]: AIModel.TextEmbedding004,
 		},
 		[AIProvider.AzureOpenAI]: {
