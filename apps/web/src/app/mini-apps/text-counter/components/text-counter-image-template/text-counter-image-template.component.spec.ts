@@ -11,7 +11,6 @@ import type {
 import type { Template } from '../../models/template.types';
 import { TextCounterExtractionService } from '../../services/text-counter-extraction.service';
 import { TextCounterTemplatesService } from '../../services/text-counter-templates.service';
-import { CONSENT_STORAGE_KEY } from '../text-counter-consent-banner/text-counter-consent-banner.component';
 
 import { TextCounterImageTemplateComponent } from './text-counter-image-template.component';
 
@@ -159,10 +158,6 @@ describe('TextCounterImageTemplateComponent', () => {
 
 	beforeEach(() => {
 		localStorage.removeItem(SETTINGS_KEY);
-		// Pre-accept consent for the default suite so existing tests
-		// continue to exercise the post-consent extraction flow. Tests
-		// that exercise the consent gate explicitly clear this flag.
-		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
 		spyOn(URL, 'createObjectURL').and.callFake(() => 'blob:fake');
 		spyOn(URL, 'revokeObjectURL').and.callFake(() => undefined);
 		extraction = new FakeExtractionService();
@@ -171,7 +166,6 @@ describe('TextCounterImageTemplateComponent', () => {
 
 	afterEach(() => {
 		localStorage.removeItem(SETTINGS_KEY);
-		localStorage.removeItem(CONSENT_STORAGE_KEY);
 	});
 
 	// -----------------------------------------------------------------
@@ -220,67 +214,6 @@ describe('TextCounterImageTemplateComponent', () => {
 			true,
 		);
 		expect(extraction.calls.length).toBe(0);
-	});
-
-	it('does not render the consent banner before any image is uploaded (M11)', () => {
-		templates.queueList([makeTemplate()]);
-		const fixture = buildWith({ extraction, templates });
-		const banner = fixture.nativeElement.querySelector(
-			'app-text-counter-consent-banner',
-		);
-		expect(banner).toBeNull();
-	});
-
-	it('renders the consent banner after the first image upload', () => {
-		templates.queueList([makeTemplate()]);
-		const fixture = buildWith({ extraction, templates });
-		const c = fixture.componentInstance;
-
-		c.onUpload({ files: [fakeImage()] });
-		fixture.detectChanges();
-
-		const banner = fixture.nativeElement.querySelector(
-			'app-text-counter-consent-banner',
-		);
-		expect(banner).not.toBeNull();
-	});
-
-	it('defers the FIRST extraction call until consent is accepted (gates the AI POST)', () => {
-		// Clear the pre-accepted flag set by beforeEach for this test.
-		localStorage.removeItem(CONSENT_STORAGE_KEY);
-		const tpl = makeTemplate({ id: 'tpl-gate' });
-		templates.queueList([tpl]);
-		extraction.queueSuccess({
-			matches: [
-				{ label: 'headline', text: 'H-text' },
-				{ label: 'body', text: 'B-text' },
-			],
-			unassigned: [],
-		} as TemplateExtractionResult);
-
-		const fixture = buildWith({ extraction, templates });
-		const c = fixture.componentInstance;
-
-		c.onUpload({ files: [fakeImage()] });
-		fixture.detectChanges();
-		c.onTemplateChange(c.imageCards()[0].id, 'tpl-gate');
-		c.onExtractClicked(c.imageCards()[0].id);
-		fixture.detectChanges();
-
-		// Card stays at pending so the user sees the "Ready to extract"
-		// panel and the consent banner above, rather than a spinner that
-		// never resolves. The AI POST has NOT fired.
-		expect(c.imageCards()[0].status).toBe('pending');
-		expect(extraction.calls.length).toBe(0);
-
-		// Simulate the banner setting the flag, then emitting accepted.
-		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
-		c.onConsentAccepted();
-		fixture.detectChanges();
-
-		expect(extraction.calls.length).toBe(1);
-		expect(c.imageCards()[0].status).toBe('done');
-		expect(c.imageCards()[0].assignments['fa-headline']).toBe('H-text');
 	});
 
 	// -----------------------------------------------------------------

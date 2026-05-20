@@ -197,28 +197,6 @@
 
 // ---------- Templates error ----------
 
-.consent-slot {
-	border-radius: var(--p-border-radius);
-	transition: box-shadow 0.3s ease;
-}
-
-.consent-slot.needs-attention {
-	animation: consent-pulse 0.8s ease-in-out 2;
-}
-
-@keyframes consent-pulse {
-	0%,
-	100% {
-		box-shadow: 0 0 0 0 transparent;
-	}
-
-	50% {
-		box-shadow:
-			0 0 0 4px color-mix(in srgb, var(--p-primary-500) 30%, transparent),
-			0 0 0 8px color-mix(in srgb, var(--p-primary-500) 12%, transparent);
-	}
-}
-
 .templates-error {
 	display: flex;
 	gap: 0.75rem;

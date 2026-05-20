@@ -33,7 +33,6 @@ The web side now talks to an API surface under `organization/:orgId/apps/text-co
 
 ## Persistence
 - Settings persist in `localStorage` under key `text-counter:settings:v1` via `services/text-counter-settings.util.ts`
-- AI-vision consent acknowledgement persists under `text-counter:ai-consent:v1` via the consent banner component. Image orchestrators (`text-counter-image-general` and `text-counter-image-template`) GATE the first extraction on consent by calling `hasAIConsent()` before firing the AI POST and draining a `pendingConsent` queue when the banner emits `(accepted)`
 - Text content, uploaded images, and extracted regions are **never** persisted — refresh discards everything (R7)
 - Settings storage uses merge-onto-defaults: adding a new key needs no migration; only renames/type changes force a version bump
 

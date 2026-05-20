@@ -9,7 +9,6 @@ import type {
 	GeneralExtractionResult,
 } from '../../models/extraction.types';
 import { TextCounterExtractionService } from '../../services/text-counter-extraction.service';
-import { CONSENT_STORAGE_KEY } from '../text-counter-consent-banner/text-counter-consent-banner.component';
 
 import { TextCounterImageGeneralComponent } from './text-counter-image-general.component';
 
@@ -83,10 +82,6 @@ describe('TextCounterImageGeneralComponent', () => {
 
 	beforeEach(() => {
 		localStorage.removeItem(SETTINGS_KEY);
-		// Pre-accept consent for the default suite so existing tests
-		// continue to exercise the post-consent extraction flow. Tests
-		// that exercise the consent gate explicitly clear this flag.
-		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
 		// Stable object-URL stubs so we don't lean on jsdom's URL impl.
 		spyOn(URL, 'createObjectURL').and.callFake(() => 'blob:fake');
 		spyOn(URL, 'revokeObjectURL').and.callFake(() => undefined);
@@ -95,7 +90,6 @@ describe('TextCounterImageGeneralComponent', () => {
 
 	afterEach(() => {
 		localStorage.removeItem(SETTINGS_KEY);
-		localStorage.removeItem(CONSENT_STORAGE_KEY);
 	});
 
 	// -------------------------------------------------------------------
@@ -397,91 +391,6 @@ describe('TextCounterImageGeneralComponent', () => {
 		expect(joined).not.toContain('secret-line-1');
 		expect(joined).not.toContain('secret-line-2');
 		expect(joined).not.toContain('edited locally');
-	});
-
-	// -------------------------------------------------------------------
-	// Consent banner
-	// -------------------------------------------------------------------
-
-	it('does not render the consent banner before any image is uploaded', () => {
-		const fixture = buildWith(fake);
-		const banner = fixture.nativeElement.querySelector(
-			'app-text-counter-consent-banner',
-		);
-		expect(banner).toBeNull();
-	});
-
-	it('renders the consent banner after the first image upload', () => {
-		fake.queueSuccess({ regions: [] });
-
-		const fixture = buildWith(fake);
-		const c = fixture.componentInstance;
-
-		c.onUpload({ files: [fakeImage()] });
-		fixture.detectChanges();
-
-		const banner = fixture.nativeElement.querySelector(
-			'app-text-counter-consent-banner',
-		);
-		expect(banner).not.toBeNull();
-	});
-
-	it('does not fire extraction on the first upload until consent is accepted (gates the FIRST AI call)', () => {
-		// Clear the pre-accepted flag set by beforeEach for this test.
-		localStorage.removeItem(CONSENT_STORAGE_KEY);
-		fake.queueSuccess({ regions: ['HEAD'] });
-
-		const fixture = buildWith(fake);
-		const c = fixture.componentInstance;
-
-		c.onUpload({ files: [fakeImage()] });
-		fixture.detectChanges();
-
-		// Image entry exists in extracting state, but the AI POST has
-		// NOT fired — the request is gated on consent acceptance.
-		expect(c.images().length).toBe(1);
-		expect(c.images()[0].status).toBe('extracting');
-		expect(fake.calls.length).toBe(0);
-
-		// Simulate the banner setting the flag, then emitting accepted.
-		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
-		c.onConsentAccepted();
-		fixture.detectChanges();
-
-		expect(fake.calls.length).toBe(1);
-		expect(c.images()[0].status).toBe('done');
-		expect(c.images()[0].rows[0].text).toBe('HEAD');
-	});
-
-	it('fires extraction immediately when consent was previously accepted', () => {
-		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
-		fake.queueSuccess({ regions: ['ok'] });
-
-		const fixture = buildWith(fake);
-		const c = fixture.componentInstance;
-
-		c.onUpload({ files: [fakeImage()] });
-		fixture.detectChanges();
-
-		// Extraction fires synchronously — no consent gating needed.
-		expect(fake.calls.length).toBe(1);
-		expect(c.images()[0].status).toBe('done');
-	});
-
-	it('does not re-show the consent banner when the accepted flag is already set', () => {
-		localStorage.setItem(CONSENT_STORAGE_KEY, 'accepted');
-		fake.queueSuccess({ regions: [] });
-
-		const fixture = buildWith(fake);
-		const c = fixture.componentInstance;
-
-		c.onUpload({ files: [fakeImage()] });
-		fixture.detectChanges();
-
-		// The host renders the banner element, but the banner itself
-		// keeps its inner content hidden via its own `visible` signal.
-		const inner = fixture.nativeElement.querySelector('.consent-banner');
-		expect(inner).toBeNull();
 	});
 
 	// -------------------------------------------------------------------

@@ -24,12 +24,12 @@ describe('TextCounterHomeComponent (tab shell)', () => {
 		return fixture;
 	}
 
-	it('defaults the active tab to "text"', () => {
+	it('defaults the active tab to "image-template"', () => {
 		const fixture = build();
-		expect(fixture.componentInstance.activeTab()).toBe('text');
+		expect(fixture.componentInstance.activeTab()).toBe('image-template');
 	});
 
-	it('renders all three tab triggers (Text, Image (general), Image + template)', () => {
+	it('renders all three tab triggers in lead-with-template order', () => {
 		const fixture = build();
 		const tabs = fixture.nativeElement.querySelectorAll('p-tab');
 		// p-tab renders one element per tab trigger.
@@ -38,16 +38,16 @@ describe('TextCounterHomeComponent (tab shell)', () => {
 		const labels = Array.from(tabs).map(
 			(el) => (el as HTMLElement).textContent?.trim() ?? '',
 		);
-		expect(labels[0]).toContain('Text');
+		expect(labels[0]).toContain('Image + template');
 		expect(labels[1]).toContain('Image (general)');
-		expect(labels[2]).toContain('Image + template');
+		expect(labels[2]).toContain('Text');
 	});
 
-	it('mounts the text-mode child for the default tab', () => {
+	it('mounts the image-template child for the default tab', () => {
 		const fixture = build();
-		// The text-mode component is mounted inside the "text" tabpanel.
+		// The image-template orchestrator is mounted in the default tabpanel.
 		const child = fixture.nativeElement.querySelector(
-			'app-text-counter-text-mode',
+			'app-text-counter-image-template',
 		);
 		expect(child).not.toBeNull();
 	});

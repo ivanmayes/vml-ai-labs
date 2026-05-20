@@ -1,18 +1,18 @@
 <p-tabs [(value)]="activeTab">
 	<p-tablist>
-		<p-tab value="text">Text</p-tab>
-		<p-tab value="image-general">Image (general)</p-tab>
 		<p-tab value="image-template">Image + template</p-tab>
+		<p-tab value="image-general">Image (general)</p-tab>
+		<p-tab value="text">Text</p-tab>
 	</p-tablist>
 	<p-tabpanels>
-		<p-tabpanel value="text">
-			<app-text-counter-text-mode />
+		<p-tabpanel value="image-template">
+			<app-text-counter-image-template />
 		</p-tabpanel>
 		<p-tabpanel value="image-general">
 			<app-text-counter-image-general />
 		</p-tabpanel>
-		<p-tabpanel value="image-template">
-			<app-text-counter-image-template />
+		<p-tabpanel value="text">
+			<app-text-counter-text-mode />
 		</p-tabpanel>
 	</p-tabpanels>
 </p-tabs>

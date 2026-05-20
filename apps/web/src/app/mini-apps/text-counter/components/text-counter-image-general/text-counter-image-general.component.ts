@@ -37,10 +37,6 @@ import {
 } from '../../services/text-counter-shared.util';
 import { computeStats } from '../../services/text-counter.util';
 import { TextCounterExtractionService } from '../../services/text-counter-extraction.service';
-import {
-	TextCounterConsentBannerComponent,
-	hasAIConsent,
-} from '../text-counter-consent-banner/text-counter-consent-banner.component';
 
 /**
  * Per-image extraction state. Order of statuses:
@@ -93,8 +89,6 @@ function narrowGeneral(
  *   immediately on every keystroke.
  * - Per-card error retry: if extraction fails for one image, that
  *   card surfaces the error + a Retry button; other cards proceed.
- * - One-time AI-vision consent banner (M11) — gated on at least one
- *   image being uploaded so it never shows on cold page load.
  * - No persistence: refreshing the page drops all images and rows
  *   (covers AE9 in part — see plan).
  */
@@ -110,7 +104,6 @@ function narrowGeneral(
 		PrimeNgModule,
 		FileUploadModule,
 		TextareaModule,
-		TextCounterConsentBannerComponent,
 	],
 })
 export class TextCounterImageGeneralComponent implements OnDestroy {
@@ -134,17 +127,6 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 	 * the user already discarded (or on the orphaned half of a retry).
 	 */
 	private readonly extractionSubs = new Map<string, Subscription>();
-
-	/**
-	 * Entries waiting on AI-vision consent before the first extraction
-	 * fires. We render the entry's card in `extracting` UI state but
-	 * defer the actual HTTP POST until the user accepts the banner.
-	 *
-	 * Once consent is recorded (banner emits `accepted`), this list is
-	 * drained. Drained-and-cleared on accept — subsequent uploads in
-	 * the same session see `hasAIConsent()` true and skip the queue.
-	 */
-	private readonly pendingConsent = new Map<string, File>();
 
 	/**
 	 * Drives the per-row count display. Recomputed whenever images() or
@@ -200,29 +182,7 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 			error: null,
 		};
 		this.images.update((list) => [...list, entry]);
-
-		// Gate the FIRST extraction on AI-vision consent. Without this,
-		// the banner renders only AFTER the request is already in
-		// flight — disclosure rather than consent. When the flag is
-		// already set (subsequent uploads, or a returning user), the
-		// extraction fires immediately.
-		if (!hasAIConsent()) {
-			this.pendingConsent.set(entry.id, file);
-			return;
-		}
 		this.runExtraction(entry.id, file);
-	}
-
-	/**
-	 * Banner emitted `accepted`. Drain any extractions we deferred while
-	 * waiting on consent.
-	 */
-	onConsentAccepted(): void {
-		const queued = Array.from(this.pendingConsent.entries());
-		this.pendingConsent.clear();
-		for (const [entryId, file] of queued) {
-			this.runExtraction(entryId, file);
-		}
 	}
 
 	private runExtraction(entryId: string, file: File): void {
@@ -316,9 +276,6 @@ export class TextCounterImageGeneralComponent implements OnDestroy {
 			sub.unsubscribe();
 			this.extractionSubs.delete(entryId);
 		}
-		// Drop from the consent-queue too — otherwise an accept later
-		// would re-fire extraction on a card the user already removed.
-		this.pendingConsent.delete(entryId);
 		const entry = this.images().find((e) => e.id === entryId);
 		if (entry) this.releasePreview(entry);
 		this.images.update((list) => list.filter((e) => e.id !== entryId));

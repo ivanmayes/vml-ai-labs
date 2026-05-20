@@ -23,7 +23,7 @@ type TextCounterTab = 'text' | 'image-general' | 'image-template';
 	],
 })
 export class TextCounterHomeComponent {
-	// Default landing on the paste-text experience preserves prior behavior.
-	// Image (general) is filled in by U6; Image + template by U9.
-	readonly activeTab = signal<TextCounterTab>('text');
+	// Image + template is the flagship experience — land users there by
+	// default and lead with it in the tab strip.
+	readonly activeTab = signal<TextCounterTab>('image-template');
 }

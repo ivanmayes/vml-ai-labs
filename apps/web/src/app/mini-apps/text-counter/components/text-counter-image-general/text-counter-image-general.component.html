@@ -7,14 +7,6 @@
 		</p>
 	</header>
 
-	<!-- One-time AI consent banner (M11). Only mounted once at least one
-	     image has been uploaded — never shows on cold page load. The
-	     banner now GATES the first extraction (see startExtraction) and
-	     emits `accepted` so we can drain any queued first uploads. -->
-	@if (images().length > 0) {
-		<app-text-counter-consent-banner (accepted)="onConsentAccepted()" />
-	}
-
 	<!-- Uploader -->
 	<div class="uploader-row flex flex-wrap items-center gap-3">
 		<p-fileUpload
