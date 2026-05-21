@@ -149,17 +149,17 @@ function buildDefaultModels(): AIDefaultModels {
 			[AIModality.Text]: AIModel.Claude35Sonnet,
 			[AIModality.Vision]: AIModel.Claude35Sonnet,
 		},
-		// Default vision points at gemini-2.5-pro — the most advanced
-		// Gemini for "complex tasks, featuring deep reasoning" per
-		// ai.google.dev. Vision + semantic role-matching (e.g. separating
-		// a headline from a subline and ignoring a product mark) is exactly
-		// the kind of task that benefits from the pro tier over flash.
+		// Default vision points at gemini-3.5-flash — described upstream
+		// as Google's "most intelligent model for sustained frontier
+		// performance" and the current top of their flash tier. Picked
+		// over 2.5-pro after live testing showed 2.5-pro still merged
+		// visually-distinct text blocks on layout-dense creative.
 		// Text default stays on a flash variant for cost; bump vision only.
 		// The legacy "gemini-1.5-pro" plain name was retired upstream and
 		// the v1beta API returns 404; the -latest aliases still resolve.
 		[AIProvider.Google]: {
 			[AIModality.Text]: AIModel.Gemini25Flash,
-			[AIModality.Vision]: AIModel.Gemini25Pro,
+			[AIModality.Vision]: AIModel.Gemini35Flash,
 			[AIModality.Embedding]: AIModel.TextEmbedding004,
 		},
 		[AIProvider.AzureOpenAI]: {
