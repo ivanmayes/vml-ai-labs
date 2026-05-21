@@ -30,6 +30,7 @@ export class ScraperStack extends cdk.Stack {
 		const dlq = new sqs.Queue(this, 'ScraperPageWorkDlq', {
 			queueName: 'vml-scraper-page-work-dlq',
 			retentionPeriod: cdk.Duration.days(14),
+			encryption: sqs.QueueEncryption.KMS_MANAGED,
 			// No redrive — DLQ is the terminal destination
 		});
 
@@ -40,6 +41,7 @@ export class ScraperStack extends cdk.Stack {
 			queueName: 'vml-scraper-page-work',
 			visibilityTimeout: cdk.Duration.seconds(720), // 6x Lambda timeout (120s)
 			retentionPeriod: cdk.Duration.days(7),
+			encryption: sqs.QueueEncryption.KMS_MANAGED,
 			deadLetterQueue: {
 				queue: dlq,
 				maxReceiveCount: 4, // After 4 failed attempts, move to DLQ

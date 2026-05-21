@@ -63,6 +63,22 @@ jest.mock('../ssrf-protection', () => ({
 	installSsrfProtection: jest.fn(),
 }));
 
+// Mock hint-executor
+const mockExecuteHints = jest.fn().mockResolvedValue([]);
+jest.mock('../hint-executor', () => ({
+	executeHints: mockExecuteHints,
+}));
+
+// Mock @aws-sdk/client-s3 (for session state S3 operations in handler)
+const mockS3Send = jest.fn().mockResolvedValue({});
+jest.mock('@aws-sdk/client-s3', () => ({
+	S3Client: jest.fn().mockImplementation(() => ({
+		send: mockS3Send,
+	})),
+	GetObjectCommand: jest.fn().mockImplementation((params: any) => params),
+	PutObjectCommand: jest.fn().mockImplementation((params: any) => params),
+}));
+
 // Mock globalThis.crypto for deterministic UUID generation
 Object.defineProperty(globalThis, 'crypto', {
 	value: {
@@ -89,6 +105,7 @@ import {
 	isJobCancelled,
 } from '../callback';
 import { installSsrfProtection } from '../ssrf-protection';
+import { executeHints } from '../hint-executor';
 
 // =============================================================================
 // Test helpers
@@ -145,6 +162,11 @@ function createMockCrawlerContext() {
 				'https://example.com/found',
 				'https://example.com/about',
 			]),
+			reload: jest.fn().mockResolvedValue(undefined),
+			context: jest.fn().mockReturnValue({
+				addCookies: jest.fn().mockResolvedValue(undefined),
+				cookies: jest.fn().mockResolvedValue([]),
+			}),
 		},
 		request: {
 			url: VALID_MESSAGE.url,
@@ -190,6 +212,8 @@ describe('Lambda handler', () => {
 		]);
 		(uploadHtml as jest.Mock).mockResolvedValue('test/page.html');
 		mockEnableBlockingInPage.mockResolvedValue(undefined);
+		mockExecuteHints.mockResolvedValue([]);
+		mockS3Send.mockResolvedValue({});
 	});
 
 	// -- Zod message validation --
@@ -619,6 +643,181 @@ describe('Lambda handler', () => {
 			const result = await handler(event);
 
 			expect(result.batchItemFailures).toEqual([]);
+		});
+	});
+
+	// -- Hint execution integration --
+
+	describe('hint execution integration', () => {
+		it('should call executeHints when message.hints is non-empty', async () => {
+			const messageWithHints = {
+				...VALID_MESSAGE,
+				hints: [
+					{ action: 'click', selector: '.accordion', snapshot: 'after' },
+				],
+			};
+
+			mockExecuteHints.mockResolvedValue([
+				{
+					viewport: 1440,
+					s3Key: 'hint-screenshot.jpg',
+					hintLabel: 'Click accordion',
+					hintIndex: 0,
+					snapshotTiming: 'after',
+				},
+			]);
+
+			const event = createSQSEvent([messageWithHints]);
+			await handler(event);
+
+			expect(executeHints).toHaveBeenCalledTimes(1);
+		});
+
+		it('should NOT call executeHints when message.hints is undefined', async () => {
+			const event = createSQSEvent([VALID_MESSAGE]);
+			await handler(event);
+
+			expect(executeHints).not.toHaveBeenCalled();
+		});
+
+		it('should NOT call executeHints when message.hints is empty array', async () => {
+			const messageWithEmptyHints = {
+				...VALID_MESSAGE,
+				hints: [],
+			};
+
+			const event = createSQSEvent([messageWithEmptyHints]);
+			await handler(event);
+
+			expect(executeHints).not.toHaveBeenCalled();
+		});
+
+		it('should merge hint screenshots with baseline screenshots in callback payload', async () => {
+			const messageWithHints = {
+				...VALID_MESSAGE,
+				hints: [
+					{ action: 'click', selector: '.accordion', snapshot: 'after' },
+				],
+			};
+
+			mockExecuteHints.mockResolvedValue([
+				{
+					viewport: 1440,
+					s3Key: 'hint-screenshot.jpg',
+					hintLabel: 'Click accordion',
+					hintIndex: 0,
+					snapshotTiming: 'after',
+				},
+			]);
+
+			const event = createSQSEvent([messageWithHints]);
+			await handler(event);
+
+			const payload = (sendCallback as jest.Mock).mock.calls[0][0];
+			// Should contain both hint screenshot and baseline screenshot
+			expect(payload.screenshots).toHaveLength(2);
+			expect(payload.screenshots).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({ hintLabel: 'Click accordion' }),
+					expect.objectContaining({ s3Key: 'test/screenshot-1440w.jpg' }),
+				]),
+			);
+		});
+	});
+
+	// -- Session state --
+
+	describe('session state', () => {
+		it('should inject session state when sessionStateS3Key is set', async () => {
+			const mockBody = JSON.stringify({
+				cookies: [{ name: 'session', value: 'abc', domain: 'example.com' }],
+				capturedAt: Date.now(),
+			});
+
+			mockS3Send.mockResolvedValue({
+				Body: {
+					transformToString: jest.fn().mockResolvedValue(mockBody),
+				},
+			});
+
+			// Update context mock to track addCookies calls
+			const mockAddCookies = jest.fn().mockResolvedValue(undefined);
+			(mockContext.page.context as jest.Mock).mockReturnValue({
+				addCookies: mockAddCookies,
+				cookies: jest.fn().mockResolvedValue([]),
+			});
+
+			const messageWithSession = {
+				...VALID_MESSAGE,
+				sessionStateS3Key: 'scraper-jobs/11111111/session-state.json',
+			};
+
+			const event = createSQSEvent([messageWithSession]);
+			await handler(event);
+
+			// Should have injected cookies
+			expect(mockAddCookies).toHaveBeenCalledWith(
+				expect.arrayContaining([
+					expect.objectContaining({ name: 'session', value: 'abc' }),
+				]),
+			);
+		});
+
+		it('should save session state to S3 when siteEntry hints exist', async () => {
+			const mockCookies = [
+				{ name: 'auth', value: 'token123', domain: 'example.com' },
+			];
+
+			(mockContext.page.context as jest.Mock).mockReturnValue({
+				cookies: jest.fn().mockResolvedValue(mockCookies),
+				addCookies: jest.fn().mockResolvedValue(undefined),
+			});
+
+			const messageWithSiteEntry = {
+				...VALID_MESSAGE,
+				hints: [
+					{ action: 'fill', selector: '#email', value: 'user@test.com', siteEntry: true },
+				],
+			};
+
+			mockExecuteHints.mockResolvedValue([]);
+
+			const event = createSQSEvent([messageWithSiteEntry]);
+			await handler(event);
+
+			// Should have saved session state to S3
+			expect(mockS3Send).toHaveBeenCalled();
+
+			// Callback should include sessionStateS3Key
+			const payload = (sendCallback as jest.Mock).mock.calls[0][0];
+			expect(payload.sessionStateS3Key).toContain('session-state.json');
+		});
+
+		it('should include sessionStateS3Key in callback payload when set', async () => {
+			const mockCookies = [
+				{ name: 'auth', value: 'token123', domain: 'example.com' },
+			];
+
+			(mockContext.page.context as jest.Mock).mockReturnValue({
+				cookies: jest.fn().mockResolvedValue(mockCookies),
+				addCookies: jest.fn().mockResolvedValue(undefined),
+			});
+
+			const messageWithSiteEntry = {
+				...VALID_MESSAGE,
+				hints: [
+					{ action: 'click', selector: '.login', siteEntry: true },
+				],
+			};
+
+			mockExecuteHints.mockResolvedValue([]);
+
+			const event = createSQSEvent([messageWithSiteEntry]);
+			await handler(event);
+
+			const payload = (sendCallback as jest.Mock).mock.calls[0][0];
+			expect(payload).toHaveProperty('sessionStateS3Key');
+			expect(payload.sessionStateS3Key).toMatch(/session-state\.json$/);
 		});
 	});
 });

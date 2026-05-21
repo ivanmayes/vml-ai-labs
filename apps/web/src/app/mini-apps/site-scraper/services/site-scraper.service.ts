@@ -2,7 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import type {
+	EventHint,
+	UrlHintGroup,
+	HintConfig,
+} from '@api/mini-apps/site-scraper/types/event-hint.types';
 import { environment } from '../../../../environments/environment';
+
+export type { EventHint, UrlHintGroup, HintConfig };
 
 export type JobStatus =
 	| 'pending'
@@ -25,6 +32,12 @@ export interface ScreenshotRecord {
 	viewport: number;
 	s3Key: string;
 	thumbnailS3Key?: string;
+	/** Human-readable label from the hint that produced this screenshot */
+	hintLabel?: string;
+	/** Index of the hint in the resolved hints array */
+	hintIndex?: number;
+	/** Whether this screenshot is a baseline, before-hint, or after-hint capture */
+	snapshotTiming?: 'baseline' | 'before' | 'after';
 }
 
 export interface ScrapeJob {
@@ -109,6 +122,7 @@ export class SiteScraperService {
 		url: string;
 		maxDepth?: number;
 		viewports?: number[];
+		hints?: HintConfig;
 	}): Observable<{ status: string; data: ScrapeJob }> {
 		return this.http.post<{ status: string; data: ScrapeJob }>(
 			`${this.baseUrl}/jobs`,
@@ -190,10 +204,17 @@ export class SiteScraperService {
 	getScreenshotUrl(
 		pageId: string,
 		viewport: number,
+		s3Key?: string,
 	): Observable<{ status: string; data: PresignedUrlResponse }> {
+		const params: Record<string, string> = {
+			viewport: viewport.toString(),
+		};
+		if (s3Key) {
+			params['s3Key'] = s3Key;
+		}
 		return this.http.get<{ status: string; data: PresignedUrlResponse }>(
 			`${this.baseUrl}/pages/${pageId}/screenshot`,
-			{ params: { viewport: viewport.toString() } },
+			{ params },
 		);
 	}
 

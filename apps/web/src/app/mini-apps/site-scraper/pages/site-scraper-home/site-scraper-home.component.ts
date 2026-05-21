@@ -20,12 +20,19 @@ import { InputTextModule } from 'primeng/inputtext';
 import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { PanelModule } from 'primeng/panel';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageService } from 'primeng/api';
 
 import {
 	SiteScraperService,
 	ScrapeJob,
 	AdminScrapeJob,
+} from '../../services/site-scraper.service';
+import type {
+	EventHint,
+	HintConfig,
+	UrlHintGroup,
 } from '../../services/site-scraper.service';
 import { SiteScraperSseService } from '../../services/site-scraper-sse.service';
 import { SessionQuery } from '../../../../state/session/session.query';
@@ -46,6 +53,8 @@ import { SessionQuery } from '../../../../state/session/session.query';
 		CardModule,
 		SelectModule,
 		SelectButtonModule,
+		PanelModule,
+		InputNumberModule,
 	],
 	providers: [MessageService, SiteScraperSseService],
 	templateUrl: './site-scraper-home.component.html',
@@ -72,6 +81,13 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 	formDepth = 2;
 	formViewports: number[] = [1920];
 
+	// Event Hints form state
+	showHints = false;
+	formHints: { global: EventHint[]; perUrl: UrlHintGroup[] } = {
+		global: [],
+		perUrl: [],
+	};
+
 	// Options
 	readonly depthOptions = [
 		{ label: '1 level', value: 1 },
@@ -86,6 +102,22 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 		{ label: '768', value: 768 },
 		{ label: '1024', value: 1024 },
 		{ label: '1920', value: 1920 },
+	];
+
+	readonly actionOptions = [
+		{ label: 'Click', value: 'click' },
+		{ label: 'Hover', value: 'hover' },
+		{ label: 'Fill', value: 'fill' },
+		{ label: 'Submit', value: 'fillSubmit' },
+		{ label: 'Wait', value: 'wait' },
+		{ label: 'Remove', value: 'remove' },
+	];
+
+	readonly snapshotOptions = [
+		{ label: 'After', value: 'after' },
+		{ label: 'Before', value: 'before' },
+		{ label: 'Both', value: 'both' },
+		{ label: 'Never', value: 'never' },
 	];
 
 	ngOnInit(): void {
@@ -168,13 +200,28 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 		const viewports =
 			this.formViewports.length > 0 ? this.formViewports : [1920];
 
+		const hasHints =
+			this.formHints.global.length > 0 ||
+			this.formHints.perUrl.length > 0;
+
+		const payload: {
+			url: string;
+			maxDepth: number;
+			viewports: number[];
+			hints?: HintConfig;
+		} = {
+			url: this.formUrl,
+			maxDepth: this.formDepth,
+			viewports,
+		};
+
+		if (hasHints) {
+			payload.hints = this.formHints;
+		}
+
 		this.isSubmitting.set(true);
 		this.scraperService
-			.createJob({
-				url: this.formUrl,
-				maxDepth: this.formDepth,
-				viewports,
-			})
+			.createJob(payload)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: () => {
@@ -197,6 +244,44 @@ export class SiteScraperHomeComponent implements OnInit, OnDestroy {
 					this.isSubmitting.set(false);
 				},
 			});
+	}
+
+	// --- Event Hints ---
+
+	toggleHints(): void {
+		this.showHints = !this.showHints;
+	}
+
+	addGlobalHint(): void {
+		this.formHints.global.push({
+			action: 'click',
+			selector: '',
+			snapshot: 'after',
+		});
+	}
+
+	removeGlobalHint(index: number): void {
+		this.formHints.global.splice(index, 1);
+	}
+
+	addUrlGroup(): void {
+		this.formHints.perUrl.push({ pattern: '', hints: [] });
+	}
+
+	removeUrlGroup(index: number): void {
+		this.formHints.perUrl.splice(index, 1);
+	}
+
+	addUrlHint(groupIndex: number): void {
+		this.formHints.perUrl[groupIndex].hints.push({
+			action: 'click',
+			selector: '',
+			snapshot: 'after',
+		});
+	}
+
+	removeUrlHint(groupIndex: number, hintIndex: number): void {
+		this.formHints.perUrl[groupIndex].hints.splice(hintIndex, 1);
 	}
 
 	cancelJob(job: ScrapeJob): void {

@@ -5,6 +5,8 @@
  * Secrets and config (callbackUrl, callbackSecret, s3Bucket, queueUrl)
  * are read from Lambda environment variables, NOT sent in messages.
  */
+import { EventHint } from './event-hint.types';
+
 export interface PageWorkMessage {
 	/** Scrape job UUID */
 	jobId: string;
@@ -24,4 +26,8 @@ export interface PageWorkMessage {
 	seedHostname: string;
 	/** S3 key prefix for all artifacts: `site-scraper/{jobId}/` */
 	s3Prefix: string;
+	/** Resolved event hints for this specific page (from global + per-URL matching) */
+	hints?: EventHint[];
+	/** S3 key for session state (cookies + localStorage) from siteEntry hints */
+	sessionStateS3Key?: string;
 }
